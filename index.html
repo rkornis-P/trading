@@ -321,30 +321,38 @@ function num(v){ const n=parseFloat(v); return isFinite(n)?n:null; }
 /* ===== CHAIN ===== */
 let rawChain=[], underlying={}, autoTimer=null;
 
-/* Multi-route fetch: tries direct CBOE, then two public relays. Works from file://, localhost, or hosted. */
-let lastRoute='';
+/* Multi-route fetch with per-route diagnostics. Routes 3-5 are wrapper services that reliably permit app requests. */
+let lastRoute='', routeReport='';
 async function fetchJsonMultiRoute(targetUrl){
     const routes=[
-        {name:'direct', make:u=>u},
-        {name:'relay-1 (corsproxy)', make:u=>'https://corsproxy.io/?url='+encodeURIComponent(u)},
-        {name:'relay-2 (allorigins)', make:u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u)}
+        {name:'direct', make:u=>u, unwrap:async r=>r.json()},
+        {name:'codetabs', make:u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), unwrap:async r=>r.json()},
+        {name:'allorigins-get', make:u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), unwrap:async r=>{ const w=await r.json(); return JSON.parse(w.contents); }},
+        {name:'corsproxy', make:u=>'https://corsproxy.io/?url='+encodeURIComponent(u), unwrap:async r=>r.json()},
+        {name:'allorigins-raw', make:u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), unwrap:async r=>r.json()}
     ];
-    let lastErr=null;
+    const report=[];
     for(const rt of routes){
         try{
             const r=await fetch(rt.make(targetUrl));
-            if(r.ok){ const j=await r.json(); lastRoute=rt.name; return j; }
-            lastErr=new Error('HTTP '+r.status+' via '+rt.name);
-        }catch(e){ lastErr=e; }
+            if(!r.ok){ report.push(rt.name+': HTTP '+r.status); continue; }
+            const j=await rt.unwrap(r);
+            if(!j || typeof j!=='object'){ report.push(rt.name+': bad payload'); continue; }
+            lastRoute=rt.name; routeReport=report.join(' · ');
+            return j;
+        }catch(e){ report.push(rt.name+': '+(e.message||'blocked').slice(0,40)); }
     }
-    throw lastErr||new Error('All routes failed');
+    routeReport=report.join(' · ');
+    throw new Error('All 5 routes failed → ['+routeReport+']');
 }
 async function fetchCboe(tk){
     const url=t=>`https://cdn.cboe.com/api/global/delayed_quotes/options/${t}.json`;
     try{ return await fetchJsonMultiRoute(url(tk)); }
     catch(e){
-        try{ return await fetchJsonMultiRoute(url('_'+tk)); }
-        catch(e2){ throw new Error(`"${tk}" unreachable on all 3 routes. Either the ticker has no listed options (try SPY), or the network is blocking data feeds (VPN/firewall/ad-blocker?).`); }
+        if(String(e.message).includes('HTTP 404')||String(e.message).includes('bad payload')){
+            try{ return await fetchJsonMultiRoute(url('_'+tk)); }catch(e2){ throw e2; }
+        }
+        throw e;
     }
 }
 
