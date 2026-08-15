@@ -190,6 +190,7 @@ input:focus, select:focus { outline:none; border-color:var(--gold); }
         <h2>Live Chain — CBOE Delayed (15m)</h2>
         <div class="row"><div><label>Ticker</label><input type="text" id="ticker" value="SPCX" style="text-transform:uppercase" autocapitalize="characters"></div>
         <div><label>Expiration</label><select id="expiry"><option>load first</option></select></div></div>
+        <div style="margin-bottom:10px;"><label>Custom Relay (your Cloudflare Worker URL — makes Load work)</label><input type="text" id="relayUrl" placeholder="https://your-worker.workers.dev" autocapitalize="off" autocorrect="off"></div>
         <div class="row3">
             <div><label>Type</label><select id="otype"><option value="all">All</option><option value="C">Calls</option><option value="P">Puts</option></select></div>
             <div><label>K Min</label><input type="number" id="kmin" placeholder="auto" inputmode="decimal"></div>
@@ -304,7 +305,7 @@ setInterval(tick,1000); tick();
 
 /* ===== SAFE STORAGE ===== */
 const store={ get(k){try{return localStorage.getItem(k);}catch(e){return null;}}, set(k,v){try{localStorage.setItem(k,v);}catch(e){}} };
-['usdjpy','jpyTrigger','vix','vix9d','pcr','fhKey','ticker'].forEach(id=>{
+['usdjpy','jpyTrigger','vix','vix9d','pcr','fhKey','ticker','relayUrl'].forEach(id=>{
     const v=store.get('ktc_'+id); if(v!==null&&v!=='') document.getElementById(id).value=v;
     document.getElementById(id).addEventListener('change',e=>store.set('ktc_'+id,e.target.value));
 });
@@ -324,13 +325,16 @@ let rawChain=[], underlying={}, autoTimer=null;
 /* Multi-route fetch with per-route diagnostics. Routes 3-5 are wrapper services that reliably permit app requests. */
 let lastRoute='', routeReport='';
 async function fetchJsonMultiRoute(targetUrl){
-    const routes=[
+    const routes=[];
+    const custom=(document.getElementById('relayUrl').value||'').trim().replace(/\/+$/,'');
+    if(custom){ routes.push({name:'your-relay', make:u=>custom+'/?url='+encodeURIComponent(u), unwrap:async r=>r.json()}); }
+    routes.push(
         {name:'direct', make:u=>u, unwrap:async r=>r.json()},
         {name:'codetabs', make:u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), unwrap:async r=>r.json()},
         {name:'allorigins-get', make:u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), unwrap:async r=>{ const w=await r.json(); return JSON.parse(w.contents); }},
         {name:'corsproxy', make:u=>'https://corsproxy.io/?url='+encodeURIComponent(u), unwrap:async r=>r.json()},
         {name:'allorigins-raw', make:u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), unwrap:async r=>r.json()}
-    ];
+    );
     const report=[];
     for(const rt of routes){
         try{
