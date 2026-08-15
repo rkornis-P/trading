@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a1220">
+<title>Kornis Trading Command</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+:root {
+    --navy:#0a1220; --panel:#121d33; --panel2:#182643; --line:#26375c;
+    --gold:#d4a574; --gold-bright:#f0c896; --text:#e8ecf1; --muted:#9db0cc;
+    --green:#3aa060; --red:#e05c5c; --blue:#5aa7ff; --purple:#9678ff;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+}
+html, body { height:100%; }
+body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:radial-gradient(ellipse at top, #131f38 0%, var(--navy) 55%);
+    color:var(--text); overscroll-behavior:none;
+    padding-top:var(--safe-t);
+}
+.app { padding:14px 14px calc(86px + var(--safe-b)); max-width:900px; margin:0 auto; }
+
+/* Header */
+.hdr { display:flex; justify-content:space-between; align-items:center; padding:10px 2px 14px; }
+.hdr h1 { font-size:17px; font-weight:800; letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--gold-bright),var(--gold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+.hdr .tm { font-size:11px; color:var(--muted); text-align:right; font-variant-numeric:tabular-nums; }
+
+/* Tabs (bottom, thumb zone) */
+.tabbar { position:fixed; bottom:0; left:0; right:0; z-index:50;
+    display:flex; background:rgba(10,18,32,.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-top:1px solid var(--line); padding:8px 6px calc(8px + var(--safe-b)); }
+.tabbar button { flex:1; background:none; border:none; color:var(--muted); font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.5px; padding:6px 2px; cursor:pointer; border-radius:10px; transition:color .2s; }
+.tabbar button .ico { display:block; font-size:20px; margin-bottom:3px; }
+.tabbar button.active { color:var(--gold-bright); }
+.page { display:none; animation:fade .25s; }
+.page.on { display:block; }
+@keyframes fade { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+/* Cards */
+.card { background:linear-gradient(180deg,var(--panel2),var(--panel)); border:1px solid var(--line);
+    border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:0 6px 24px rgba(0,0,0,.35); }
+.card h2 { font-size:12px; text-transform:uppercase; letter-spacing:1.4px; color:var(--gold); margin-bottom:12px; }
+.small { font-size:12px; color:var(--muted); line-height:1.6; }
+
+/* Inputs */
+label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--gold); font-weight:700; margin-bottom:5px; }
+input, select { width:100%; padding:12px 13px; background:#0d1526; border:1px solid var(--line); border-radius:10px;
+    color:var(--text); font-size:16px; /* 16px stops iOS zoom-on-focus */ appearance:none; }
+input:focus, select:focus { outline:none; border-color:var(--gold); }
+.row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px; }
+.btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--gold),#b98a55); color:#0a1220;
+    border:none; border-radius:12px; font-size:15px; font-weight:800; letter-spacing:.5px; cursor:pointer; }
+.btn:active { transform:scale(.98); }
+.btn.ghost { background:transparent; border:1px solid var(--line); color:var(--muted); }
+.btn:disabled { opacity:.5; }
+.btnrow { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.status { font-size:12px; color:var(--muted); padding-top:8px; line-height:1.5; }
+.status.err { color:#f0a0a0; } .status.ok { color:#7fd6a1; }
+
+/* Quote strip */
+.quote { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:8px; }
+.quote .px { font-size:34px; font-weight:800; font-variant-numeric:tabular-nums; }
+.quote .chg { font-size:15px; font-weight:700; }
+.up{color:#7fd6a1} .down{color:#f0a0a0}
+.quote .lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+
+/* Dial */
+.dialbox { display:flex; align-items:center; gap:18px; }
+.needle { transform-origin:80px 84px; transition:transform .9s cubic-bezier(.2,.8,.3,1); }
+.dial-val { font-size:24px; font-weight:800; text-align:center; margin-top:2px; }
+.regime { flex:1; }
+.regime .nm { font-size:16px; font-weight:800; margin-bottom:4px; }
+.pill { display:inline-block; padding:6px 12px; border-radius:16px; font-size:10.5px; font-weight:700;
+    border:1px solid var(--line); color:var(--muted); margin:6px 6px 0 0; }
+.pill.on-green { background:rgba(58,160,96,.15); border-color:var(--green); color:#7fd6a1; }
+.pill.on-red { background:rgba(224,92,92,.15); border-color:var(--red); color:#f0a0a0; }
+
+/* Option cards (mobile chain) */
+.oc { border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; background:rgba(13,21,38,.55); }
+.oc.itm { border-left:3px solid var(--gold); }
+.oc .l1 { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.oc .k { font-size:16px; font-weight:800; }
+.calltag{color:#7fd6a1; font-weight:800;} .puttag{color:#f0a0a0; font-weight:800;}
+.oc .mid { font-size:16px; font-weight:800; font-variant-numeric:tabular-nums; }
+.ocg { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; font-size:11px; font-variant-numeric:tabular-nums; }
+.ocg .cell { background:rgba(10,18,32,.6); border-radius:8px; padding:6px 7px; }
+.ocg .h { color:var(--muted); font-size:9px; text-transform:uppercase; letter-spacing:.5px; }
+.flag { display:inline-block; padding:2px 8px; border-radius:8px; font-size:9px; font-weight:800; text-transform:uppercase; margin-left:6px; }
+.flag.wide{background:rgba(224,92,92,.15); color:#f0a0a0;} .flag.tight{background:rgba(58,160,96,.15); color:#7fd6a1;} .flag.hot{background:rgba(212,165,116,.2); color:var(--gold-bright);}
+
+/* Events */
+.ev { display:flex; gap:12px; align-items:center; padding:11px 12px; border:1px solid var(--line); border-radius:12px; margin-bottom:8px; background:rgba(13,21,38,.5); }
+.ev .cd { min-width:56px; text-align:center; }
+.ev .cd .n { font-size:19px; font-weight:800; }
+.ev .cd .u { font-size:9px; text-transform:uppercase; color:var(--muted); }
+.ev .nm { font-size:13px; font-weight:700; }
+.ev .dt { font-size:11px; color:var(--muted); }
+.tag { display:inline-block; padding:1px 8px; border-radius:8px; font-size:9px; font-weight:800; text-transform:uppercase; margin-left:5px; }
+.tag.critical{background:rgba(224,92,92,.15); color:#f0a0a0;} .tag.high{background:rgba(212,165,116,.15); color:var(--gold-bright);} .tag.med{background:rgba(90,167,255,.12); color:#9cc8ff;}
+.imminent { animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{box-shadow:0 0 0 rgba(224,92,92,0);} 50%{box-shadow:0 0 14px rgba(224,92,92,.4);} }
+
+/* News */
+.ni { padding:10px 12px; border-left:3px solid var(--line); margin-bottom:8px; background:rgba(13,21,38,.5); border-radius:0 10px 10px 0; }
+.ni.c{border-left-color:var(--red);} .ni.h{border-left-color:var(--gold);}
+.ni .hl { font-size:12.5px; line-height:1.5; }
+.ni .mt { font-size:10.5px; color:var(--muted); margin-top:3px; }
+.kw { color:var(--gold-bright); font-weight:700; }
+
+/* Playbook */
+.pb { border-left:3px solid var(--gold); padding:12px 14px; margin-bottom:12px; background:rgba(13,21,38,.5); border-radius:0 12px 12px 0; }
+.pb .t { font-size:14px; font-weight:800; margin-bottom:6px; }
+.pb .b { font-size:12.5px; color:var(--muted); line-height:1.65; }
+.pb .b strong { color:var(--text); }
+.pb .src { font-size:10px; color:var(--gold); margin-top:6px; text-transform:uppercase; letter-spacing:.5px; }
+.summ { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.stat { background:rgba(13,21,38,.5); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+.stat .k{font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;}
+.stat .v{font-size:16px; font-weight:800;}
+.factor { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(38,55,92,.5); font-size:12px; }
+.factor:last-child{border-bottom:none;}
+.disclaim { font-size:11px; color:var(--muted); line-height:1.6; padding:12px 4px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+    <h1>⬢ KORNIS TRADING COMMAND</h1>
+    <div class="tm"><span id="clk">—</span><br><span id="clkd" style="font-size:10px;">—</span></div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div class="page on" id="pg-dash">
+    <div class="card">
+        <h2>Underlying</h2>
+        <div class="quote">
+            <div><div class="lbl" id="qTk">SPCX</div><div class="px" id="qPx">—</div></div>
+            <div style="text-align:right"><div class="chg" id="qChg">—</div><div class="lbl">IV30: <span id="qIv">—</span></div><div class="lbl" id="qTime"></div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Macro Risk Regime</h2>
+        <div class="dialbox">
+            <div>
+                <svg width="160" height="92" viewBox="0 0 160 92">
+                    <path d="M 12 84 A 68 68 0 0 1 148 84" fill="none" stroke="#0d1526" stroke-width="12" stroke-linecap="round"/>
+                    <path d="M 12 84 A 68 68 0 0 1 46 25" fill="none" stroke="#3aa060" stroke-width="12" stroke-linecap="round" opacity=".85"/>
+                    <path d="M 49 23 A 68 68 0 0 1 111 23" fill="none" stroke="#d4a574" stroke-width="12" opacity=".85"/>
+                    <path d="M 114 25 A 68 68 0 0 1 148 84" fill="none" stroke="#e05c5c" stroke-width="12" stroke-linecap="round" opacity=".85"/>
+                    <g class="needle" id="needle">
+                        <line x1="80" y1="84" x2="80" y2="28" stroke="#f0c896" stroke-width="3" stroke-linecap="round"/>
+                        <circle cx="80" cy="84" r="6" fill="#f0c896"/>
+                    </g>
+                </svg>
+                <div class="dial-val" id="dialVal">—</div>
+            </div>
+            <div class="regime">
+                <div class="nm" id="regNm">Set inputs below</div>
+                <div class="small" id="regDs">Enter gate values, then Compute.</div>
+                <div><span class="pill" id="p1">PATH 1 · $135</span><span class="pill" id="p2">PATH 2 · $105–100</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Gate Inputs</h2>
+        <div class="row"><div><label>USD/JPY</label><input type="number" step="0.01" id="usdjpy" inputmode="decimal"></div>
+        <div><label>Trigger</label><input type="number" step="0.1" id="jpyTrigger" value="159" inputmode="decimal"></div></div>
+        <div class="row"><div><label>VIX</label><input type="number" step="0.01" id="vix" inputmode="decimal"></div>
+        <div><label>VIX9D</label><input type="number" step="0.01" id="vix9d" inputmode="decimal"></div></div>
+        <div class="row"><div><label>Put/Call</label><input type="number" step="0.01" id="pcr" inputmode="decimal"></div>
+        <div style="display:flex; align-items:flex-end;"><button class="btn" onclick="computeRegime()">⟳ Compute</button></div></div>
+        <div id="factors"></div>
+    </div>
+</div>
+
+<!-- ============ CHAIN ============ -->
+<div class="page" id="pg-chain">
+    <div class="card">
+        <h2>Live Chain — CBOE Delayed (15m)</h2>
+        <div class="row"><div><label>Ticker</label><input type="text" id="ticker" value="SPCX" style="text-transform:uppercase" autocapitalize="characters"></div>
+        <div><label>Expiration</label><select id="expiry"><option>load first</option></select></div></div>
+        <div class="row3">
+            <div><label>Type</label><select id="otype"><option value="all">All</option><option value="C">Calls</option><option value="P">Puts</option></select></div>
+            <div><label>K Min</label><input type="number" id="kmin" placeholder="auto" inputmode="decimal"></div>
+            <div><label>K Max</label><input type="number" id="kmax" placeholder="auto" inputmode="decimal"></div>
+        </div>
+        <div class="btnrow"><button class="btn" id="loadBtn" onclick="loadChain()">⚡ Load</button>
+        <button class="btn ghost" id="autoBtn" onclick="toggleAuto()">Auto: OFF</button></div>
+        <div class="status" id="chStatus">First run: try SPY to verify the pipe, then your ticker.</div>
+        <div style="margin-top:12px; border-top:1px solid var(--line); padding-top:12px;">
+            <label>Backup: Paste Import (always works)</label>
+            <div class="small" style="margin-bottom:8px;">If Load fails: tap "Open Data Tab" → a tab opens with raw data → select all (Cmd+A) → copy (Cmd+C) → come back here → paste in the box → tap Import.</div>
+            <div class="btnrow" style="margin-bottom:8px;">
+                <button class="btn ghost" onclick="openDataTab()">↗ Open Data Tab</button>
+                <button class="btn" onclick="importPasted()">📋 Import</button>
+            </div>
+            <textarea id="pasteBox" placeholder="paste the copied data here" style="width:100%; height:70px; padding:10px; background:#0d1526; border:1px solid var(--line); border-radius:10px; color:var(--text); font-size:12px; font-family:monospace;"></textarea>
+        </div>
+    </div>
+    <div class="summ" id="summ" style="display:none;"></div>
+    <div id="chainList"></div>
+</div>
+
+<!-- ============ MACRO ============ -->
+<div class="page" id="pg-macro">
+    <div class="card">
+        <h2>Auto News Scanner</h2>
+        <label>Finnhub API Key</label><input type="password" id="fhKey" placeholder="saved on this device">
+        <div style="height:10px"></div>
+        <div class="btnrow"><button class="btn" onclick="scanNews()">⚡ Scan</button>
+        <button class="btn ghost" id="nAutoBtn" onclick="toggleNewsAuto()">Auto: OFF</button></div>
+        <div class="status" id="nStatus">Scans general + forex headlines for your carry-trade triggers.</div>
+        <div id="newsFeed" style="margin-top:8px;"></div>
+    </div>
+    <div class="card">
+        <h2>Event Countdown Radar</h2>
+        <div id="evList"></div>
+        <div class="small" style="margin-top:8px;">Verify dates vs official calendars. BOJ/FOMC = Path-2 catalysts.</div>
+    </div>
+</div>
+
+<!-- ============ PLAYBOOK ============ -->
+<div class="page" id="pg-play">
+    <div class="card">
+        <h2>Latest Research Playbook — 2024–2026 Literature</h2>
+        <div class="small" style="margin-bottom:12px;">Distilled from current academic papers (SSRN, arXiv, J. Futures Markets, J. Financial Econometrics), exchange research (CBOE), and institutional desk practice. Paraphrased findings — verify anything before you trade it.</div>
+
+        <div class="pb">
+            <div class="t">1 · Dealer Gamma Is the New Market Structure</div>
+            <div class="b">The academic consensus (Eraker/Vilkov/Dim SSRN; CBOE gamma-squeeze research) is that market-maker net gamma measurably shapes intraday behavior: <strong>positive dealer gamma → mean reversion and pinning</strong> (dealers buy dips/sell rips); <strong>negative dealer gamma → momentum and cascades</strong> (dealers sell weakness/buy strength). CBOE's own research quantified the effect at up to ~3 percentage points of annualized realized vol. Practical rule: identify the gamma-flip level, call wall, and put wall each session. Fade moves toward walls in positive-gamma regimes; ride breaks in negative-gamma regimes. Exogenous catalysts (FOMC, CPI, news) can shatter the walls — regime awareness beats levels.</div>
+            <div class="src">SSRN 4692190 · cboe.com gamma research · SpotGamma/MenthorQ practice</div>
+        </div>
+
+        <div class="pb">
+            <div class="t">2 · The 0DTE Regime Changed Everything</div>
+            <div class="b">0DTE now runs roughly half of SPX volume — a structural shift, not a fad. Key findings: MM 0DTE inventory gamma is on average positive (stabilizing), but when it flips negative, intraday momentum strengthens. Institutional desks harvest premium via hedged intraday strangles; directional traders time entries when IV is cheap vs the expected intraday move. For your long-only style: <strong>your Aug-14 expiry position was a 0DTE trade whether you called it that or not</strong> — the discipline for those is time-stops (out if no movement in 30 min), regime-stops (out if gamma flips), and hard scaling rules, because ±100% swings in minutes are normal.</div>
+            <div class="src">SSRN 4692190 · Resonanz Capital institutional review · CBOE volume data</div>
+        </div>
+
+        <div class="pb">
+            <div class="t">3 · Machine Learning Beats Closed-Form on Vol Forecasting</div>
+            <div class="b">The 2025–2026 journal literature converges on hybrid models: parametric option-pricing model first (Black-Scholes/Heston), then a <strong>neural network trained on the residual errors</strong>. These "theory-guided ML" hybrids beat both pure models and pure ML on out-of-sample IV forecasting and delta-neutral trading Sharpe. LSTMs win at short maturities; GARCH-family still competitive at long maturities. Retail translation: you can't run these live, but the finding that <strong>short-dated IV is predictable from recent surface dynamics</strong> justifies watching IV term-structure changes day-over-day as an edge signal — rising front-end IV vs stable back-end = the market pricing an imminent move.</div>
+            <div class="src">J. Futures Markets 2026 (Duan; Jiang) · J. Financial Econometrics · arXiv rough-vol literature</div>
+        </div>
+
+        <div class="pb">
+            <div class="t">4 · Regime Classification Before Direction</div>
+            <div class="b">New ETF research frames the daily problem as binary classification — <strong>"trending day" vs "oscillating day"</strong> — before any directional call, because strategy selection depends on it: oscillating days favor mean-reversion (fade band extremes), trending days favor momentum (buy breaks, no fading). Your dashboard's regime dial is a manual version of this. The literature's inputs: overnight gap size, opening-range width, VIX level/term structure, and prior-day realized vol. Rule of thumb from the research: the first 30–60 minutes usually reveals the day type — trade small or not at all before classification.</div>
+            <div class="src">MDPI JRFM 2026 · intraday commonality literature</div>
+        </div>
+
+        <div class="pb">
+            <div class="t">5 · Option Momentum & Return Predictability</div>
+            <div class="b">Heston et al. (J. Finance 2023) documented <strong>option momentum</strong> — strategies that performed recently tend to persist — and Bali et al. (RFS 2023) showed ML on big options data predicts option returns cross-sectionally. The stable retail-usable factors: <strong>expensive IV relative to subsequent realized vol loses money for buyers persistently</strong> (the variance risk premium), so buying options systematically only wins with a timing edge; and liquidity (tight spreads, high OI) is a return factor in itself — your screener's spread% flag is the direct application.</div>
+            <div class="src">J. Finance 2023 · Review of Financial Studies 2023</div>
+        </div>
+
+        <div class="pb">
+            <div class="t">6 · Synthesis: The Kornis Protocol v2</div>
+            <div class="b"><strong>Step 1 — Classify the regime</strong> (dial: macro gates + news scan + VIX structure). <strong>Step 2 — Classify the day</strong> (trending vs oscillating, first 30–60 min). <strong>Step 3 — Locate the structure</strong> (walls: biggest OI strikes on the chain tab; band extremes; anchored VWAP). <strong>Step 4 — Time with confluence</strong> (your reference guide's stack: oscillator divergence + location + trigger candle). <strong>Step 5 — Vehicle by Greeks</strong> (IV rank decides ITM vs ATM; DTE ≥ 2–3× expected hold; spread ≤ 5–8%). <strong>Step 6 — Exit by rule</strong> (scale into strength; time-stop; regime-stop). Every element is now in this app or the reference guide.</div>
+            <div class="src">Synthesis of all sources above + your dual-path framework</div>
+        </div>
+    </div>
+    <div class="disclaim">Research digest for educational reference — not financial advice. Findings paraphrased from published research; markets evolve and published edges decay. Verify before trading. Data delayed 15 min; confirm live prices on your broker.</div>
+</div>
+
+</div>
+
+<!-- ============ TAB BAR ============ -->
+<div class="tabbar">
+    <button class="active" onclick="go('dash',this)"><span class="ico">◉</span>Dashboard</button>
+    <button onclick="go('chain',this)"><span class="ico">☰</span>Chain</button>
+    <button onclick="go('macro',this)"><span class="ico">⚡</span>Macro</button>
+    <button onclick="go('play',this)"><span class="ico">✦</span>Playbook</button>
+</div>
+
+<script>
+/* ===== NAV ===== */
+function go(p, btn){
+    document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+    document.getElementById('pg-'+p).classList.add('on');
+    document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    window.scrollTo(0,0);
+}
+
+/* ===== CLOCK ===== */
+function tick(){ const n=new Date();
+    document.getElementById('clk').textContent=n.toLocaleTimeString('en-US');
+    document.getElementById('clkd').textContent=n.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+setInterval(tick,1000); tick();
+
+/* ===== SAFE STORAGE ===== */
+const store={ get(k){try{return localStorage.getItem(k);}catch(e){return null;}}, set(k,v){try{localStorage.setItem(k,v);}catch(e){}} };
+['usdjpy','jpyTrigger','vix','vix9d','pcr','fhKey','ticker'].forEach(id=>{
+    const v=store.get('ktc_'+id); if(v!==null&&v!=='') document.getElementById(id).value=v;
+    document.getElementById(id).addEventListener('change',e=>store.set('ktc_'+id,e.target.value));
+});
+
+/* ===== OPTION SYMBOL PARSER (tested 8/8) ===== */
+function parseOptionSymbol(sym){
+    const m=/^([A-Z.]+?)(\d{6})([CP])(\d{8})$/.exec(sym.replace(/\s+/g,''));
+    if(!m) return null;
+    const [,root,ymd,cp,kRaw]=m;
+    return { root, expiry:`${parseInt(ymd.slice(0,2),10)+2000}-${ymd.slice(2,4)}-${ymd.slice(4,6)}`, type:cp, strike:parseInt(kRaw,10)/1000 };
+}
+function num(v){ const n=parseFloat(v); return isFinite(n)?n:null; }
+
+/* ===== CHAIN ===== */
+let rawChain=[], underlying={}, autoTimer=null;
+
+/* Multi-route fetch: tries direct CBOE, then two public relays. Works from file://, localhost, or hosted. */
+let lastRoute='';
+async function fetchJsonMultiRoute(targetUrl){
+    const routes=[
+        {name:'direct', make:u=>u},
+        {name:'relay-1 (corsproxy)', make:u=>'https://corsproxy.io/?url='+encodeURIComponent(u)},
+        {name:'relay-2 (allorigins)', make:u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u)}
+    ];
+    let lastErr=null;
+    for(const rt of routes){
+        try{
+            const r=await fetch(rt.make(targetUrl));
+            if(r.ok){ const j=await r.json(); lastRoute=rt.name; return j; }
+            lastErr=new Error('HTTP '+r.status+' via '+rt.name);
+        }catch(e){ lastErr=e; }
+    }
+    throw lastErr||new Error('All routes failed');
+}
+async function fetchCboe(tk){
+    const url=t=>`https://cdn.cboe.com/api/global/delayed_quotes/options/${t}.json`;
+    try{ return await fetchJsonMultiRoute(url(tk)); }
+    catch(e){
+        try{ return await fetchJsonMultiRoute(url('_'+tk)); }
+        catch(e2){ throw new Error(`"${tk}" unreachable on all 3 routes. Either the ticker has no listed options (try SPY), or the network is blocking data feeds (VPN/firewall/ad-blocker?).`); }
+    }
+}
+
+function processPayload(j, sourceLabel){
+    const st=document.getElementById('chStatus');
+    const d=j.data||j;
+    underlying={ price:d.current_price??d.close??null, change:d.price_change??null, changePct:d.price_change_percent??null,
+        iv30:d.iv30??null, time:j.timestamp||d.last_trade_time||'' };
+    const opts=d.options||[];
+    if(!opts.length) throw new Error('Empty chain — ticker may not have listed options.');
+    rawChain=opts.map(o=>{
+        const p=parseOptionSymbol(o.option||''); if(!p) return null;
+        const bid=num(o.bid), ask=num(o.ask);
+        const mid=(bid!=null&&ask!=null&&ask>0)?(bid+ask)/2:null;
+        const spreadPct=(mid&&mid>0&&bid!=null&&ask!=null)?((ask-bid)/mid)*100:null;
+        return {...p, bid, ask, mid, spreadPct, last:num(o.last_trade_price),
+            volume:num(o.volume)||0, oi:num(o.open_interest)||0,
+            iv:num(o.iv), delta:num(o.delta), gamma:num(o.gamma), theta:num(o.theta), vega:num(o.vega)};
+    }).filter(Boolean);
+    const exps=[...new Set(rawChain.map(r=>r.expiry))].sort();
+    const sel=document.getElementById('expiry');
+    sel.innerHTML=exps.map(e=>{
+        const dte=Math.round((new Date(e+'T16:00:00')-new Date())/86400000);
+        return `<option value="${e}">${e} (${dte}d)</option>`; }).join('');
+    sel.value=exps.find(e=>(new Date(e)-new Date())/86400000>=30)||exps[0];
+    renderQuote(); renderChain();
+    st.textContent=`✓ ${rawChain.length} contracts, ${exps.length} expirations (15-min delayed) · ${sourceLabel}`; st.className='status ok';
+}
+
+async function loadChain(){
+    const btn=document.getElementById('loadBtn'), st=document.getElementById('chStatus');
+    const tk=document.getElementById('ticker').value.trim().toUpperCase();
+    if(!tk){ st.textContent='Enter a ticker.'; st.className='status err'; return; }
+    btn.disabled=true; st.textContent='Fetching '+tk+'…'; st.className='status';
+    try{
+        const j=await fetchCboe(tk);
+        processPayload(j, 'route: '+lastRoute);
+    }catch(err){
+        st.textContent='✗ '+err.message+' → Use the Paste Import backup below: tap "Open Data Tab", copy everything, paste, Import.';
+        st.className='status err';
+    }finally{ btn.disabled=false; }
+}
+
+function openDataTab(){
+    const tk=document.getElementById('ticker').value.trim().toUpperCase()||'SPY';
+    window.open('https://cdn.cboe.com/api/global/delayed_quotes/options/'+tk+'.json','_blank');
+}
+
+function importPasted(){
+    const st=document.getElementById('chStatus');
+    let txt=document.getElementById('pasteBox').value.trim();
+    if(!txt){ st.textContent='Paste box is empty — open the data tab, Cmd+A, Cmd+C, come back, Cmd+V, then Import.'; st.className='status err'; return; }
+    try{
+        // Tolerate accidental leading/trailing junk from the copy
+        const a=txt.indexOf('{'), b=txt.lastIndexOf('}');
+        if(a<0||b<0) throw new Error('That doesn\u2019t look like the data — make sure you copied from the data tab (it starts with a { character).');
+        const j=JSON.parse(txt.slice(a,b+1));
+        processPayload(j, 'source: pasted');
+        document.getElementById('pasteBox').value='';
+    }catch(err){
+        st.textContent='✗ Import failed: '+err.message;
+        st.className='status err';
+    }
+}
+
+function renderQuote(){
+    const f=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
+    document.getElementById('qTk').textContent=document.getElementById('ticker').value.toUpperCase();
+    document.getElementById('qPx').textContent=underlying.price!=null?'$'+f(underlying.price):'—';
+    const c=document.getElementById('qChg');
+    if(underlying.change!=null){ const up=underlying.change>=0;
+        c.textContent=`${up?'▲':'▼'} ${f(Math.abs(underlying.change))} (${f(Math.abs(underlying.changePct))}%)`;
+        c.className='chg '+(up?'up':'down'); }
+    document.getElementById('qIv').textContent=underlying.iv30!=null?f(underlying.iv30,1)+'%':'—';
+    document.getElementById('qTime').textContent=String(underlying.time).replace('T',' ').slice(0,16);
+}
+
+function renderChain(){
+    const exp=document.getElementById('expiry').value, typ=document.getElementById('otype').value;
+    const kmin=parseFloat(document.getElementById('kmin').value), kmax=parseFloat(document.getElementById('kmax').value);
+    const lo=isNaN(kmin)?(underlying.price?underlying.price*0.85:-Infinity):kmin;
+    const hi=isNaN(kmax)?(underlying.price?underlying.price*1.15:Infinity):kmax;
+    const rows=rawChain.filter(r=>r.expiry===exp&&(typ==='all'||r.type===typ)&&r.strike>=lo&&r.strike<=hi)
+        .sort((a,b)=>a.strike-b.strike||a.type.localeCompare(b.type));
+    const list=document.getElementById('chainList');
+    if(!rows.length){ list.innerHTML='<div class="card small">No contracts match filters.</div>'; return; }
+    const spot=underlying.price, f=(v,d=2)=>v==null?'—':Number(v).toFixed(d);
+    list.innerHTML=rows.map(r=>{
+        const itm=spot!=null&&((r.type==='C'&&r.strike<spot)||(r.type==='P'&&r.strike>spot));
+        let flags='';
+        if(r.spreadPct!=null){ if(r.spreadPct<=5) flags+='<span class="flag tight">tight</span>';
+            else if(r.spreadPct>=15) flags+='<span class="flag wide">wide</span>'; }
+        if(r.volume>r.oi&&r.volume>10) flags+='<span class="flag hot">hot</span>';
+        return `<div class="oc ${itm?'itm':''}">
+            <div class="l1"><div class="k"><span class="${r.type==='C'?'calltag':'puttag'}">${r.type==='C'?'CALL':'PUT'}</span> $${f(r.strike,r.strike%1?2:0)} ${itm?'· ITM':''}${flags}</div>
+            <div class="mid">${f(r.mid)}</div></div>
+            <div class="ocg">
+                <div class="cell"><div class="h">Bid/Ask</div>${f(r.bid)}/${f(r.ask)}</div>
+                <div class="cell"><div class="h">Spread</div>${r.spreadPct==null?'—':f(r.spreadPct,1)+'%'}</div>
+                <div class="cell"><div class="h">Vol/OI</div>${r.volume}/${r.oi}</div>
+                <div class="cell"><div class="h">IV</div>${r.iv==null?'—':f(r.iv*100>5?r.iv:r.iv*100,1)+'%'}</div>
+                <div class="cell"><div class="h">Δ</div>${f(r.delta,3)}</div>
+                <div class="cell"><div class="h">Γ</div>${f(r.gamma,4)}</div>
+                <div class="cell"><div class="h">Θ</div>${f(r.theta,3)}</div>
+                <div class="cell"><div class="h">ν</div>${f(r.vega,3)}</div>
+            </div></div>`;
+    }).join('');
+    const calls=rows.filter(r=>r.type==='C'), puts=rows.filter(r=>r.type==='P');
+    const sv=a=>a.reduce((s,r)=>s+r.volume,0);
+    const pc=sv(calls)?(sv(puts)/sv(calls)):null;
+    const maxOI=rows.reduce((m,r)=>r.oi>(m.oi||0)?r:m,{});
+    const sm=document.getElementById('summ'); sm.style.display='grid';
+    sm.innerHTML=`<div class="stat"><div class="k">P/C Vol (view)</div><div class="v">${pc==null?'—':pc.toFixed(2)}</div></div>
+        <div class="stat"><div class="k">OI Wall</div><div class="v">${maxOI.strike?'$'+maxOI.strike+' '+maxOI.type:'—'}</div></div>`;
+}
+['expiry','otype','kmin','kmax'].forEach(id=>document.getElementById(id).addEventListener('change',renderChain));
+function toggleAuto(){ const b=document.getElementById('autoBtn');
+    if(autoTimer){ clearInterval(autoTimer); autoTimer=null; b.textContent='Auto: OFF'; }
+    else{ autoTimer=setInterval(loadChain,60000); b.textContent='Auto: 60s'; loadChain(); } }
+
+/* ===== EVENTS ===== */
+const EVENTS=[
+    {name:'FOMC Decision',date:'2026-09-16',impact:'critical',note:'Fed + SEP + presser'},
+    {name:'FOMC Decision',date:'2026-10-28',impact:'critical',note:'Fed + presser'},
+    {name:'FOMC Decision',date:'2026-12-09',impact:'critical',note:'Fed + SEP'},
+    {name:'BOJ Decision',date:'2026-09-18',impact:'critical',note:'PRIMARY Path-2 catalyst'},
+    {name:'BOJ Decision',date:'2026-10-30',impact:'critical',note:'PRIMARY Path-2 catalyst'},
+    {name:'BOJ Decision',date:'2026-12-18',impact:'critical',note:'PRIMARY Path-2 catalyst'},
+    {name:'US CPI',date:'2026-09-11',impact:'high',note:'8:30 ET'},
+    {name:'US CPI',date:'2026-10-13',impact:'high',note:'8:30 ET'},
+    {name:'US CPI',date:'2026-11-12',impact:'high',note:'8:30 ET'},
+    {name:'Core PCE',date:'2026-08-28',impact:'med',note:'Fed gauge'},
+    {name:'Core PCE',date:'2026-09-25',impact:'med',note:'Fed gauge'},
+    {name:'Monthly OpEx',date:'2026-08-21',impact:'med',note:'Gamma unclench'},
+    {name:'Monthly OpEx',date:'2026-09-18',impact:'med',note:'Quad witching'},
+];
+(function addNFP(){ const now=new Date();
+    for(let m=0;m<5;m++){ const d=new Date(now.getFullYear(),now.getMonth()+m,1);
+        while(d.getDay()!==5) d.setDate(d.getDate()+1);
+        EVENTS.push({name:'Nonfarm Payrolls',date:d.toISOString().slice(0,10),impact:'high',note:'8:30 ET'}); }})();
+(function renderEv(){ const now=new Date(); now.setHours(0,0,0,0);
+    const list=EVENTS.map(e=>({...e,d:new Date(e.date+'T12:00:00')})).filter(e=>e.d>=now).sort((a,b)=>a.d-b.d).slice(0,10);
+    document.getElementById('evList').innerHTML=list.map(e=>{
+        const days=Math.round((e.d-now)/86400000);
+        return `<div class="ev${days<=3?' imminent':''}"><div class="cd"><div class="n">${days===0?'NOW':days}</div><div class="u">${days===0?'today':'days'}</div></div>
+            <div><div class="nm">${e.name}<span class="tag ${e.impact}">${e.impact}</span></div>
+            <div class="dt">${e.d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'})} · ${e.note}</div></div></div>`; }).join(''); })();
+
+/* ===== NEWS (tested trigger logic) ===== */
+const TRIGGERS={
+    critical:['boj','bank of japan','yen intervention','carry trade','carry unwind','usd/jpy','usdjpy','yen surge','emergency meeting','circuit breaker','flash crash'],
+    high:['fomc','fed decision','rate decision','powell','cpi','inflation data','rate hike','rate cut','yen','vix spike','nonfarm','payrolls','recession'],
+    med:['tariff','geopolitical','oil surge','china stimulus','earnings warning','downgrade','default']
+};
+let newsHitScore=0, nAutoTimer=null;
+function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+async function scanNews(){
+    const key=document.getElementById('fhKey').value.trim(), st=document.getElementById('nStatus');
+    if(!key){ st.textContent='Enter your Finnhub key first.'; st.className='status err'; return; }
+    st.textContent='Scanning…'; st.className='status';
+    try{
+        const [gen,fx]=await Promise.all([
+            fetch(`https://finnhub.io/api/v1/news?category=general&token=${encodeURIComponent(key)}`).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json();}),
+            fetch(`https://finnhub.io/api/v1/news?category=forex&token=${encodeURIComponent(key)}`).then(r=>r.ok?r.json():[])
+        ]);
+        const all=[...(Array.isArray(gen)?gen:[]),...(Array.isArray(fx)?fx:[])];
+        if(!all.length) throw new Error('No articles — check key.');
+        const seen=new Set(), scored=[];
+        for(const a of all){
+            if(!a.headline||seen.has(a.headline)) continue; seen.add(a.headline);
+            const t=(a.headline+' '+(a.summary||'')).toLowerCase();
+            let level=null, matched=[];
+            for(const [lvl,kws] of Object.entries(TRIGGERS))
+                for(const kw of kws) if(t.includes(kw)){ matched.push(kw);
+                    if(!level||lvl==='critical'||(lvl==='high'&&level==='med')) level=lvl; }
+            scored.push({a,level,matched});
+        }
+        const hits=scored.filter(s=>s.level);
+        const cN=hits.filter(h=>h.level==='critical').length, hN=hits.filter(h=>h.level==='high').length;
+        newsHitScore=Math.min(100,cN*25+hN*8+hits.length*2);
+        const show=[...hits,...scored.filter(s=>!s.level).slice(0,4)].slice(0,20);
+        document.getElementById('newsFeed').innerHTML=show.map(({a,level,matched})=>{
+            const dt=a.datetime?new Date(a.datetime*1000).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+            const kws=matched.length?` · <span class="kw">${[...new Set(matched)].slice(0,3).join(', ')}</span>`:'';
+            return `<div class="ni ${level==='critical'?'c':level==='high'?'h':''}"><div class="hl">${level?`<span class="tag ${level}">${level}</span> `:''}${esc(a.headline)}</div><div class="mt">${esc(a.source||'')} · ${dt}${kws}</div></div>`; }).join('');
+        st.textContent=`✓ ${scored.length} articles · ${cN} critical, ${hN} high · pressure ${newsHitScore}/100`; st.className='status ok';
+        computeRegime();
+    }catch(err){ st.textContent='✗ '+err.message; st.className='status err'; }
+}
+function toggleNewsAuto(){ const b=document.getElementById('nAutoBtn');
+    if(nAutoTimer){ clearInterval(nAutoTimer); nAutoTimer=null; b.textContent='Auto: OFF'; }
+    else{ scanNews(); nAutoTimer=setInterval(scanNews,300000); b.textContent='Auto: 5m'; } }
+
+/* ===== REGIME (tested scoring) ===== */
+function computeRegime(){
+    const uj=parseFloat(document.getElementById('usdjpy').value);
+    const trig=parseFloat(document.getElementById('jpyTrigger').value)||159;
+    const vix=parseFloat(document.getElementById('vix').value);
+    const vix9d=parseFloat(document.getElementById('vix9d').value);
+    const pcr=parseFloat(document.getElementById('pcr').value);
+    let factors=[];
+    let jpyPts=0, jpyTxt='no data';
+    if(!isNaN(uj)){ const dist=trig-uj;
+        if(uj>=trig){jpyPts=30;jpyTxt=`${uj} ≥ ${trig} BREACHED`;}
+        else if(dist<=1){jpyPts=24;jpyTxt=`${uj} within 1.0`;}
+        else if(dist<=3){jpyPts=15;jpyTxt=`${uj} approaching`;}
+        else{jpyPts=Math.max(0,8-dist);jpyTxt=`${uj} · ${dist.toFixed(1)} below`;} }
+    factors.push({n:'USD/JPY Gate',p:jpyPts,m:30,t:jpyTxt});
+    let vixPts=0, vixTxt='no data';
+    if(!isNaN(vix)){ if(vix>=35)vixPts=26;else if(vix>=28)vixPts=20;else if(vix>=22)vixPts=13;else if(vix>=17)vixPts=7;else vixPts=2;
+        vixTxt='VIX '+vix;
+        if(!isNaN(vix9d)&&vix9d>vix){vixPts=Math.min(30,vixPts+6);vixTxt+=' · 9D INVERTED';} }
+    factors.push({n:'Vol Complex',p:vixPts,m:30,t:vixTxt});
+    let pcrPts=0, pcrTxt='no data';
+    if(!isNaN(pcr)){ if(pcr>=1.2)pcrPts=20;else if(pcr>=1.0)pcrPts=16;else if(pcr>=0.8)pcrPts=8;else if(pcr>=0.6)pcrPts=4;else pcrPts=10;
+        pcrTxt='P/C '+pcr+(pcr>=1.0?' fear':pcr<0.55?' complacent':''); }
+    factors.push({n:'Options Sentiment',p:pcrPts,m:20,t:pcrTxt});
+    factors.push({n:'News Pressure',p:Math.round(newsHitScore*0.2),m:20,t:newsHitScore>0?newsHitScore+'/100':'run scan'});
+    const score=factors.reduce((s,f)=>s+f.p,0);
+    document.getElementById('needle').style.transform=`rotate(${(score/100)*180-90}deg)`;
+    document.getElementById('dialVal').textContent=score;
+    let nm,ds,p1='',p2='';
+    if(score<35){ nm='🟢 CALM — Path 1'; ds='Wash-cycle conditions toward $135. Standard entries; ATM viable.'; p1='on-green'; }
+    else if(score<65){ nm='🟡 TRANSITION'; ds='Stress building. Smaller size, ITM bias, watch the gates.'; }
+    else{ nm='🔴 RISK-OFF — Path 2'; ds='Carry-unwind active. Capitulation fade toward $105–100; deep ITM + extra DTE for the reversal.'; p2='on-red'; }
+    document.getElementById('regNm').textContent=nm;
+    document.getElementById('regDs').textContent=ds;
+    document.getElementById('p1').className='pill '+p1;
+    document.getElementById('p2').className='pill '+p2;
+    document.getElementById('factors').innerHTML=factors.map(f=>
+        `<div class="factor"><span style="color:var(--muted)">${f.n}</span><span><strong>${f.p}/${f.m}</strong> <span class="small">${f.t}</span></span></div>`).join('');
+}
+</script>
+</body>
+</html>
