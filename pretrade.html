@@ -136,14 +136,15 @@
       <option value="vwap">VWAP reclaim / rejection</option>
       <option value="midair">Mid-range — no defined level</option>
     </select>
-    <label for="momentum">RSI / MACD versus your direction</label>
-    <select id="momentum">
-      <option value="">— Select —</option>
-      <option value="agree">Agree with my direction</option>
-      <option value="neutral">Neutral / mixed</option>
-      <option value="fight">Fighting my direction</option>
-      <option value="divergence">Fading a move on RSI divergence (deliberate)</option>
-    </select>
+    <label>Momentum — enter the numbers straight off your platform</label>
+    <div class="row3">
+      <div><label for="rsi">RSI (14)</label><input type="number" id="rsi" inputmode="decimal" placeholder="54"></div>
+      <div><label for="macdline">MACD Line</label><input type="number" id="macdline" inputmode="decimal" step="0.01" placeholder="0.42"></div>
+      <div><label for="signalline">Signal Line</label><input type="number" id="signalline" inputmode="decimal" step="0.01" placeholder="0.31"></div>
+    </div>
+    <label for="divergefade" style="display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--dim);margin-top:14px;cursor:pointer">
+      <input type="checkbox" id="divergefade" style="width:20px;height:20px;accent-color:#BF9000"> Deliberate divergence fade (price made a new high/low but RSI didn't confirm)
+    </label>
   </div>
 
   <div class="card">
@@ -278,12 +279,23 @@ function runGates(){
   else if(loc==='midair') gates.push(gate('G6 · CHART LOCATION','fail','Mid-range entry, no level — theta gets a head start while you wait for a starting gun.'));
   else gates.push(gate('G6 · CHART LOCATION','pass','Entry at a defined level ('+document.getElementById('location').selectedOptions[0].text+').'));
 
-  const mom=document.getElementById('momentum').value;
-  if(!mom) gates.push(gate('G7 · MOMENTUM','fail','RSI/MACD not checked.'));
-  else if(mom==='fight') gates.push(gate('G7 · MOMENTUM','fail','Momentum is fighting the direction — the timing is early even if the level is right.'));
-  else if(mom==='neutral') gates.push(gate('G7 · MOMENTUM','warn','Momentum mixed — not a veto, not a tailwind.'));
-  else if(mom==='divergence') gates.push(gate('G7 · MOMENTUM','pass','Deliberate divergence fade — valid setup; keep the stop honest.'));
-  else gates.push(gate('G7 · MOMENTUM','pass','Momentum agrees with the direction.'));
+  const rsi=num('rsi'), macd=num('macdline'), sig=num('signalline');
+  const fade=document.getElementById('divergefade').checked;
+  if(fade){
+    gates.push(gate('G7 · MOMENTUM','pass','Deliberate divergence fade — valid setup; keep the stop honest.'));
+  } else if(rsi===null||macd===null||sig===null){
+    gates.push(gate('G7 · MOMENTUM','fail','RSI/MACD numbers not entered — momentum unchecked.'));
+  } else if(!direction){
+    gates.push(gate('G7 · MOMENTUM','fail','Pick a direction first — momentum can only be judged against it.'));
+  } else {
+    const rsiBull = rsi>50, macdBull = macd>sig;
+    const wantBull = (direction==='call');
+    const rsiAgrees = (rsiBull===wantBull), macdAgrees = (macdBull===wantBull);
+    const detail = 'RSI '+rsi.toFixed(0)+' ('+(rsiBull?'bullish':'bearish')+') · MACD '+(macdBull?'above':'below')+' signal ('+(macdBull?'bullish':'bearish')+') vs. your '+direction.toUpperCase();
+    if(rsiAgrees&&macdAgrees) gates.push(gate('G7 · MOMENTUM','pass','Both agree with the direction. '+detail+'.'));
+    else if(!rsiAgrees&&!macdAgrees) gates.push(gate('G7 · MOMENTUM','fail','Both are fighting the direction — timing is early even if the level is right. '+detail+'.'));
+    else gates.push(gate('G7 · MOMENTUM','warn','Mixed — one agrees, one fights. '+detail+'.'));
+  }
 
   let cq=[], cqFail=false, cqWarn=false;
   if(d===null||b===null||a===null||dte===null||oi===null){cqFail=true;cq.push('incomplete contract data');}
@@ -356,7 +368,8 @@ async function runAI(){
     price:num('price'), iv:num('iv'), ivRank:num('ivrank'), atr:num('atr'),
     delta:num('delta'), bid:num('bid'), ask:num('ask'), dte:num('dte'), openInterest:num('oi'),
     entryLocation:document.getElementById('location').value,
-    momentum:document.getElementById('momentum').value,
+    rsi:num('rsi'), macdLine:num('macdline'), macdSignal:num('signalline'),
+    divergenceFade:document.getElementById('divergefade').checked,
     profitTarget:txt('target'), stopLevel:txt('stop'), timeStop:txt('timestop')
   };
 
