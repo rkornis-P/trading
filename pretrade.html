@@ -87,6 +87,15 @@
   .gx-regime{margin-top:12px;border-radius:8px;padding:11px 13px;font-size:12.5px;border:1px solid var(--line);background:var(--panel2);color:var(--dim)}
   .gx-regime b{color:#fff}
   #gxManual{display:none;margin-top:12px}
+  /* Overnight tape */
+  .on-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .on-cell{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 12px}
+  .on-cell .k{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+  .on-cell .v{font-size:18px;font-weight:700;color:#fff;margin-top:3px}
+  .on-cell .c{font-size:12px;font-weight:600;margin-top:1px}
+  .on-cell .c.up{color:var(--green)} .on-cell .c.dn{color:var(--red)} .on-cell .c.fx{color:var(--gold-soft)}
+  .on-cell.jpy{grid-column:1 / -1;border-color:var(--gold)}
+  .on-cell.jpy .v{color:var(--gold-soft);font-size:22px}
   /* Info modal */
   #modalWrap{display:none;position:fixed;inset:0;background:rgba(4,8,16,.78);z-index:100;align-items:flex-end;justify-content:center}
   #modalWrap.open{display:flex}
@@ -102,9 +111,9 @@
 
 <header>
   <div class="wrap">
-    <div class="kicker">Kornis Protocol · Module · v3</div>
+    <div class="kicker">Kornis Protocol · Module · v3.2</div>
     <h1>Pre-Trade Gate <span style="color:var(--gold-soft)">+ AI + Γ</span></h1>
-    <div class="sub">Eleven gates including live dealer gamma. Tap any ⓘ for plain English. <a href="index.html">← BACK TO PLATFORM</a></div>
+    <div class="sub">Eleven gates, overnight tape, and live dealer gamma. Tap any ⓘ for plain English. <a href="index.html">← BACK TO PLATFORM</a></div>
   </div>
 </header>
 
@@ -123,6 +132,21 @@
     </div>
     <div class="lbl">Gate 1 · Thesis in one sentence <button class="info-i" onclick="info('thesis')">i</button></div>
     <textarea id="thesis" placeholder="e.g., USD/JPY pressing 159 forces carry unwind; SPCX breaks $140 support on volume within two sessions."></textarea>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">TAPE</span> Overnight Session — Tokyo &amp; London <button class="info-i" onclick="info('overnight')">i</button></h2>
+    <button class="gx-btn" id="onBtn" onclick="pullOvernight()">PULL OVERNIGHT TAPE</button>
+    <div class="live" id="onStatus">Tokyo hands to London, London hands to New York. Tap before the bell to pull S&amp;P futures, FTSE, DAX, Nikkei, and USD/JPY — the read on what your open inherits.</div>
+    <div class="on-grid" id="onGrid" style="display:none"></div>
+    <div class="gx-regime" id="onRead" style="display:none"></div>
+    <div id="onManual" style="display:none">
+      <div class="live" style="border-color:var(--amber)">Live fetch unavailable — enter USD/JPY by hand if you have it (the Path 2 trigger), or leave blank to skip.</div>
+      <div class="row" style="margin-top:10px">
+        <div><label for="mJPY">USD/JPY</label><input type="number" id="mJPY" inputmode="decimal" step="0.01" placeholder="158.40"></div>
+        <div></div>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -175,6 +199,11 @@
       <div><div class="lbl">Delta <button class="info-i" onclick="info('delta')">i</button></div><input type="number" id="delta" inputmode="decimal" step="0.01" placeholder="0.45" oninput="liveCalc()"></div>
       <div><div class="lbl">Bid $ <button class="info-i" onclick="info('spread')">i</button></div><input type="number" id="bid" inputmode="decimal" placeholder="3.10" oninput="liveCalc()"></div>
       <div><div class="lbl">Ask $ <button class="info-i" onclick="info('spread')">i</button></div><input type="number" id="ask" inputmode="decimal" placeholder="3.25" oninput="liveCalc()"></div>
+    </div>
+    <div class="row3">
+      <div><div class="lbl">Theta <button class="info-i" onclick="info('theta')">i</button></div><input type="number" id="theta" inputmode="decimal" step="0.01" placeholder="-0.34" oninput="liveCalc()"></div>
+      <div><div class="lbl">Vega <button class="info-i" onclick="info('vega')">i</button></div><input type="number" id="vega" inputmode="decimal" step="0.01" placeholder="0.08" oninput="liveCalc()"></div>
+      <div><div class="lbl">Gamma <button class="info-i" onclick="info('gammag')">i</button></div><input type="number" id="gammag" inputmode="decimal" step="0.01" placeholder="0.03" oninput="liveCalc()"></div>
     </div>
     <div class="row">
       <div><div class="lbl">Days to Expiration <button class="info-i" onclick="info('dte')">i</button></div><input type="number" id="dte" inputmode="numeric" placeholder="7" oninput="liveCalc()"></div>
@@ -266,6 +295,10 @@ divergence:{t:'Divergence Fade',b:'A deliberate counter-trend setup: price makes
 delta:{t:'Delta',b:'Two readings in one number. First: how much the option gains per $1 stock move — 0.45 delta earns about $45 per contract per dollar. Second: a rough probability the option finishes in the money — 0.45 is priced as a coin-flip-ish shot. The gate wants 0.35–0.55: real participation without lottery pricing. Cheaper far-out strikes trade probability for quantity — usually a bad trade.',w:'Listed per contract on the option chain (may be under "Greeks").'},
 spread:{t:'Bid / Ask Spread',b:'The bid is what buyers pay, the ask is what sellers get — the gap is your invisible commission, paid entering AND exiting. A $0.15 spread on a $3 option is 5% surrendered round-trip before the stock moves an inch. The gate flags spreads above 5% of the option\u2019s price. Always order at the midpoint with a limit order — never market orders on options.',w:'Both prices shown on every option chain row.'},
 dte:{t:'Days to Expiration (DTE)',b:'A count of days until the contract dies. Time decay is not steady — it ACCELERATES into expiration, steepest in the final week, brutal in the last two days. For a 1–3 day hold, buying 5–10+ days out costs slightly more but buys forgiveness for being a day early. On a directional trade, timing error is the most common error.',w:'Count the days to the expiration date on the contract, or the chain lists it.'},
+theta:{t:'Theta — Daily Rent',b:'The dollars the option loses per day just from time passing, per share. A theta of −0.34 means the contract bleeds about $34 every day the stock does nothing. The page converts it to a <b>daily rent percentage</b> of your premium — this is the number that kills 1–3 day trades. If rent runs over 10%/day, the move has to come almost immediately or the decay eats the thesis alive. Rho, the fifth Greek, is deliberately left off — interest-rate sensitivity is meaningless on short-dated contracts.',w:'On the option chain under "Greeks," listed per contract. Usually shown negative.'},
+vega:{t:'Vega — Volatility Sensitivity',b:'How much the option gains or loses when implied volatility moves ONE point, per share. Vega 0.08 = about $8 per contract per IV point. This is the whole game on event trades: buying before an event, rising IV pays you through vega even if the stock hasn\\u2019t moved yet; holding through the event, IV crush takes it back through the same door. High vega + high IV rank = the most air under the trade.',w:'On the option chain under "Greeks."'},
+gammag:{t:'Gamma — Delta\\u2019s Accelerator',b:'How fast delta itself changes as the stock moves $1. Gamma 0.03 on a 0.45-delta option means after a $1 favorable move you effectively hold a 0.48-delta option — the position gets stronger as it wins and weaker as it loses. Highest near your strike and near expiration. Informational here; the walls it creates market-wide are handled in Gate 9.',w:'On the option chain under "Greeks."'},
+overnight:{t:'Overnight Tape — Tokyo & London',b:'By the time New York opens, two full sessions have already voted. <b>Tokyo</b> sets the yen-carry tone — the Nikkei and USD/JPY overnight are the first read on Path 2. <b>London</b> (3:00–11:30 AM ET) is where the largest USD/JPY volume in the world trades; the biggest yen moves routinely happen in the London morning, hours before the US bell. <b>S&amp;P futures</b> absorb all of it continuously and are the single best predictor of the open. Green Europe + calm yen = risk-on open; red Europe + yen strengthening (USD/JPY falling) or spiking through the trigger = the carry-unwind tape. Pull this before entering any morning position.',w:'Tap the button — pulled live through your Kornis relay. Fifteen-to-twenty-minute delays possible on indices.'},
 oi:{t:'Open Interest',b:'The number of contracts outstanding at that strike — the depth of the market behind the quotes. Thousands of contracts means an established strike where exit is easy. Near-zero means the quotes are a facade: spreads widen the moment you need out. Different from volume, which is just today\u2019s trades.',w:'A column on the option chain, per strike.'},
 gex:{t:'Dealer Gamma (GEX)',b:'Market makers who sell options hedge them by trading the stock — and the hedging itself moves price. Summing that pressure across every strike gives the gamma exposure profile: <b>walls</b> where huge positioning makes dealers trade AGAINST moves (price gets pinned), and a <b>flip level</b> below which they trade WITH moves (swings get amplified). On a heavily-optioned name like SPCX, these levels can decide whether your correct call gets paid or capped.',w:'This page computes it live from the CBOE chain — tap the button.'},
 callwall:{t:'Call Wall',b:'The strike with the largest call positioning above the market — a ceiling. As price rises toward it, dealer hedging leans harder against the advance, so rallies tend to stall or pin there, especially near Friday expiration. The gate flags call targets that need price to punch through the wall.',w:'Computed from the live chain.'},
@@ -319,7 +352,89 @@ function liveCalc(){
   if(d!==null) parts.push(`Delta ${d.toFixed(2)} ${d>=0.35&&d<=0.55?'(in the 0.35–0.55 band)':'(outside the preferred band)'}`);
   if(dte!==null) parts.push(`${dte} DTE ${dte>=5?'(clear of the theta cliff)':'(on the steepest decay)'}`);
   if(oi!==null) parts.push(`OI ${oi.toLocaleString()} ${oi>=1000?'(deep)':'(thin)'}`);
+  const th_=num('theta'), vg=num('vega'), gm=num('gammag');
+  if(th_!==null && b!==null && a!==null && (a+b)>0){
+    const mid=(a+b)/2, rent=Math.abs(th_)/mid*100;
+    parts.push(`Theta rent <b>${rent.toFixed(1)}%/day</b> ${rent<=5?'(manageable)':rent<=10?'(steep — move must come fast)':'(brutal — thesis must hit almost immediately)'}`);
+  }
+  if(vg!==null && b!==null && a!==null && (a+b)>0){
+    const mid=(a+b)/2;
+    parts.push(`Vega: 1-pt IV move ≈ <b>±$${(vg*100).toFixed(0)}/contract</b> (${(vg/mid*100).toFixed(1)}% of premium)`);
+  }
+  if(gm!==null && d!==null) parts.push(`Gamma ${gm.toFixed(2)} — delta becomes ~${(Math.abs(d)+gm).toFixed(2)} after a $1 favorable move`);
   if(parts.length) cEl.innerHTML = parts.join(' · ');
+}
+
+/* ================= OVERNIGHT TAPE ================= */
+let ON = null;
+const ON_SYMS = [
+  {k:'ES=F',   label:'S&P FUTURES', fmt:v=>v.toFixed(0)},
+  {k:'^FTSE',  label:'FTSE 100 · LONDON', fmt:v=>v.toFixed(0)},
+  {k:'^GDAXI', label:'DAX · FRANKFURT', fmt:v=>v.toFixed(0)},
+  {k:'^N225',  label:'NIKKEI 225 · TOKYO', fmt:v=>v.toFixed(0)}
+];
+const JPY_TRIGGER = 159;
+
+async function pullOvernight(){
+  const st = document.getElementById('onStatus');
+  const btn = document.getElementById('onBtn');
+  btn.disabled = true; st.innerHTML = 'Pulling the overnight session…';
+  try{
+    const resp = await fetch('https://kornis-ai-relay.rick-018.workers.dev/?quotes=1');
+    if(!resp.ok) throw new Error('relay returned '+resp.status);
+    const j = await resp.json();
+    const q = j.quotes || {};
+    let html='', greens=0, reds=0, got=0;
+    for(const s of ON_SYMS){
+      const d = q[s.k];
+      if(!d || d.price==null) continue;
+      got++;
+      const chg = d.chgPct;
+      const up = chg!=null && chg>=0;
+      if(chg!=null){ if(chg>0.15) greens++; else if(chg<-0.15) reds++; }
+      html += '<div class="on-cell"><div class="k">'+s.label+'</div><div class="v">'+s.fmt(d.price)+'</div>'
+            + (chg!=null ? '<div class="c '+(up?'up':'dn')+'">'+(up?'▲ +':'▼ ')+chg.toFixed(2)+'%</div>' : '')
+            + '</div>';
+    }
+    const fx = q['JPY=X'];
+    let jpyVal=null, jpyLine='';
+    if(fx && fx.price!=null){
+      jpyVal = fx.price;
+      const dist = JPY_TRIGGER - jpyVal;
+      const chg = fx.chgPct;
+      jpyLine = '<div class="on-cell jpy"><div class="k">USD/JPY — PATH 2 TRIGGER '+JPY_TRIGGER+'</div><div class="v">'+jpyVal.toFixed(2)+'</div>'
+        + '<div class="c fx">'
+        + (chg!=null ? ((chg>=0?'▲ +':'▼ ')+chg.toFixed(2)+'% · ') : '')
+        + (jpyVal>=JPY_TRIGGER ? 'TRIGGER CROSSED — carry-unwind path is live'
+           : dist<=1 ? dist.toFixed(2)+' from trigger — armed, watch London'
+           : dist.toFixed(2)+' below trigger')
+        + '</div></div>';
+    }
+    if(!got && !jpyLine) throw new Error('no quotes returned');
+    document.getElementById('onGrid').innerHTML = html + jpyLine;
+    document.getElementById('onGrid').style.display = 'grid';
+    const read = document.getElementById('onRead');
+    read.style.display = 'block';
+    let tone;
+    if(greens>=3 && !reds) tone = '<b>Risk-on handoff</b> — Tokyo and Europe are green into the bell. Favors continuation and call-side theses; carry trade untroubled unless the yen says otherwise above.';
+    else if(reds>=3 && !greens) tone = '<b>Risk-off handoff</b> — the overnight sessions are selling. The open inherits pressure; put-side theses get a tailwind, and watch USD/JPY for the carry-unwind confirmation.';
+    else tone = '<b>Mixed handoff</b> — the overnight sessions disagree. Let the first 30 minutes of New York pick a side before committing premium.';
+    if(jpyVal!==null && jpyVal>=JPY_TRIGGER) tone += ' <b>USD/JPY is through the trigger</b> — Path 2 conditions on the macro side.';
+    read.innerHTML = tone;
+    ON = {esFutPct: q['ES=F']?.chgPct??null, ftsePct: q['^FTSE']?.chgPct??null, daxPct: q['^GDAXI']?.chgPct??null, nikkeiPct: q['^N225']?.chgPct??null, usdJpy: jpyVal, jpyTrigger: JPY_TRIGGER, source:'live', asOf:new Date().toLocaleTimeString()};
+    st.innerHTML = 'Pulled at '+ON.asOf+'. Delayed up to 15–20 min on indices; verify on your platform before ordering.';
+    document.getElementById('onManual').style.display='none';
+  }catch(err){
+    ON = null;
+    st.innerHTML = 'Live fetch failed ('+(err.message||'connection')+'). If the relay was just updated, give it a minute and retry.';
+    document.getElementById('onManual').style.display='block';
+  }finally{ btn.disabled=false; }
+}
+function getOvernight(){
+  if(ON) return ON;
+  const j = num('mJPY');
+  if(j!==null) return {usdJpy:j, jpyTrigger:JPY_TRIGGER, source:'manual'};
+  return null;
 }
 
 /* ================= DEALER GAMMA ENGINE ================= */
@@ -332,8 +447,8 @@ async function pullGamma(){
   const btn=document.getElementById('gxBtn');
   btn.disabled=true; st.innerHTML='Fetching the '+tk+' option chain from CBOE…';
   try{
-    const resp = await fetch('https://cdn.cboe.com/api/global/delayed_quotes/options/'+encodeURIComponent(tk)+'.json');
-    if(!resp.ok) throw new Error('CBOE returned '+resp.status);
+    const resp = await fetch('https://kornis-ai-relay.rick-018.workers.dev/?chain='+encodeURIComponent(tk));
+    if(!resp.ok) throw new Error('relay returned '+resp.status);
     const j = await resp.json();
     const spot = j?.data?.current_price ?? j?.data?.close;
     const opts = j?.data?.options || [];
@@ -485,6 +600,13 @@ function runGates(){
     if(sp>5){cqWarn=true;cq.push('spread '+sp.toFixed(1)+'% (wide)');} else cq.push('spread '+sp.toFixed(1)+'%');
     if(dte<5){cqFail=true;cq.push(dte+' DTE — on the theta cliff');} else cq.push(dte+' DTE');
     if(oi<1000){cqWarn=true;cq.push('OI '+oi+' (thin)');} else cq.push('OI deep');
+    const th8=num('theta'), mid8=(a+b)/2;
+    if(th8!==null && mid8>0){
+      const rent=Math.abs(th8)/mid8*100;
+      if(rent>10){cqWarn=true;cq.push('theta rent '+rent.toFixed(1)+'%/day (brutal — move must be immediate)');}
+      else if(rent>5){cqWarn=true;cq.push('theta rent '+rent.toFixed(1)+'%/day (steep)');}
+      else cq.push('theta rent '+rent.toFixed(1)+'%/day');
+    }
   }
   gates.push(gate('G8 · CONTRACT QUALITY', cqFail?'fail':(cqWarn?'warn':'pass'), cq.join(' · ')+'. Limit orders at the midpoint, always.'));
 
@@ -546,6 +668,8 @@ function copyReport(){
     'Ticker: '+r.ticker+'  Direction: '+r.direction.toUpperCase(),
     'Result: '+r.verdict+' ('+r.fails+' fail / '+r.warns+' flag)'];
   if(gx) lines.push('Gamma: CW $'+(gx.callWall||'—')+' / PW $'+(gx.putWall||'—')+' / Flip $'+(gx.flip||'—')+' ('+(gx.regime||'?')+' regime, '+gx.source+')');
+  const on=getOvernight();
+  if(on) lines.push('Overnight: USD/JPY '+(on.usdJpy!=null?on.usdJpy.toFixed(2):'—')+' (trigger '+on.jpyTrigger+')'+(on.esFutPct!=null?' · ES '+(on.esFutPct>=0?'+':'')+on.esFutPct.toFixed(2)+'%':'')+(on.ftsePct!=null?' · FTSE '+(on.ftsePct>=0?'+':'')+on.ftsePct.toFixed(2)+'%':'')+(on.nikkeiPct!=null?' · NKY '+(on.nikkeiPct>=0?'+':'')+on.nikkeiPct.toFixed(2)+'%':'')+' ('+on.source+')');
   lines.push('—');
   r.gates.forEach(g=>lines.push('['+g.status.toUpperCase()+'] '+g.title+' — '+g.note));
   const ai=document.getElementById('aiOut').innerText;
@@ -569,7 +693,9 @@ async function runAI(){
     ticker:txt('ticker'), direction, thesis:txt('thesis'),
     catalyst:document.getElementById('catalyst').value,
     price:num('price'), iv:num('iv'), ivRank:num('ivrank'), atr:num('atr'),
-    delta:num('delta'), bid:num('bid'), ask:num('ask'), dte:num('dte'), openInterest:num('oi'),
+    delta:num('delta'), theta:num('theta'), vega:num('vega'), gamma:num('gammag'),
+    bid:num('bid'), ask:num('ask'), dte:num('dte'), openInterest:num('oi'),
+    overnightTape:(function(){const o=getOvernight(); return o||'not pulled';})(),
     entryLocation:document.getElementById('location').value,
     rsi:num('rsi'), macdLine:num('macdline'), macdSignal:num('signalline'),
     divergenceFade:document.getElementById('divergefade').checked,
@@ -590,7 +716,7 @@ DO THE FOLLOWING, using web search where noted:
 1. CATALYST VERIFICATION — Search the web for ${inputs.ticker || 'the ticker'}'s next earnings date and any scheduled events (Fed meetings, lockup expirations, product events, economic data) in the next 5 trading days from today. State what you find with dates. If the trader marked "no scheduled event" but you find one inside the window, flag it prominently.
 2. THESIS STRESS-TEST — In 3-4 sentences: what specifically has to happen for this thesis to pay within 1-3 days, and what is the single most likely way it fails?
 3. GAMMA & STRUCTURE READ — Using the dealer gamma data above (if computed): does the position's path to its target cross a wall or the flip? Say plainly whether market structure helps or hinders this specific trade.
-4. WHAT THE GATES MISSED — Anything the mechanical checklist cannot see: correlation/concentration issues, macro context, weekend theta if relevant, crowding, or contradictions between the entered numbers.
+4. WHAT THE GATES MISSED — Anything the mechanical checklist cannot see: correlation/concentration issues, macro context, weekend theta if relevant, crowding, or contradictions between the entered numbers. If overnightTape data is present, read it explicitly: does the Tokyo/London handoff (ES futures, FTSE, DAX, Nikkei, USD/JPY vs the trigger) support or fight this trade's direction?
 5. DEVIL'S ADVOCATE — One paragraph arguing the OPPOSITE side of this trade as persuasively as you honestly can.
 6. BOTTOM LINE — State whether you agree or disagree with the mechanical ${r.verdict} verdict and why, in 2-3 sentences. End with: "Decision and risk remain yours."
 
