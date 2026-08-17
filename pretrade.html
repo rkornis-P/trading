@@ -111,7 +111,7 @@
 
 <header>
   <div class="wrap">
-    <div class="kicker">Kornis Protocol · Module · v3.2</div>
+    <div class="kicker">Kornis Protocol · Module · v3.3</div>
     <h1>Pre-Trade Gate <span style="color:var(--gold-soft)">+ AI + Γ</span></h1>
     <div class="sub">Eleven gates, overnight tape, and live dealer gamma. Tap any ⓘ for plain English. <a href="index.html">← BACK TO PLATFORM</a></div>
   </div>
@@ -132,6 +132,8 @@
     </div>
     <div class="lbl">Gate 1 · Thesis in one sentence <button class="info-i" onclick="info('thesis')">i</button></div>
     <textarea id="thesis" placeholder="e.g., USD/JPY pressing 159 forces carry unwind; SPCX breaks $140 support on volume within two sessions."></textarea>
+    <button class="gx-btn" id="afBtn" onclick="autoFill()">AUTO-FILL LIVE DATA</button>
+    <div class="live" id="afStatus">Enter the ticker and pick a direction, then tap — price, RSI, MACD, signal line, ATR, and IV fill themselves. Contract details fill from the chain picker in Gate 8. Only IV Rank stays manual.</div>
   </div>
 
   <div class="card">
@@ -210,6 +212,12 @@
       <div><div class="lbl">Open Interest <button class="info-i" onclick="info('oi')">i</button></div><input type="number" id="oi" inputmode="numeric" placeholder="2500" oninput="liveCalc()"></div>
     </div>
     <div class="live" id="contractLive">Enter contract details — spread %, delta band, and DTE checks will compute here.</div>
+    <div class="lbl" style="margin-top:16px">Or fill straight from the live chain</div>
+    <div class="row">
+      <div><label for="expSel">Expiration</label><select id="expSel" onchange="buildStrikes()"><option value="">— tap AUTO-FILL first —</option></select></div>
+      <div><label for="strkSel">Strike</label><select id="strkSel"><option value="">—</option></select></div>
+    </div>
+    <button class="gx-btn" onclick="fillContract()">FILL CONTRACT FROM CHAIN</button>
   </div>
 
   <div class="card">
@@ -324,6 +332,7 @@ function setDir(d){
   direction = d;
   document.getElementById('dirCall').classList.toggle('on', d==='call');
   document.getElementById('dirPut').classList.toggle('on', d==='put');
+  if(typeof CHAIN!=='undefined' && CHAIN) buildStrikes();
 }
 const num = id => { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? null : v; };
 const txt = id => document.getElementById(id).value.trim();
@@ -363,6 +372,163 @@ function liveCalc(){
   }
   if(gm!==null && d!==null) parts.push(`Gamma ${gm.toFixed(2)} — delta becomes ~${(Math.abs(d)+gm).toFixed(2)} after a $1 favorable move`);
   if(parts.length) cEl.innerHTML = parts.join(' · ');
+}
+
+/* ================= AUTO-FILL ENGINE ================= */
+const RELAY = 'https://kornis-ai-relay.rick-018.workers.dev';
+let CHAIN = null; // {spot, opts:[{sym,exp,dte,type,strike,bid,ask,iv,oi,delta,gamma,theta,vega}]}
+
+function emaSeries(arr, n){
+  const k = 2/(n+1); const out = new Array(arr.length).fill(null); let prev = null;
+  for(let i=0;i<arr.length;i++){
+    if(i===n-1){ prev = arr.slice(0,n).reduce((a,b)=>a+b,0)/n; out[i]=prev; }
+    else if(i>=n){ prev = arr[i]*k + prev*(1-k); out[i]=prev; }
+  }
+  return out;
+}
+function computeIndicators(h,l,c){
+  const n = c.length;
+  let rsi=null, atr=null, macd=null, signal=null;
+  if(n>15){
+    let g=0, x=0;
+    for(let i=1;i<=14;i++){ const d=c[i]-c[i-1]; if(d>0) g+=d; else x-=d; }
+    let ag=g/14, al=x/14;
+    for(let i=15;i<n;i++){ const d=c[i]-c[i-1]; ag=(ag*13+(d>0?d:0))/14; al=(al*13+(d<0?-d:0))/14; }
+    rsi = al===0 ? 100 : 100 - 100/(1+ag/al);
+    const tr=[];
+    for(let i=1;i<n;i++) tr.push(Math.max(h[i]-l[i], Math.abs(h[i]-c[i-1]), Math.abs(l[i]-c[i-1])));
+    let a = tr.slice(0,14).reduce((p,q)=>p+q,0)/14;
+    for(let i=14;i<tr.length;i++) a=(a*13+tr[i])/14;
+    atr = a;
+  }
+  if(n>35){
+    const e12=emaSeries(c,12), e26=emaSeries(c,26);
+    const mv=[];
+    for(let i=0;i<n;i++) if(e12[i]!=null && e26[i]!=null) mv.push(e12[i]-e26[i]);
+    const sg=emaSeries(mv,9);
+    macd = mv[mv.length-1];
+    signal = sg[sg.length-1];
+  }
+  return {rsi, atr, macd, signal};
+}
+function parseChain(j){
+  const spot = j?.data?.current_price ?? j?.data?.close;
+  const raw = j?.data?.options || [];
+  const now = new Date(); const opts=[];
+  for(const o of raw){
+    const m = (o.option||'').match(/(\d{6})([CP])(\d{8})$/);
+    if(!m) continue;
+    const exp = new Date(2000+ +m[1].slice(0,2), +m[1].slice(2,4)-1, +m[1].slice(4,6));
+    const dte = Math.ceil((exp-now)/86400000);
+    if(dte < 0) continue;
+    let iv = +o.iv || 0; if(iv>0 && iv<5) iv*=100;
+    opts.push({sym:o.option, exp, dte, type:m[2], strike:+m[3]/1000,
+      bid:+o.bid||0, ask:+o.ask||0, iv, oi:+o.open_interest||0,
+      delta:+o.delta||0, gamma:+o.gamma||0, theta:+o.theta||0, vega:+o.vega||0});
+  }
+  return {spot, opts};
+}
+function setVal(id, v, dec){
+  if(v==null || isNaN(v)) return false;
+  document.getElementById(id).value = v.toFixed(dec);
+  return true;
+}
+async function autoFill(){
+  const tk = txt('ticker').toUpperCase();
+  const st = document.getElementById('afStatus');
+  const btn = document.getElementById('afBtn');
+  if(!tk){ st.innerHTML='Enter the ticker first, then tap again.'; return; }
+  btn.disabled = true;
+  const filled=[], failed=[];
+  st.innerHTML = 'Pulling 6 months of '+tk+' price history…';
+  try{
+    const r = await fetch(RELAY+'/?hist='+encodeURIComponent(tk));
+    const j = await r.json();
+    const res = j?.chart?.result?.[0];
+    const q = res?.indicators?.quote?.[0];
+    if(!res || !q) throw new Error('no history');
+    const h=[], l=[], c=[];
+    for(let i=0;i<q.close.length;i++){
+      if(q.close[i]!=null && q.high[i]!=null && q.low[i]!=null){ h.push(q.high[i]); l.push(q.low[i]); c.push(q.close[i]); }
+    }
+    if(c.length<40) throw new Error('history too short');
+    const px = res.meta?.regularMarketPrice ?? c[c.length-1];
+    if(setVal('price', px, 2)) filled.push('price');
+    const ind = computeIndicators(h,l,c);
+    if(setVal('rsi', ind.rsi, 0)) filled.push('RSI');
+    if(setVal('macdline', ind.macd, 2)) filled.push('MACD');
+    if(setVal('signalline', ind.signal, 2)) filled.push('signal');
+    if(setVal('atr', ind.atr, 2)) filled.push('ATR');
+  }catch(e){ failed.push('price history ('+(e.message||'connection')+')'); }
+
+  st.innerHTML = 'Pulling the '+tk+' option chain…';
+  try{
+    const r = await fetch(RELAY+'/?chain='+encodeURIComponent(tk));
+    const j = await r.json();
+    CHAIN = parseChain(j);
+    if(!CHAIN.opts.length) throw new Error('chain empty');
+    // ATM IV: nearest expiration 3-45 DTE, strike closest to spot
+    const spot = CHAIN.spot || num('price');
+    const cands = CHAIN.opts.filter(o=>o.dte>=3 && o.dte<=45 && o.iv>0);
+    if(cands.length && spot){
+      const minDte = Math.min(...cands.map(o=>o.dte));
+      const nearExp = cands.filter(o=>o.dte===minDte);
+      nearExp.sort((a,b)=>Math.abs(a.strike-spot)-Math.abs(b.strike-spot));
+      const atmStrike = nearExp[0].strike;
+      const atm = nearExp.filter(o=>o.strike===atmStrike);
+      const avgIv = atm.reduce((s,o)=>s+o.iv,0)/atm.length;
+      if(setVal('iv', avgIv, 0)) filled.push('IV');
+    }
+    buildExpirations();
+    filled.push('chain loaded — pick expiration &amp; strike in Gate 8');
+  }catch(e){ failed.push('option chain ('+(e.message||'connection')+')'); }
+
+  liveCalc();
+  let msg='';
+  if(filled.length) msg += '<b>Filled:</b> '+filled.join(', ')+'.';
+  if(failed.length) msg += ' <b>Could not pull:</b> '+failed.join(', ')+' — enter by hand.';
+  msg += ' IV Rank stays manual (barchart.com). Verify numbers against your platform before ordering.';
+  st.innerHTML = msg;
+  btn.disabled = false;
+}
+function buildExpirations(){
+  const sel = document.getElementById('expSel');
+  if(!CHAIN || !CHAIN.opts.length){ sel.innerHTML='<option value="">— tap AUTO-FILL first —</option>'; return; }
+  const seen={};
+  const exps = CHAIN.opts.filter(o=>o.dte<=60).map(o=>({k:o.exp.getTime(), dte:o.dte, exp:o.exp}))
+    .filter(e=>{ if(seen[e.k]) return false; seen[e.k]=1; return true; })
+    .sort((a,b)=>a.k-b.k);
+  sel.innerHTML = '<option value="">— select —</option>' + exps.map(e=>{
+    const lbl = e.exp.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' ('+e.dte+' DTE)';
+    return '<option value="'+e.k+'">'+lbl+'</option>';
+  }).join('');
+  buildStrikes();
+}
+function buildStrikes(){
+  const expK = +document.getElementById('expSel').value || null;
+  const sel = document.getElementById('strkSel');
+  if(!CHAIN || !expK){ sel.innerHTML='<option value="">—</option>'; return; }
+  const want = direction==='put' ? 'P' : 'C';
+  const spot = CHAIN.spot || num('price') || 0;
+  const rows = CHAIN.opts.filter(o=>o.exp.getTime()===expK && o.type===want)
+    .sort((a,b)=>a.strike-b.strike);
+  let atmIdx=0, best=1e9;
+  rows.forEach((o,i)=>{ const d=Math.abs(o.strike-spot); if(d<best){best=d; atmIdx=i;} });
+  sel.innerHTML = rows.map((o,i)=>'<option value="'+o.sym+'"'+(i===atmIdx?' selected':'')+'>$'+o.strike+' — '+o.bid.toFixed(2)+'/'+o.ask.toFixed(2)+(Math.abs(o.strike-spot)===best?' (ATM)':'')+'</option>').join('') || '<option value="">no '+(want==='C'?'calls':'puts')+' at this expiration</option>';
+}
+async function fillContract(){
+  const st = document.getElementById('contractLive');
+  if(!direction){ st.innerHTML='Pick CALL or PUT first — the strike list depends on it.'; return; }
+  if(!CHAIN){ st.innerHTML='Tap AUTO-FILL LIVE DATA at the top first to load the chain.'; return; }
+  const sym = document.getElementById('strkSel').value;
+  const o = CHAIN.opts.find(x=>x.sym===sym);
+  if(!o){ st.innerHTML='Select an expiration and strike above.'; return; }
+  setVal('bid', o.bid, 2); setVal('ask', o.ask, 2);
+  setVal('delta', Math.abs(o.delta), 2);
+  setVal('theta', o.theta, 2); setVal('vega', o.vega, 2); setVal('gammag', o.gamma, 2);
+  document.getElementById('dte').value = o.dte;
+  document.getElementById('oi').value = o.oi;
+  liveCalc();
 }
 
 /* ================= OVERNIGHT TAPE ================= */
