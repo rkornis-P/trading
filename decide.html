@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kornis Decision Engine</title>
+<style>
+:root{--bg:#070c16;--panel:#0d1526;--panel2:#111c33;--line:#1d2b4a;--text:#dce4f2;--dim:#6b7a99;
+--gold:#c9a030;--gold-soft:#e8c86a;--green:#3ddc84;--red:#ff5470;--amber:#ffb454;--blue:#5aa7ff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:14px 12px 90px;max-width:560px;margin:0 auto}
+.kicker{font-size:9.5px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700}
+h1{font-size:23px;font-weight:800;margin:2px 0 3px}
+.sub{font-size:11.5px;color:var(--dim);margin-bottom:14px;line-height:1.5}
+.sub a{color:var(--gold-soft);text-decoration:none;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 15px;margin-bottom:14px}
+h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:11px;display:flex;align-items:center;gap:8px}
+h2 .n{background:var(--gold);color:#000;font-size:9px;padding:2px 7px;border-radius:4px;letter-spacing:.05em}
+label,.lbl{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+input,select{width:100%;background:#0a1120;border:1px solid var(--line);border-radius:9px;color:#fff;font-size:16px;padding:11px 12px;outline:none}
+input:focus{border-color:var(--gold)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.btn{width:100%;background:linear-gradient(135deg,#a07818,var(--gold),#e8c86a);color:#000;border:none;border-radius:10px;font-size:13px;font-weight:800;letter-spacing:.08em;padding:13px;cursor:pointer;margin:4px 0 10px}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--gold-soft)}
+.status{font-size:11.5px;color:var(--dim);background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:10px 12px;line-height:1.55}
+.status b{color:var(--gold-soft)}
+/* verdict banner */
+.verdict{border-radius:12px;padding:15px 14px;margin:10px 0;border:1px solid var(--line);background:var(--panel2)}
+.verdict .vh{font-size:16px;font-weight:800;margin-bottom:6px}
+.verdict .vb{font-size:12.5px;line-height:1.6;color:var(--text)}
+.verdict.bull{border-color:var(--green)} .verdict.bull .vh{color:var(--green)}
+.verdict.bear{border-color:var(--red)} .verdict.bear .vh{color:var(--red)}
+.verdict.wait{border-color:var(--amber)} .verdict.wait .vh{color:var(--amber)}
+/* signal chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{font-size:10.5px;padding:4px 9px;border-radius:20px;border:1px solid var(--line);background:#0a1120;color:var(--dim)}
+.chip.b{border-color:rgba(61,220,132,.5);color:var(--green)}
+.chip.s{border-color:rgba(255,84,112,.5);color:var(--red)}
+.chip.n{border-color:rgba(255,180,84,.45);color:var(--amber)}
+/* metric grid */
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.mcell{background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.mcell .mk{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;display:flex;justify-content:space-between}
+.mcell .mv{font-size:15px;font-weight:700;margin-top:2px}
+.mcell .ms{font-size:10px;margin-top:1px;color:var(--dim)}
+.up{color:var(--green)}.dn{color:var(--red)}.md{color:var(--amber)}.fx{color:var(--gold-soft)}
+.wide{grid-column:1/-1}
+/* scanner cards */
+.scan-item{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:9px;cursor:pointer}
+.scan-item:active{border-color:var(--gold)}
+.scan-top{display:flex;justify-content:space-between;align-items:baseline}
+.scan-tk{font-size:16px;font-weight:800}
+.scan-dir{font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px}
+.scan-dir.call{background:rgba(61,220,132,.15);color:var(--green)}
+.scan-dir.put{background:rgba(255,84,112,.15);color:var(--red)}
+.scan-why{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.5}
+.scan-score{font-size:10px;color:var(--gold-soft)}
+/* info system */
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:50%;background:none;border:1px solid var(--gold);color:var(--gold-soft);font-size:10px;font-style:italic;font-family:Georgia,serif;cursor:pointer;flex:none}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(4,7,14,.85);z-index:50;padding:20px 14px;overflow-y:auto}
+.modal{background:var(--panel);border:1px solid var(--gold);border-radius:14px;padding:18px 16px;max-width:520px;margin:40px auto}
+.modal h3{font-size:14px;color:var(--gold-soft);margin-bottom:10px}
+.modal .mb{font-size:12.5px;line-height:1.65;color:var(--text)}
+.modal .mb b{color:var(--gold-soft)}
+.modal .mw{margin-top:12px;padding:9px 11px;background:#0a1120;border-left:3px solid var(--gold);font-size:11px;color:var(--dim);line-height:1.5}
+.modal button{margin-top:14px;width:100%;background:var(--gold);color:#000;border:none;border-radius:9px;font-weight:800;padding:11px;font-size:12px}
+/* library accordion */
+.acc{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.acc-h{padding:12px 13px;font-size:12.5px;font-weight:700;color:var(--gold-soft);display:flex;justify-content:space-between;cursor:pointer;background:var(--panel2)}
+.acc-b{display:none;padding:12px 13px;font-size:12px;line-height:1.65;border-top:1px solid var(--line)}
+.acc.open .acc-b{display:block}
+.acc-b h4{font-size:11.5px;color:var(--gold-soft);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.08em}
+.acc-b h4:first-child{margin-top:0}
+.acc-b b{color:#fff}
+.acc-b .tag{font-size:9px;color:var(--gold);border:1px solid var(--gold);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle}
+.spark{width:100%;height:44px;margin-top:6px}
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:40}
+.tabbar button{flex:1;background:none;border:none;color:var(--dim);font-size:10px;padding:9px 0 max(9px, env(safe-area-inset-bottom));cursor:pointer}
+.tabbar button .ico{display:block;font-size:17px;margin-bottom:2px}
+.tabbar button.active{color:var(--gold-soft)}
+.sec{display:none}.sec.on{display:block}
+.small-note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:8px}
+</style></head><body>
+
+<div class="kicker">Kornis Protocol · Decision Engine · v1.0</div>
+<h1>Decide <span style="color:var(--gold-soft)">◈</span></h1>
+<div class="sub">Scan → Read → Verdict. Every number pulls live; every term has a plain-English ⓘ. <a href="index.html">← PLATFORM</a> · <a href="pretrade.html">GATES →</a></div>
+
+<!-- ============ SCAN ============ -->
+<div class="sec on" id="sec-scan">
+  <div class="card">
+    <h2><span class="n">SCAN</span> Today's Five <button class="info-i" onclick="info('scanner')">i</button></h2>
+    <button class="btn" id="scanBtn" onclick="runScan()">SCAN 40 STOCKS + FX FUTURES</button>
+    <div class="status" id="scanStatus">One tap screens ~40 liquid optionable names and the major currency &amp; commodity futures for reversal and breakout setups, then ranks the five strongest. Tap any result to run the full Engine on it.</div>
+    <div id="scanResults" style="margin-top:12px"></div>
+    <div id="fxResults"></div>
+  </div>
+</div>
+
+<!-- ============ ENGINE ============ -->
+<div class="sec" id="sec-engine">
+  <div class="card">
+    <h2><span class="n">READ</span> Full Read on One Name</h2>
+    <div class="row">
+      <div><label for="tk">Ticker</label><input type="text" id="tk" value="SPCX" style="text-transform:uppercase" autocapitalize="characters"></div>
+      <div><label for="hold">Hold Style</label><select id="hold"><option value="day">Day / 1–3 days</option><option value="swing">Swing / 1–4 weeks</option></select></div>
+    </div>
+    <button class="btn" id="engBtn" onclick="runEngine()">RUN THE ENGINE</button>
+    <div class="status" id="engStatus">Pulls 6 months of price history, the full option chain, and the volatility complex, computes 25+ indicators, and walks them down to one conclusion.</div>
+  </div>
+  <div id="engineOut"></div>
+</div>
+
+<!-- ============ LIBRARY ============ -->
+<div class="sec" id="sec-lib">
+  <div class="card">
+    <h2><span class="n">LEARN</span> Indicator Library</h2>
+    <div class="status" style="margin-bottom:12px">Every tool the Engine uses, in plain English — what it measures, the bottom signal, the top signal, and the trap. Tap a section to open it.</div>
+    <div id="library"></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal"><h3 id="mT"></h3><div class="mb" id="mB"></div><div class="mw" id="mW"></div>
+  <button onclick="document.getElementById('modalBg').style.display='none'">GOT IT</button></div>
+</div>
+
+<div class="tabbar">
+  <button class="active" onclick="sec('scan',this)"><span class="ico">◎</span>Scan</button>
+  <button onclick="sec('engine',this)"><span class="ico">◈</span>Engine</button>
+  <button onclick="sec('lib',this)"><span class="ico">✦</span>Library</button>
+  <button onclick="location.href='pretrade.html'"><span class="ico">⚑</span>Gates</button>
+  <button onclick="location.href='index.html'"><span class="ico">◉</span>Home</button>
+</div>
+
+<script>
+/* nav */
+function sec(s,btn){document.querySelectorAll('.sec').forEach(e=>e.classList.remove('on'));
+document.getElementById('sec-'+s).classList.add('on');
+document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+if(btn)btn.classList.add('active');window.scrollTo(0,0);}
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+function n2(v,d){return v==null||isNaN(v)?'—':(+v).toFixed(d==null?2:d);}
+/* ================= INDICATOR MATH (daily bars) ================= */
+function sma(a,n,i){i=i==null?a.length-1:i;if(i<n-1)return null;let s=0;for(let k=i-n+1;k<=i;k++)s+=a[k];return s/n;}
+function emaAll(a,n){const k=2/(n+1),o=new Array(a.length).fill(null);let p=null;
+for(let i=0;i<a.length;i++){if(i===n-1){p=sma(a,n,i);o[i]=p;}else if(i>=n){p=a[i]*k+p*(1-k);o[i]=p;}}return o;}
+function rsiAll(c,n){n=n||14;const o=new Array(c.length).fill(null);if(c.length<n+2)return o;
+let g=0,l=0;for(let i=1;i<=n;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}
+let ag=g/n,al=l/n;o[n]=al===0?100:100-100/(1+ag/al);
+for(let i=n+1;i<c.length;i++){const d=c[i]-c[i-1];ag=(ag*(n-1)+(d>0?d:0))/n;al=(al*(n-1)+(d<0?-d:0))/n;
+o[i]=al===0?100:100-100/(1+ag/al);}return o;}
+function macdAll(c){const e12=emaAll(c,12),e26=emaAll(c,26);
+const m=c.map((_,i)=>e12[i]!=null&&e26[i]!=null?e12[i]-e26[i]:null);
+const mv=m.filter(v=>v!=null);const sg=emaAll(mv,9);
+const sig=new Array(c.length).fill(null);const off=c.length-mv.length;
+for(let i=0;i<mv.length;i++)sig[i+off]=sg[i];
+return{macd:m,sig,hist:c.map((_,i)=>m[i]!=null&&sig[i]!=null?m[i]-sig[i]:null)};}
+function stochAll(h,l,c,n){n=n||14;const k=new Array(c.length).fill(null);
+for(let i=n-1;i<c.length;i++){let hh=-1e9,ll=1e9;for(let j=i-n+1;j<=i;j++){hh=Math.max(hh,h[j]);ll=Math.min(ll,l[j]);}
+k[i]=hh===ll?50:100*(c[i]-ll)/(hh-ll);}
+const kv=k.filter(v=>v!=null);const dRaw=[];for(let i=0;i<kv.length;i++)dRaw.push(i<2?null:(kv[i]+kv[i-1]+kv[i-2])/3);
+const d=new Array(c.length).fill(null);const off=c.length-kv.length;
+for(let i=0;i<kv.length;i++)d[i+off]=dRaw[i];return{k,d};}
+function willR(h,l,c,n){n=n||14;const i=c.length-1;if(i<n-1)return null;
+let hh=-1e9,ll=1e9;for(let j=i-n+1;j<=i;j++){hh=Math.max(hh,h[j]);ll=Math.min(ll,l[j]);}
+return hh===ll?-50:-100*(hh-c[i])/(hh-ll);}
+function cci(h,l,c,n){n=n||20;const i=c.length-1;if(i<n-1)return null;
+const tp=[];for(let j=i-n+1;j<=i;j++)tp.push((h[j]+l[j]+c[j])/3);
+const m=tp.reduce((a,b)=>a+b,0)/n;const md=tp.reduce((a,b)=>a+Math.abs(b-m),0)/n;
+return md===0?0:(tp[tp.length-1]-m)/(0.015*md);}
+function atrAll(h,l,c,n){n=n||14;const o=new Array(c.length).fill(null);if(c.length<n+1)return o;
+const tr=[null];for(let i=1;i<c.length;i++)tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));
+let a=0;for(let i=1;i<=n;i++)a+=tr[i];a/=n;o[n]=a;
+for(let i=n+1;i<c.length;i++){a=(a*(n-1)+tr[i])/n;o[i]=a;}return o;}
+function adx(h,l,c,n){n=n||14;if(c.length<2*n+2)return null;
+const pdm=[],ndm=[],tr=[];
+for(let i=1;i<c.length;i++){const up=h[i]-h[i-1],dw=l[i-1]-l[i];
+pdm.push(up>dw&&up>0?up:0);ndm.push(dw>up&&dw>0?dw:0);
+tr.push(Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1])));}
+let str=0,spd=0,snd=0;for(let i=0;i<n;i++){str+=tr[i];spd+=pdm[i];snd+=ndm[i];}
+const dx=[];
+for(let i=n;i<tr.length;i++){str=str-str/n+tr[i];spd=spd-spd/n+pdm[i];snd=snd-snd/n+ndm[i];
+const pdi=100*spd/str,ndi=100*snd/str;dx.push(pdi+ndi===0?0:100*Math.abs(pdi-ndi)/(pdi+ndi));}
+let a=0;for(let i=0;i<n;i++)a+=dx[i];a/=n;
+for(let i=n;i<dx.length;i++)a=(a*(n-1)+dx[i])/n;return a;}
+function bollinger(c,n,mult){n=n||20;mult=mult||2;const i=c.length-1;if(i<n-1)return null;
+const m=sma(c,n,i);let v=0;for(let j=i-n+1;j<=i;j++)v+=(c[j]-m)**2;const sd=Math.sqrt(v/n);
+const up=m+mult*sd,lo=m-mult*sd;
+return{mid:m,up,lo,pctB:up===lo?0.5:(c[i]-lo)/(up-lo),bw:(up-lo)/m*100};}
+function bwSeries(c,n){n=n||20;const o=[];for(let i=n-1;i<c.length;i++){
+const m=sma(c,n,i);let v=0;for(let j=i-n+1;j<=i;j++)v+=(c[j]-m)**2;const sd=Math.sqrt(v/n);
+o.push((2*2*sd)/m*100);}return o;}
+function keltner(h,l,c,n,mult){n=n||20;mult=mult||1.5;const e=emaAll(c,n);const a=atrAll(h,l,c,n);
+const i=c.length-1;if(e[i]==null||a[i]==null)return null;
+return{mid:e[i],up:e[i]+mult*a[i],lo:e[i]-mult*a[i]};}
+function supertrend(h,l,c,n,mult){n=n||10;mult=mult||3;const a=atrAll(h,l,c,n);
+let dir=1,fub=null,flb=null;
+for(let i=n;i<c.length;i++){const mid=(h[i]+l[i])/2;const ub=mid+mult*a[i],lb=mid-mult*a[i];
+fub=fub==null?ub:(ub<fub||c[i-1]>fub?ub:fub);
+flb=flb==null?lb:(lb>flb||c[i-1]<flb?lb:flb);
+if(dir===1&&c[i]<flb)dir=-1;else if(dir===-1&&c[i]>fub)dir=1;}
+return dir;}
+function obvAll(c,v){const o=[0];for(let i=1;i<c.length;i++)o.push(o[i-1]+(c[i]>c[i-1]?v[i]:c[i]<c[i-1]?-v[i]:0));return o;}
+function mfi(h,l,c,v,n){n=n||14;const i=c.length-1;if(i<n)return null;
+let pos=0,neg=0;for(let j=i-n+1;j<=i;j++){const tp=(h[j]+l[j]+c[j])/3,pt=(h[j-1]+l[j-1]+c[j-1])/3;
+const mf=tp*v[j];if(tp>pt)pos+=mf;else if(tp<pt)neg+=mf;}
+return neg===0?100:100-100/(1+pos/neg);}
+function demarker(h,l,n){n=n||14;const i=h.length-1;if(i<n)return null;
+let up=0,dn=0;for(let j=i-n+1;j<=i;j++){up+=Math.max(h[j]-h[j-1],0);dn+=Math.max(l[j-1]-l[j],0);}
+return up+dn===0?0.5:up/(up+dn);}
+function td9(c){let buy=0,sell=0;
+for(let i=c.length-1;i>=4;i--){if(c[i]<c[i-4]){if(sell)break;buy++;if(buy>=9)break;}
+else if(c[i]>c[i-4]){if(buy)break;sell++;if(sell>=9)break;}else break;}
+return{buy,sell};}
+function roc(c,n){const i=c.length-1;if(i<n)return null;return (c[i]-c[i-n])/c[i-n]*100;}
+function hv(c,n){n=n||20;const i=c.length-1;if(i<n+1)return null;
+const r=[];for(let j=i-n+1;j<=i;j++)r.push(Math.log(c[j]/c[j-1]));
+const m=r.reduce((a,b)=>a+b,0)/n;const v=r.reduce((a,b)=>a+(b-m)**2,0)/(n-1);
+return Math.sqrt(v)*Math.sqrt(252)*100;}
+function pivots(h,l,c){const i=c.length-1;const P=(h[i]+l[i]+c[i])/3;
+return{P,R1:2*P-l[i],S1:2*P-h[i],R2:P+(h[i]-l[i]),S2:P-(h[i]-l[i])};}
+function fibs(h,l){let hi=-1e9,lo=1e9;const st=Math.max(0,h.length-63);
+for(let i=st;i<h.length;i++){hi=Math.max(hi,h[i]);lo=Math.min(lo,l[i]);}
+const d=hi-lo;return{hi,lo,f382:hi-0.382*d,f5:hi-0.5*d,f618:hi-0.618*d};}
+/* divergence: compare last two price pivot lows/highs vs oscillator values */
+function pivotIdx(arr,isLow){const out=[];
+for(let i=2;i<arr.length-2;i++){
+if(isLow&&arr[i]<arr[i-1]&&arr[i]<arr[i-2]&&arr[i]<arr[i+1]&&arr[i]<arr[i+2])out.push(i);
+if(!isLow&&arr[i]>arr[i-1]&&arr[i]>arr[i-2]&&arr[i]>arr[i+1]&&arr[i]>arr[i+2])out.push(i);}
+return out;}
+function divergence(price,osc,win){win=win||60;const st=Math.max(0,price.length-win);
+const p=price.slice(st),o=osc.slice(st);
+const lows=pivotIdx(p,true),highs=pivotIdx(p,false);
+let bull=false,bear=false;
+if(lows.length>=2){const a=lows[lows.length-2],b=lows[lows.length-1];
+if(p[b]<p[a]&&o[b]!=null&&o[a]!=null&&o[b]>o[a])bull=true;}
+if(highs.length>=2){const a=highs[highs.length-2],b=highs[highs.length-1];
+if(p[b]>p[a]&&o[b]!=null&&o[a]!=null&&o[b]<o[a])bear=true;}
+return{bull,bear};}
+function candleSignals(o,h,l,c){const i=c.length-1;if(i<2)return[];const out=[];
+const body=Math.abs(c[i]-o[i]),rng=h[i]-l[i],lw=Math.min(o[i],c[i])-l[i],uw=h[i]-Math.max(o[i],c[i]);
+if(rng>0){
+if(lw>2*body&&uw<body&&body>0)out.push({s:'Hammer',dir:1});
+if(uw>2*body&&lw<body&&body>0)out.push({s:'Shooting Star',dir:-1});
+if(body/rng<0.1)out.push({s:'Doji (indecision)',dir:0});}
+if(c[i]>o[i]&&c[i-1]<o[i-1]&&c[i]>o[i-1]&&o[i]<c[i-1])out.push({s:'Bullish Engulfing',dir:1});
+if(c[i]<o[i]&&c[i-1]>o[i-1]&&c[i]<o[i-1]&&o[i]>c[i-1])out.push({s:'Bearish Engulfing',dir:-1});
+return out;}
+</script>
+
+<script>
+/* ================= CHAIN ANALYTICS ================= */
+function parseChain(j){
+  const spot=j?.data?.current_price??j?.data?.close;
+  const raw=j?.data?.options||[];const now=new Date();const opts=[];
+  for(const o of raw){const m=(o.option||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+  const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+  const dte=Math.ceil((exp-now)/86400000);if(dte<0)continue;
+  let iv=+o.iv||0;if(iv>0&&iv<5)iv*=100;
+  opts.push({exp,dte,type:m[2],strike:+m[3]/1000,bid:+o.bid||0,ask:+o.ask||0,iv,
+  oi:+o.open_interest||0,vol:+o.volume||0,delta:+o.delta||0,gamma:+o.gamma||0,theta:+o.theta||0,vega:+o.vega||0});}
+  return{spot,opts};}
+function chainAnalytics(ch){
+  const{spot,opts}=ch;if(!opts.length||!spot)return null;
+  const exps=[...new Set(opts.map(o=>o.dte))].sort((a,b)=>a-b);
+  const near=exps.find(d=>d>=2)??exps[0];
+  const nextM=exps.find(d=>d>=20&&d>near)??exps[exps.length-1];
+  function atmIv(dte){const rows=opts.filter(o=>o.dte===dte&&o.iv>0);
+    if(!rows.length)return null;rows.sort((a,b)=>Math.abs(a.strike-spot)-Math.abs(b.strike-spot));
+    const k=rows[0].strike;const atm=rows.filter(o=>o.strike===k);
+    return atm.reduce((s,o)=>s+o.iv,0)/atm.length;}
+  const ivNear=atmIv(near),ivNext=atmIv(nextM);
+  // implied move from ATM straddle at near expiry
+  let impMove=null;{const rows=opts.filter(o=>o.dte===near);
+    if(rows.length){const ks=[...new Set(rows.map(o=>o.strike))].sort((a,b)=>Math.abs(a-spot)-Math.abs(b-spot));
+    const k=ks[0];const cc=rows.find(o=>o.strike===k&&o.type==='C'),pp=rows.find(o=>o.strike===k&&o.type==='P');
+    if(cc&&pp&&(cc.bid+cc.ask)>0&&(pp.bid+pp.ask)>0)impMove=((cc.bid+cc.ask)/2+(pp.bid+pp.ask)/2)/spot*100;}}
+  // 25-delta skew at near expiry (fallback: 5% OTM strikes)
+  let skew=null;{const rows=opts.filter(o=>o.dte===near&&o.iv>0);
+    let pv=rows.filter(o=>o.type==='P'&&o.delta<0).sort((a,b)=>Math.abs(Math.abs(a.delta)-0.25)-Math.abs(Math.abs(b.delta)-0.25))[0];
+    let cv=rows.filter(o=>o.type==='C'&&o.delta>0).sort((a,b)=>Math.abs(a.delta-0.25)-Math.abs(b.delta-0.25))[0];
+    if(!pv||!cv){pv=rows.filter(o=>o.type==='P').sort((a,b)=>Math.abs(a.strike-spot*0.95)-Math.abs(b.strike-spot*0.95))[0];
+    cv=rows.filter(o=>o.type==='C').sort((a,b)=>Math.abs(a.strike-spot*1.05)-Math.abs(b.strike-spot*1.05))[0];}
+    if(pv&&cv)skew=pv.iv-cv.iv;}
+  // P/C, max pain, OI walls, GEX across expiries <=45 DTE
+  const uni=opts.filter(o=>o.dte<=45);
+  const pOI=uni.filter(o=>o.type==='P').reduce((s,o)=>s+o.oi,0);
+  const cOI=uni.filter(o=>o.type==='C').reduce((s,o)=>s+o.oi,0);
+  const pV=uni.filter(o=>o.type==='P').reduce((s,o)=>s+o.vol,0);
+  const cV=uni.filter(o=>o.type==='C').reduce((s,o)=>s+o.vol,0);
+  const strikes=[...new Set(uni.map(o=>o.strike))].sort((a,b)=>a-b);
+  let maxPain=null,best=1e18;
+  for(const k of strikes){let pain=0;
+    for(const o of uni){if(o.type==='C'&&k>o.strike)pain+=(k-o.strike)*o.oi;
+    if(o.type==='P'&&k<o.strike)pain+=(o.strike-k)*o.oi;}
+    if(pain<best){best=pain;maxPain=k;}}
+  const oiBy={};for(const o of uni){oiBy[o.strike]=oiBy[o.strike]||{c:0,p:0};oiBy[o.strike][o.type==='C'?'c':'p']+=o.oi;}
+  let callWall=null,putWall=null,cw=0,pw=0;
+  for(const k of strikes){if(oiBy[k].c>cw&&k>=spot){cw=oiBy[k].c;callWall=k;}
+  if(oiBy[k].p>pw&&k<=spot){pw=oiBy[k].p;putWall=k;}}
+  // GEX: dealers long calls' gamma, short puts' gamma (standard sign convention)
+  let gexTot=0;const gexByK={};
+  for(const o of uni){if(!o.gamma||!o.oi)continue;
+  const g=o.gamma*o.oi*100*spot*(o.type==='C'?1:-1);gexTot+=g;gexByK[o.strike]=(gexByK[o.strike]||0)+g;}
+  let flip=null,cum=0,prevCum=0,prevK=null;
+  for(const k of strikes){cum+=gexByK[k]||0;
+  if(prevK!=null&&((prevCum<0&&cum>=0)||(prevCum>=0&&cum<0))&&flip==null)flip=k;
+  prevCum=cum;prevK=k;}
+  return{spot,near,nextM,ivNear,ivNext,impMove,skew,
+  pcOI:cOI?pOI/cOI:null,pcVol:cV?pV/cV:null,maxPain,callWall,putWall,gexTot,flip,exps};}
+/* pick a concrete contract */
+function pickContract(ch,dir,holdStyle,ivRich){
+  const{spot,opts}=ch;const want=dir==='CALL'?'C':'P';
+  const dteMin=holdStyle==='day'?5:30,dteMax=holdStyle==='day'?21:90;
+  let pool=opts.filter(o=>o.type===want&&o.dte>=dteMin&&o.dte<=dteMax&&(o.bid+o.ask)>0);
+  if(!pool.length)pool=opts.filter(o=>o.type===want&&(o.bid+o.ask)>0);
+  if(!pool.length)return null;
+  const tgtD=ivRich?0.68:0.5; // rich premium -> deeper ITM per the delta table
+  pool.sort((a,b)=>{
+  const da=a.delta?Math.abs(Math.abs(a.delta)-tgtD):Math.abs(Math.abs(a.strike-spot)/spot-(ivRich?-0.06:0));
+  const db=b.delta?Math.abs(Math.abs(b.delta)-tgtD):Math.abs(Math.abs(b.strike-spot)/spot-(ivRich?-0.06:0));
+  return da-db||a.dte-b.dte;});
+  return pool[0];}
+</script>
+
+<script>
+/* ================= THE ENGINE ================= */
+let LAST=null;
+async function runEngine(){
+  const tk=document.getElementById('tk').value.trim().toUpperCase();
+  const hold=document.getElementById('hold').value;
+  const st=document.getElementById('engStatus'),btn=document.getElementById('engBtn'),out=document.getElementById('engineOut');
+  if(!tk){st.innerHTML='Enter a ticker.';return;}
+  btn.disabled=true;out.innerHTML='';
+  try{
+    st.innerHTML='Pulling '+tk+' price history…';
+    const hr=await fetch(RELAY+'/?hist='+encodeURIComponent(tk));const hj=await hr.json();
+    const res=hj?.chart?.result?.[0];const q=res?.indicators?.quote?.[0];
+    if(!res||!q)throw new Error('no price history for '+tk);
+    const O=[],H=[],L=[],C=[],V=[];
+    for(let i=0;i<q.close.length;i++)if(q.close[i]!=null&&q.high[i]!=null&&q.low[i]!=null){
+    O.push(q.open[i]??q.close[i]);H.push(q.high[i]);L.push(q.low[i]);C.push(q.close[i]);V.push(q.volume?.[i]??0);}
+    if(C.length<60)throw new Error('history too short');
+    const px=res.meta?.regularMarketPrice??C[C.length-1];
+
+    st.innerHTML='Pulling the option chain…';
+    let ch=null,ca=null;
+    try{const cr=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));ch=parseChain(await cr.json());
+    if(ch.opts.length)ca=chainAnalytics(ch);}catch(e){}
+
+    st.innerHTML='Pulling the volatility complex…';
+    let vq={};try{const qr=await fetch(RELAY+'/?quotes=1');vq=(await qr.json()).quotes||{};}catch(e){}
+
+    st.innerHTML='Computing…';
+    LAST=computeAll(tk,hold,px,O,H,L,C,V,ch,ca,vq);
+    renderEngine(LAST);
+    st.innerHTML='Done — '+new Date().toLocaleTimeString()+'. Data delayed 15–20 min; verify prices before ordering.';
+  }catch(e){st.innerHTML='<b>Failed:</b> '+(e.message||'connection')+'. If the relay was just updated, retry in a minute.';}
+  finally{btn.disabled=false;}
+}
+function computeAll(tk,hold,px,O,H,L,C,V,ch,ca,vq){
+  const bull=[],bear=[],warn=[];
+  const add=(arr,label)=>arr.push(label);
+  /* trend */
+  const e9=emaAll(C,9),e21=emaAll(C,21),i=C.length-1;
+  const s50=sma(C,50),s200=C.length>=200?sma(C,200):null;
+  const trendUp=e9[i]>e21[i];
+  trendUp?add(bull,'9>21 EMA (short-term up)'):add(bear,'9<21 EMA (short-term down)');
+  let cross=null;
+  if(s50&&s200){cross=s50>s200?'GOLDEN':'DEATH';cross==='GOLDEN'?add(bull,'Golden cross regime'):add(bear,'Death cross regime');}
+  const stDir=supertrend(H,L,C);stDir===1?add(bull,'Supertrend green'):add(bear,'Supertrend red');
+  const _adx=adx(H,L,C);
+  if(_adx!=null){if(_adx>40)warn.push('ADX '+_adx.toFixed(0)+' — strong trend: do NOT fade extremes');
+  else if(_adx<20)warn.push('ADX '+_adx.toFixed(0)+' — weak trend: mean-reversion signals reliable');}
+  /* momentum */
+  const R=rsiAll(C),rsi=R[i];
+  if(rsi<30)add(bull,'RSI oversold '+rsi.toFixed(0));else if(rsi>70)add(bear,'RSI overbought '+rsi.toFixed(0));
+  const M=macdAll(C);const hFlipUp=M.hist[i]>0&&M.hist[i-1]<=0,hFlipDn=M.hist[i]<0&&M.hist[i-1]>=0;
+  if(hFlipUp)add(bull,'MACD histogram flipped positive');
+  else if(hFlipDn)add(bear,'MACD histogram flipped negative');
+  else if(M.hist[i]!=null){M.hist[i]>0?add(bull,'MACD hist positive'):add(bear,'MACD hist negative');}
+  const S=stochAll(H,L,C);const kNow=S.k[i],dNow=S.d[i];
+  if(kNow!=null&&dNow!=null){if(kNow<20&&kNow>dNow)add(bull,'Stochastic turning up <20');
+  if(kNow>80&&kNow<dNow)add(bear,'Stochastic turning down >80');}
+  const wr=willR(H,L,C);if(wr!=null){if(wr<-80)add(bull,'Williams %R exhausted low');if(wr>-20)add(bear,'Williams %R exhausted high');}
+  const _cci=cci(H,L,C);if(_cci!=null){if(_cci<-100)add(bull,'CCI stretched low '+_cci.toFixed(0));if(_cci>100)add(bear,'CCI stretched high '+_cci.toFixed(0));}
+  const dem=demarker(H,L);if(dem!=null){if(dem<0.30)add(bull,'DeMarker buy-exhaustion '+dem.toFixed(2));if(dem>0.70)add(bear,'DeMarker sell-exhaustion '+dem.toFixed(2));}
+  const td=td9(C);if(td.buy>=9)add(bull,'TD-9 buy setup complete');if(td.sell>=9)add(bear,'TD-9 sell setup complete');
+  else{if(td.buy>=7)add(bull,'TD count '+td.buy+' of 9 (buy forming)');if(td.sell>=7)add(bear,'TD count '+td.sell+' of 9 (sell forming)');}
+  /* divergence — the master concept */
+  const dvR=divergence(C,R),dvO=divergence(C,obvAll(C,V));
+  if(dvR.bull)add(bull,'★ Bullish RSI divergence');if(dvR.bear)add(bear,'★ Bearish RSI divergence');
+  if(dvO.bull)add(bull,'★ OBV accumulation divergence');if(dvO.bear)add(bear,'★ OBV distribution divergence');
+  /* bands & squeeze */
+  const bb=bollinger(C);const kc=keltner(H,L,C);
+  let squeeze=false;
+  if(bb&&kc){squeeze=bb.up<kc.up&&bb.lo>kc.lo;
+  if(squeeze)warn.push('TTM SQUEEZE ON — energy compressed, cheap premium, breakout loading');
+  if(bb.pctB<0)add(bull,'Closed below lower Bollinger');if(bb.pctB>1)add(bear,'Closed above upper Bollinger');
+  if(C[i-1]<bollinger(C.slice(0,i)).lo&&C[i]>bb.lo)add(bull,'Bollinger re-entry from below (classic buy)');
+  }
+  const bws=bwSeries(C);const bwNow=bws[bws.length-1],bwMin=Math.min(...bws.slice(-40));
+  const bwSq=bwNow<=bwMin*1.1;
+  /* volume */
+  const _mfi=mfi(H,L,C,V);if(_mfi!=null){if(_mfi<20)add(bull,'MFI oversold '+_mfi.toFixed(0));if(_mfi>80)add(bear,'MFI overbought '+_mfi.toFixed(0));}
+  const avgV=sma(V,20);const downDay=C[i]<O[i];
+  if(avgV&&V[i]>2.5*avgV){warn.push('Volume climax: '+(V[i]/avgV).toFixed(1)+'× average — '+(downDay?'possible capitulation':'possible blow-off'));}
+  /* candles */
+  for(const cs of candleSignals(O,H,L,C)){if(cs.dir===1)add(bull,cs.s);else if(cs.dir===-1)add(bear,cs.s);else warn.push(cs.s);}
+  /* levels */
+  const pv=pivots(H,L,C),fb=fibs(H,L),a14=atrAll(H,L,C)[i];
+  /* vol pricing */
+  const hv20=hv(C);
+  let ivVerdict=null,ivRich=false;
+  if(ca&&ca.ivNear&&hv20){const ratio=ca.ivNear/hv20;
+  ivRich=ratio>1.25;
+  ivVerdict=ratio<0.9?{t:'BARGAIN',c:'up',d:'IV '+ca.ivNear.toFixed(0)+'% vs realized '+hv20.toFixed(0)+'% — options priced BELOW how much this actually moves. Long premium is cheap.'}
+  :ratio<=1.25?{t:'FAIR',c:'md',d:'IV '+ca.ivNear.toFixed(0)+'% vs realized '+hv20.toFixed(0)+'% — premium fairly priced. Direction must carry the trade.'}
+  :{t:'EXPENSIVE',c:'dn',d:'IV '+ca.ivNear.toFixed(0)+'% vs realized '+hv20.toFixed(0)+'% — you are overpaying for movement. Needs a big fast move, or go deeper ITM to cut vega.'};}
+  if(ca&&ca.ivNear&&ca.ivNext&&ca.ivNear>ca.ivNext+2)warn.push('IV term structure inverted (near>far) — event premium or acute stress in this name');
+  if(ca&&ca.skew!=null){if(ca.skew>12)warn.push('Steep put skew '+ca.skew.toFixed(0)+'pts — heavy downside hedging; watch for skew flattening as a bottom tell');
+  if(ca.skew<-3)warn.push('Inverted skew (calls over puts) — speculative blow-off conditions');}
+  /* flow */
+  if(ca){if(ca.pcVol!=null){if(ca.pcVol>1.0)add(bull,'Put/Call vol '+ca.pcVol.toFixed(2)+' — fear extreme (contrarian)');
+  if(ca.pcVol<0.5)add(bear,'Put/Call vol '+ca.pcVol.toFixed(2)+' — call frenzy (complacency)');}
+  if(ca.gexTot!=null){ca.gexTot<0?warn.push('Dealer gamma NEGATIVE — hedging amplifies moves; expect velocity'):warn.push('Dealer gamma positive — hedging dampens moves; pinning likely near big OI');}}
+  /* macro vol complex */
+  const vx=vq['^VIX']?.price,vx9=vq['^VIX9D']?.price,vx3=vq['^VIX3M']?.price,vvix=vq['^VVIX']?.price,skx=vq['^SKEW']?.price,jpy=vq['JPY=X']?.price;
+  if(vx!=null){if(vx>35)add(bull,'VIX '+vx.toFixed(0)+' — capitulation zone (contrarian)');
+  if(vx<13)warn.push('VIX '+vx.toFixed(1)+' — complacency grind; fragile-top conditions');}
+  if(vx!=null&&vx9!=null&&vx9>vx)warn.push('VIX9D > VIX — acute near-term stress (backwardation cousin, bottom-zone marker)');
+  if(vx!=null&&vx3!=null&&vx>vx3)warn.push('VIX term structure in BACKWARDATION — extreme fear, historically bottom-forming');
+  if(vvix!=null&&vvix>110)warn.push('VVIX elevated '+vvix.toFixed(0)+' — institutions grabbing crash hedges');
+  if(skx!=null&&skx>150&&vx!=null&&vx<15)warn.push('SKEW '+skx.toFixed(0)+' with low VIX — calm surface, crash insurance bid: fragile top');
+  if(jpy!=null&&jpy>=159)warn.push('USD/JPY through 159 — PATH 2 carry-unwind trigger LIVE');
+  else if(jpy!=null&&jpy>=158)warn.push('USD/JPY '+jpy.toFixed(2)+' — within 1.0 of the Path 2 trigger');
+  /* opex proximity */
+  const now=new Date();const opex=new Date(now.getFullYear(),now.getMonth(),1);
+  let fr=0;while(true){if(opex.getDay()===5)fr++;if(fr===3)break;opex.setDate(opex.getDate()+1);}
+  const dOpex=Math.ceil((opex-now)/86400000);
+  if(dOpex>=0&&dOpex<=4)warn.push('Monthly OpEx in '+dOpex+' day'+(dOpex===1?'':'s')+' — charm/vanna unclench; turns cluster around expiration week');
+  /* score & verdict */
+  const score=bull.length-bear.length;
+  const strong=(dvR.bull||dvR.bear||td.buy>=9||td.sell>=9);
+  let dir=null,quality;
+  if(score>=2){dir='CALL';}else if(score<=-2){dir='PUT';}
+  quality=Math.abs(score)>=5&&strong?'TIER 1 — full confluence':Math.abs(score)>=5?'TIER 2 — strong stack':Math.abs(score)>=3?'TIER 3 — decent, wait for trigger':'NO EDGE — stand aside';
+  let pick=null;if(dir&&ch&&ch.opts.length)pick=pickContract(ch,dir,hold,ivRich);
+  return{tk,hold,px,bull,bear,warn,rsi,macdHist:M.hist[i],stochK:kNow,wr,cci:_cci,dem,td,adx:_adx,
+  bb,squeeze:squeeze||bwSq,atr:a14,hv20,pv,fb,ca,ivVerdict,ivRich,dir,score,quality,pick,vx,vx9,vvix,skx,jpy,C,e9:e9[i],e21:e21[i],s50,s200,cross,dOpex};}
+</script>
+
+<script>
+/* ================= RENDER ================= */
+function chipRow(arr,cls){return arr.map(s=>'<span class="chip '+cls+'">'+s+'</span>').join('');}
+function mcell(label,val,subtitle,cls,infoKey){
+return '<div class="mcell"><div class="mk"><span>'+label+'</span>'+(infoKey?'<button class="info-i" onclick="info(\''+infoKey+'\')">i</button>':'')+'</div><div class="mv '+(cls||'')+'">'+val+'</div>'+(subtitle?'<div class="ms">'+subtitle+'</div>':'')+'</div>';}
+function renderEngine(D){
+  const out=document.getElementById('engineOut');
+  let html='';
+  /* THE VERDICT — first, because conclusions lead */
+  const vc=D.dir==='CALL'?'bull':D.dir==='PUT'?'bear':'wait';
+  let vh,vb;
+  if(!D.dir){vh='STAND ASIDE — no edge on '+D.tk;
+  vb='The bull and bear evidence is balanced ('+D.bull.length+' vs '+D.bear.length+' signals). Forcing a trade here is paying theta for a coin flip. Re-run after the next session or scan for a better name.';}
+  else{vh=(D.dir==='CALL'?'LEAN LONG — BUY CALLS':'LEAN SHORT — BUY PUTS')+' · '+D.quality;
+  vb='<b>'+D.bull.length+' bullish vs '+D.bear.length+' bearish signals.</b> ';
+  if(D.ivVerdict)vb+='Premium is <b>'+D.ivVerdict.t+'</b>: '+D.ivVerdict.d+' ';
+  if(D.pick){const mid=(D.pick.bid+D.pick.ask)/2;
+  vb+='<br><br><b>Suggested vehicle:</b> the $'+D.pick.strike+' '+(D.pick.type==='C'?'CALL':'PUT')+' expiring in '+D.pick.dte+' days — roughly $'+n2(mid)+' ('+(D.pick.delta?Math.abs(D.pick.delta).toFixed(2):'~'+(D.ivRich?'0.70':'0.50'))+' delta'+(D.ivRich?', deeper ITM to cut vega because premium is rich':' , at-the-money for max gamma')+'). '
+  +(D.pick.delta?'Delta says the market gives this ~'+(Math.abs(D.pick.delta)*100).toFixed(0)+'% odds of finishing in the money. ':'')
+  +'OI '+D.pick.oi.toLocaleString()+'.';}
+  vb+='<br><br><b>Timing:</b> '+(D.quality.startsWith('TIER 1')?'The stack is full — trigger conditions are live now. Execute on the next confirming bar, size per the gates.':D.quality.startsWith('TIER 2')?'Strong stack but missing a star signal (divergence/TD-9). Enter on the trigger bar: MACD flip, Bollinger re-entry, or reclaim of the 9-EMA.':D.quality.startsWith('TIER 3')?'Setup is forming, not fired. Set an alert at the trigger level and wait — theta punishes early.':'');
+  vb+='<br><br><b>Before ordering:</b> run this exact contract through the <a href="pretrade.html" style="color:var(--gold-soft)">Eleven Gates</a>.';}
+  html+='<div class="verdict '+vc+'"><div class="vh">'+vh+'</div><div class="vb">'+vb+'</div></div>';
+  /* warnings */
+  if(D.warn.length)html+='<div class="card"><h2><span class="n">⚠</span> Forces &amp; Warnings <button class="info-i" onclick="info(\'forces\')">i</button></h2><div class="chips">'+chipRow(D.warn,'n')+'</div></div>';
+  /* evidence */
+  html+='<div class="card"><h2><span class="n">±</span> The Evidence</h2>'
+  +'<div class="lbl">Bullish ('+D.bull.length+')</div><div class="chips">'+(D.bull.length?chipRow(D.bull,'b'):'<span class="chip">none</span>')+'</div>'
+  +'<div class="lbl" style="margin-top:8px">Bearish ('+D.bear.length+')</div><div class="chips">'+(D.bear.length?chipRow(D.bear,'s'):'<span class="chip">none</span>')+'</div>'
+  +'<div class="small-note">★ = divergence, the highest-conviction class of signal. Chips summarize; the Library tab explains every tool.</div></div>';
+  /* momentum dashboard */
+  html+='<div class="card"><h2><span class="n">Δ</span> Momentum &amp; Exhaustion</h2><div class="mgrid">'
+  +mcell('RSI 14',n2(D.rsi,0),D.rsi<30?'oversold':D.rsi>70?'overbought':'neutral',D.rsi<30?'up':D.rsi>70?'dn':'md','rsi')
+  +mcell('MACD Hist',n2(D.macdHist),D.macdHist>0?'positive':'negative',D.macdHist>0?'up':'dn','macd')
+  +mcell('Stoch %K',n2(D.stochK,0),D.stochK<20?'oversold':D.stochK>80?'overbought':'mid',D.stochK<20?'up':D.stochK>80?'dn':'md','stoch')
+  +mcell('Williams %R',n2(D.wr,0),D.wr<-80?'exhausted low':D.wr>-20?'exhausted high':'mid',D.wr<-80?'up':D.wr>-20?'dn':'md','willr')
+  +mcell('CCI 20',n2(D.cci,0),Math.abs(D.cci)>100?'stretched':'normal',D.cci<-100?'up':D.cci>100?'dn':'md','cci')
+  +mcell('DeMarker',n2(D.dem,2),D.dem<0.3?'buy exhaustion':D.dem>0.7?'sell exhaustion':'neutral',D.dem<0.3?'up':D.dem>0.7?'dn':'md','dem')
+  +mcell('TD Count',(D.td.buy?D.td.buy+' buy':D.td.sell?D.td.sell+' sell':'0'),'9 = reversal flag',(D.td.buy>=9||D.td.sell>=9)?'fx':'md','td9')
+  +mcell('ADX',n2(D.adx,0),D.adx>40?'strong trend — don\'t fade':D.adx<20?'weak — fade OK':'moderate',D.adx>40?'dn':'up','adx')
+  +'</div></div>';
+  /* trend & levels */
+  html+='<div class="card"><h2><span class="n">◢</span> Trend &amp; Levels</h2><div class="mgrid">'
+  +mcell('9 / 21 EMA',n2(D.e9)+' / '+n2(D.e21),D.e9>D.e21?'aligned up':'aligned down',D.e9>D.e21?'up':'dn','emas')
+  +mcell('50 / 200',n2(D.s50)+(D.s200?' / '+n2(D.s200):' / —'),D.cross?(D.cross==='GOLDEN'?'golden cross':'death cross'):'insufficient history',D.cross==='GOLDEN'?'up':D.cross==='DEATH'?'dn':'md','cross')
+  +mcell('ATR 14','$'+n2(D.atr),'stop basis: 1.5–2× ATR','fx','atr')
+  +mcell('Squeeze',D.squeeze?'ON':'off',D.squeeze?'breakout loading + cheap vega':'bands normal',D.squeeze?'fx':'md','squeeze')
+  +mcell('Pivot / R1 / S1','$'+n2(D.pv.P,2),'R1 $'+n2(D.pv.R1)+' · S1 $'+n2(D.pv.S1),'md','pivots')
+  +mcell('Fib 38/50/62','$'+n2(D.fb.f382),'$'+n2(D.fb.f5)+' · $'+n2(D.fb.f618)+' (3-mo swing)','md','fibs')
+  +'</div></div>';
+  /* options pricing */
+  if(D.ca){const ca=D.ca;
+  html+='<div class="card"><h2><span class="n">ν</span> Is the Premium Cheap or Rich?</h2><div class="mgrid">'
+  +(D.ivVerdict?mcell('Verdict',D.ivVerdict.t,'IV vs realized volatility',D.ivVerdict.c,'ivhv'):'')
+  +mcell('ATM IV (near)',n2(ca.ivNear,0)+'%','next monthly '+n2(ca.ivNext,0)+'%',ca.ivNear>(ca.ivNext||0)?'dn':'up','term')
+  +mcell('Realized HV20',n2(D.hv20,0)+'%','how much it ACTUALLY moves','fx','ivhv')
+  +mcell('Implied Move','±'+n2(ca.impMove,1)+'%','by '+ca.near+'-day expiry (straddle)','fx','impmove')
+  +mcell('Put Skew',n2(ca.skew,1)+' pts',ca.skew>12?'steep — fear premium':ca.skew<-3?'INVERTED — blow-off':'normal',ca.skew>12?'dn':ca.skew<-3?'n':'md','skew')
+  +'</div></div>';
+  /* positioning */
+  html+='<div class="card"><h2><span class="n">Γ</span> Dealer Positioning &amp; Flow</h2><div class="mgrid">'
+  +mcell('P/C Volume',n2(ca.pcVol,2),ca.pcVol>1?'fear extreme (contrarian bull)':ca.pcVol<0.5?'call frenzy (top zone)':'neutral 0.60–0.80',ca.pcVol>1?'up':ca.pcVol<0.5?'dn':'md','pcr')
+  +mcell('P/C Open Int',n2(ca.pcOI,2),'positioning, slower-moving','md','pcr')
+  +mcell('Max Pain','$'+n2(ca.maxPain,0),'expiration magnet','fx','maxpain')
+  +mcell('Dealer Gamma',(ca.gexTot>=0?'+':'')+(ca.gexTot/1e6).toFixed(1)+'M',ca.gexTot<0?'NEGATIVE — moves amplify':'positive — moves dampen/pin',ca.gexTot<0?'dn':'up','gex')
+  +mcell('Call Wall','$'+n2(ca.callWall,0),'rally cap / target','dn','walls')
+  +mcell('Put Wall / Flip','$'+n2(ca.putWall,0)+' / $'+n2(ca.flip,0),'support / regime line','up','walls')
+  +'</div></div>';}
+  /* macro complex */
+  html+='<div class="card"><h2><span class="n">Ω</span> Macro Vol Complex</h2><div class="mgrid">'
+  +mcell('VIX',n2(D.vx,1),D.vx>35?'capitulation zone':D.vx<13?'complacency':'normal',D.vx>35?'up':D.vx<13?'n':'md','vix')
+  +mcell('VIX9D',n2(D.vx9,1),(D.vx9>D.vx)?'ABOVE VIX — acute stress':'below VIX — calm near-term',(D.vx9>D.vx)?'n':'up','vix9d')
+  +mcell('VVIX',n2(D.vvix,0),D.vvix>110?'crash hedges bid':'normal',D.vvix>110?'n':'md','vvix')
+  +mcell('SKEW Index',n2(D.skx,0),D.skx>150?'tail-risk premium high':'normal',D.skx>150?'n':'md','skewidx')
+  +mcell('USD/JPY',n2(D.jpy,2),D.jpy>=159?'PATH 2 LIVE':(159-D.jpy).toFixed(2)+' below trigger',D.jpy>=159?'dn':'fx','jpygate')
+  +mcell('OpEx','in '+D.dOpex+'d','turns cluster at expiry weeks',D.dOpex<=4?'n':'md','opex')
+  +'</div></div>';
+  out.innerHTML=html;
+  sec('engine',document.querySelectorAll('.tabbar button')[1]);
+}
+/* ================= SCANNER ================= */
+const STOCKS=['SPCX','TSLA','NVDA','AMD','PLTR','COIN','MSTR','HOOD','META','AAPL','MSFT','AMZN','GOOGL','NFLX','SMCI','AVGO','MU','SOFI','UBER','SHOP','CRWD','SNOW','BABA','RIVN','MARA','RIOT','DKNG','ROKU','PYPL','BAC','XOM','SPY','QQQ','IWM'];
+const FUTS=[['6J=F','Yen'],['6E=F','Euro'],['6B=F','Pound'],['6A=F','Aussie'],['CL=F','Crude'],['GC=F','Gold'],['SI=F','Silver'],['NG=F','NatGas']];
+function scoreSym(c){
+  if(!c||c.length<40)return null;
+  const i=c.length-1,R=rsiAll(c),rsi=R[i],M=macdAll(c),bb=bollinger(c);
+  const e9=emaAll(c,9),e21=emaAll(c,21);
+  const bws=bwSeries(c);const sq=bws.length>10&&bws[bws.length-1]<=Math.min(...bws.slice(-40))*1.15;
+  const r10=roc(c,10);
+  let bullPts=0,bearPts=0;const why=[];
+  if(rsi<30){bullPts+=2;why.push('RSI '+rsi.toFixed(0)+' oversold');}
+  if(rsi>70){bearPts+=2;why.push('RSI '+rsi.toFixed(0)+' overbought');}
+  if(bb){if(bb.pctB<0.05){bullPts+=2;why.push('at/below lower Bollinger');}
+  if(bb.pctB>0.95){bearPts+=2;why.push('at/above upper Bollinger');}}
+  if(M.hist[i]!=null&&M.hist[i-1]!=null){
+  if(M.hist[i]>0&&M.hist[i-1]<=0){bullPts+=2;why.push('MACD flip up today');}
+  if(M.hist[i]<0&&M.hist[i-1]>=0){bearPts+=2;why.push('MACD flip down today');}
+  else if(M.hist[i]>M.hist[i-1]&&M.hist[i]<0){bullPts+=1;why.push('MACD hist rising below zero');}
+  else if(M.hist[i]<M.hist[i-1]&&M.hist[i]>0){bearPts+=1;why.push('MACD hist fading above zero');}}
+  const dv=divergence(c,R,50);
+  if(dv.bull){bullPts+=3;why.push('★ bullish divergence');}
+  if(dv.bear){bearPts+=3;why.push('★ bearish divergence');}
+  if(sq){bullPts+=1;bearPts+=1;why.push('squeeze on — cheap premium');}
+  if(r10!=null&&r10<-10){bullPts+=1;why.push('ROC10 '+r10.toFixed(0)+'% washed out');}
+  if(r10!=null&&r10>12){bearPts+=1;why.push('ROC10 +'+r10.toFixed(0)+'% extended');}
+  const trendUp=e9[i]>e21[i];
+  const score=Math.max(bullPts,bearPts),dir=bullPts>=bearPts?'CALL':'PUT';
+  return{score,dir,why,rsi,r10,trendUp,sq};}
+async function runScan(){
+  const st=document.getElementById('scanStatus'),btn=document.getElementById('scanBtn');
+  const outS=document.getElementById('scanResults'),outF=document.getElementById('fxResults');
+  btn.disabled=true;outS.innerHTML='';outF.innerHTML='';
+  st.innerHTML='Scanning '+STOCKS.length+' stocks + '+FUTS.length+' futures…';
+  try{
+    const all=STOCKS.concat(FUTS.map(f=>f[0]));
+    const r=await fetch(RELAY+'/?scan='+encodeURIComponent(all.join(',')));
+    const j=await r.json();const data=j.scan||{};
+    const rows=[];
+    for(const s of STOCKS){const d=data[s];const sc=d?scoreSym(d.c):null;
+    if(sc&&sc.score>=2)rows.push({tk:s,last:d.last??d.c[d.c.length-1],...sc});}
+    rows.sort((a,b)=>b.score-a.score);
+    const top=rows.slice(0,5);
+    outS.innerHTML='<div class="lbl" style="margin-top:4px">Top 5 stock setups</div>'+(top.length?top.map(r=>
+    '<div class="scan-item" onclick="useTicker(\''+r.tk+'\')"><div class="scan-top"><span class="scan-tk">'+r.tk+' <span style="font-size:11px;color:var(--dim)">$'+n2(r.last)+'</span></span><span class="scan-dir '+(r.dir==='CALL'?'call':'put')+'">'+r.dir+'S · score '+r.score+'</span></div><div class="scan-why">'+r.why.join(' · ')+'</div></div>').join('')
+    :'<div class="status">No name in the universe scores ≥2 today — a quiet tape is information too. Stand aside or lower the bar tomorrow.</div>');
+    /* futures: rank movers by |ROC5| */
+    const fr=[];
+    for(const [s,nm] of FUTS){const d=data[s];if(!d||d.c.length<10)continue;
+    const r5=roc(d.c,5),R=rsiAll(d.c),rsi=R[R.length-1];
+    fr.push({s,nm,last:d.last??d.c[d.c.length-1],r5,rsi});}
+    fr.sort((a,b)=>Math.abs(b.r5)-Math.abs(a.r5));
+    outF.innerHTML='<div class="lbl" style="margin-top:14px">Currency &amp; commodity futures — biggest 5-day movers</div>'+fr.slice(0,5).map(f=>
+    '<div class="scan-item" onclick="useTicker(\''+f.s+'\')"><div class="scan-top"><span class="scan-tk">'+f.nm+' <span style="font-size:11px;color:var(--dim)">'+f.s+' · '+n2(f.last)+'</span></span><span class="scan-dir '+(f.r5>=0?'call':'put')+'">'+(f.r5>=0?'+':'')+n2(f.r5,1)+'% 5d</span></div><div class="scan-why">RSI '+n2(f.rsi,0)+(f.rsi<30?' — washed out, reversal watch':f.rsi>70?' — extended, exhaustion watch':' — trending')+'</div></div>').join('');
+    st.innerHTML='Scan complete '+new Date().toLocaleTimeString()+'. Tap any card to run the full Engine. Scores: ★ divergence 3 · RSI/Bollinger extremes 2 · MACD flips 2 · squeeze/ROC 1.';
+  }catch(e){st.innerHTML='<b>Scan failed:</b> '+(e.message||'connection')+'. Make sure the v4 worker is deployed, then retry.';}
+  finally{btn.disabled=false;}
+}
+function useTicker(t){document.getElementById('tk').value=t;
+sec('engine',document.querySelectorAll('.tabbar button')[1]);runEngine();}
+</script>
+
+<script>
+/* ================= INFO SYSTEM ================= */
+const INFO={
+scanner:{t:'How the Scanner Works',b:'One tap pulls three months of daily prices for ~40 liquid, heavily-optioned names plus the major currency and commodity futures. Each gets scored: <b>divergence 3 points</b> (the master signal), RSI or Bollinger extremes 2, fresh MACD flips 2, squeeze conditions and washed-out ROC 1. The five highest scores are your candidates — with the direction (calls or puts) the evidence points to and the exact reasons. It finds candidates; the Engine and the Gates decide.',w:'A high score is a SETUP, not a trade. Tap through to the Engine, then run the Gates.'},
+forces:{t:'Forces & Warnings',b:'Everything currently acting ON this stock and its options, beyond simple direction: dealer gamma regime (does hedging amplify or dampen moves), volatility term structure stress, skew extremes, VIX-family fear readings, the yen carry trigger, OpEx proximity, volume climaxes, and ADX trend-strength warnings about whether reversal signals can even be trusted right now.',w:'Warnings are not bearish or bullish — they tell you which TOOLS to trust and how violent the tape may be.'},
+rsi:{t:'RSI — Relative Strength Index',b:'Speed and size of recent price changes, 0–100. Below 30 = oversold, above 70 = overbought. <b>Divergence beats levels:</b> price making a lower low while RSI makes a higher low is the classic bottom signature. In strong bear phases RSI bottoms nearer 25; in strong bull runs it can sit above 70 for weeks — adjust to the regime, not the textbook.',w:'On the chain in your broker or computed here from daily closes (14-period).'},
+macd:{t:'MACD — Convergence/Divergence',b:'Momentum + trend hybrid (12/26/9). The histogram flipping positive below zero is a classic bottom trigger; flipping negative above zero, a top trigger. Best signal of all: divergence at an extreme. Your triple-confirmation — MACD flip + RSI extreme + Bollinger touch — filters most false signals.',w:'Computed from daily closes.'},
+stoch:{t:'Stochastic %K / %D',b:'Where today\u2019s close sits in the recent high-low range. Faster than RSI — better for short-dated timing. %K crossing above %D below 20 = bottom trigger; crossing down above 80 = top trigger.',w:'14,3,3 on daily bars.'},
+willr:{t:'Williams %R',b:'Inverted stochastic, 0 to −100. Below −80 = exhausted low; the hook back above −80 is the confirmation. Often leads price by 1–3 bars at turns.',w:''},
+cci:{t:'CCI — Commodity Channel Index',b:'Distance from the statistical mean, unbounded. Beyond ±100 = stretched; beyond ±200 = extreme. The signal is the SNAP BACK inside ±100, not the extreme itself.',w:''},
+dem:{t:'DeMarker',b:'Tom DeMark\u2019s exhaustion gauge — designed to LEAD reversals. Below 0.30 = buying exhaustion complete, upward turn probable. Above 0.70 = selling exhaustion, downward turn probable.',w:''},
+td9:{t:'TD Sequential 9-Count',b:'Counts consecutive closes beyond the close four bars earlier. A completed 9 at an extreme is one of the most-watched reversal flags on institutional desks. 7–8 = forming; 9 = flag up.',w:''},
+adx:{t:'ADX — Trend Strength',b:'0–100, measures trend STRENGTH not direction. This decides whether your reversal tools work: <b>below 20</b> = weak trend, oscillator extremes are reliable, mean-reversion dominates. <b>Above 40</b> = powerful trend — overbought/oversold readings fail repeatedly; do NOT fade. ADX rolling over from above 40 hints exhaustion.',w:''},
+emas:{t:'9 / 21 EMA',b:'Your short-term momentum gates. 9 above 21 = up-alignment; the 9-EMA reclaim is a day-trade trigger. Moving averages LAG — they define context; oscillators and flow do the timing.',w:''},
+cross:{t:'Golden / Death Cross',b:'50-day above 200-day = golden cross, bull phase confirmed (weeks–months). Below = death cross. Confirms major turns AFTER the fact — regime context, not a timing tool.',w:''},
+atr:{t:'ATR — Average True Range',b:'Pure volatility, in dollars. ATR spikes accompany capitulation lows; unusually quiet ATR precedes complacent tops. Also your stop-placement basis: 1.5–2× ATR beyond the entry, so normal noise can\u2019t shake you out.',w:''},
+squeeze:{t:'TTM Squeeze / Bollinger Squeeze',b:'Bollinger Bands contracting INSIDE Keltner Channels = compressed energy about to release. For an options buyer this is the double tailwind: squeeze = low realized vol = <b>cheap premium</b>. A confirmed breakout wins on direction AND volatility expansion simultaneously — the ideal long-vega entry.',w:''},
+pivots:{t:'Pivot Points',b:'Classic floor-trader levels from yesterday\u2019s high/low/close. Price above the pivot = intraday bull bias; R1/S1 are the first targets and defenses. Widely watched, therefore self-fulfilling intraday.',w:''},
+fibs:{t:'Fibonacci Retracements',b:'From the 3-month swing high to low: the 38.2%, 50%, and 61.8% retracements are where pullbacks most often find buyers/sellers. Confluence with a pivot, an anchored VWAP, or an OI wall makes the level far stronger.',w:''},
+ivhv:{t:'IV vs HV — Cheap or Expensive?',b:'The single most important question for a premium BUYER. Implied volatility is the movement you are PAYING for; historical (realized) volatility is the movement the stock actually DELIVERS. IV well below HV = <b>bargain</b> — you buy movement at a discount. IV far above HV = <b>expensive</b> — even a correct direction call can lose to IV crush. Mitigations when rich: go deeper ITM (0.70Δ, less vega) or demand a bigger, faster move.',w:'The Engine compares near-term ATM IV to 20-day realized.'},
+term:{t:'IV Term Structure',b:'Near-dated IV vs next monthly. Near ABOVE far (inversion/backwardation) = event premium or acute stress — expect a vol crush after the event passes. Buying short-dated longs into inversion means paying the crush.',w:''},
+impmove:{t:'Implied Move',b:'The ATM straddle price as a % of spot — the market\u2019s own forecast of how far this moves by expiration. Your target must exceed it for a long option to pay properly. It is also the IV-crush yardstick after events.',w:''},
+skew:{t:'IV Skew (Put − Call)',b:'OTM put IV minus OTM call IV. Steep positive = heavy downside hedging demand (fear). Skew hitting extremes then FLATTENING = downside fear peaking — a bottom-formation tell. Inverted skew (calls over puts) = speculative blow-off conditions, common in momentum names.',w:''},
+pcr:{t:'Put/Call Ratio',b:'Contrarian gauge from options volume itself. Neutral 0.60–0.80. Above 1.0 = fear extreme — historically such readings preceded rallies about 72% of the time within 20 trading days. Below ~0.50 = call-buying frenzy, complacency-top zone.',w:''},
+maxpain:{t:'Max Pain',b:'The strike where option holders collectively lose the most — price often gravitates there in expiration week as hedges unwind. Use it as a realistic magnet/target, especially setting exits into OpEx.',w:''},
+gex:{t:'Dealer Gamma (GEX)',b:'Aggregate dealer hedging position. <b>Positive:</b> dealers fade moves — buy dips, sell rips — volatility dies, price pins near big OI. <b>Negative:</b> dealers must SELL weakness and BUY strength — moves amplify, flushes accelerate. This is how capitulation lows get made. The flip level is the regime boundary; reclaiming it confirms a bottom.',w:'Computed from gamma × OI across the chain, calls positive / puts negative.'},
+walls:{t:'OI Walls & the Flip',b:'Large open-interest strikes act as magnets and walls. Big put walls below price = support (dealer hedging buys as price approaches); big call walls cap rallies. Use walls to set realistic profit targets for your contracts. The flip is where cumulative dealer gamma changes sign.',w:''},
+vix:{t:'VIX',b:'30-day S&P implied vol — the market\u2019s fear gauge. Spikes above 35–40 have historically marked capitulation buying zones. Sub-13 grind = complacency; not a precise top-timer, but risk is elevated. VIX making higher lows while the index makes higher highs = internal deterioration.',w:''},
+vix9d:{t:'VIX9D vs VIX',b:'9-day fear vs 30-day fear. VIX9D ABOVE VIX = acute near-term stress — the backwardation cousin and a bottom-zone marker. It normalizing back below VIX is part of the all-clear.',w:''},
+vvix:{t:'VVIX — Vol of Vol',b:'Demand for VIX options. VVIX spiking BEFORE VIX = institutions grabbing crash hedges — early warning. VVIX collapsing while VIX stays high = the panic is ending.',w:''},
+skewidx:{t:'SKEW Index',b:'Tail-risk pricing on the S&P. Elevated SKEW with LOW VIX = calm surface but heavy crash-insurance buying — the fragile-top signature.',w:''},
+jpygate:{t:'USD/JPY — Your Path 2 Gate',b:'The carry-trade barometer. Violent yen strengthening and VIX backwardation tend to fire TOGETHER at risk-off capitulation lows — they confirm each other. 159 is your trigger; through it, the carry-unwind path is live and the whole risk complex trades as one bet.',w:''},
+opex:{t:'OpEx — Options Expiration',b:'Monthly expiration (third Friday). Charm and vanna hedging flows unclench after expiry — the "OpEx drift" — which is why turns cluster around expiration weeks. Inside 4 days: expect pinning toward max pain, then freer movement after.',w:''}
+};
+function info(k){const d=INFO[k];if(!d)return;
+document.getElementById('mT').textContent=d.t;
+document.getElementById('mB').innerHTML=d.b;
+document.getElementById('mW').innerHTML=d.w?('<b>WHERE:</b> '+d.w):'';
+document.getElementById('mW').style.display=d.w?'block':'none';
+document.getElementById('modalBg').style.display='block';}
+</script>
+
+<script>
+/* ================= LIBRARY ================= */
+const LIB=[
+{t:'The Confluence Stack — How to Reach a Decision',b:'<h4>The Method</h4>No single indicator is tradeable. The stack works by <b>agreement across independent families</b>: (1) momentum/exhaustion, (2) volatility &amp; bands, (3) volume, (4) options flow &amp; dealer positioning, (5) macro vol complex. Each family votes; the Verdict counts the votes.<h4>Signal Reliability Hierarchy</h4><b>Tier 1 — act:</b> triple divergence, TD-9 at an extreme, capitulation volume + hammer, VIX backwardation + P/C spike together.<br><b>Tier 2 — act on trigger:</b> single divergence, Bollinger re-entry, MACD flip at an RSI extreme, squeeze breakout.<br><b>Tier 3 — watch:</b> single oscillator extremes, MA crosses, pattern completions without volume.<br><b>Noise:</b> any single indicator alone, mid-range readings, signals against a 40+ ADX trend.<h4>Top → Exit Calls / Long Puts</h4>Rising wedge or M-top + bearish divergence + P/C under 0.5 + inverted skew + positive gamma pinning dissolving = the exit-and-flip stack. Bottoms mirror it.'},
+{t:'Divergence — The Master Concept',b:'Nearly every oscillator\u2019s most powerful use is divergence, not absolute levels:<h4>The Four Types</h4><b>Regular bullish:</b> price lower low + indicator higher low → bottom forming.<br><b>Regular bearish:</b> price higher high + indicator lower high → top forming.<br><b>Hidden bullish:</b> price higher low + indicator lower low → uptrend continuation (buy the dip).<br><b>Hidden bearish:</b> price lower high + indicator higher high → downtrend continuation.<h4>The King Signal</h4><b>Triple divergence</b> — three successive non-confirmations — is the highest-conviction reversal signal in technical analysis. The Engine scans RSI and OBV divergences automatically (marked ★).'},
+{t:'The Greeks — Vehicle Selection',b:'<h4>Delta (Δ) — Direction &amp; Probability<span class="tag">1st order</span></h4>Move per $1 of stock; also ≈ probability of expiring ITM (a 0.30Δ call is roughly a 30% shot).<br><b>0.70+ deep ITM:</b> stock-like, least theta/vega — the vehicle for buying capitulation bottoms at HIGH IV.<br><b>0.45–0.55 ATM:</b> max gamma, standard when the trigger fires.<br><b>0.20–0.35 OTM:</b> lottery-adjacent — only at Tier-1 confluence with a fast catalyst.<br><b>&lt;0.15:</b> pure premium bleed — the market is telling you the odds.<h4>Theta (Θ) — The Cost of Being Early</h4>Decay accelerates inside ~30 DTE. Buy more time than you think you need (45–90 DTE for swings), exit before the final 21 days, scale out into strength. Friday entries on short-dated contracts start underwater — weekend decay is priced beforehand.<h4>Vega (ν) — The Bottom-Buyer\u2019s Trap</h4>IV peaks AT the low: buy calls there and you\u2019re long vol at the top of the vol cycle — the post-bottom IV crush can eat correct direction calls. Mitigate with deep ITM. The asymmetry: IV is CHEAPEST at complacent tops, so long puts at euphoric tops profit from the drop AND the vol expansion — better vehicle economics than calls at panic bottoms.<h4>The Second Order<span class="tag">frontier</span></h4><b>Vanna:</b> IV collapse after a bottom forces mechanical dealer buying — the fuel of V-shaped "vanna rallies."<br><b>Charm:</b> delta decay drives pre-OpEx drift; positioning unclenches after expiry — why turns cluster there.<br><b>Vomma:</b> why far-OTM options explode disproportionately in vol spikes.<br><b>Rho:</b> negligible short-dated; matters on LEAPS in a shifting-rate world.'},
+{t:'The VIX Family & Vol-of-Vol',b:'<h4>The Macro Layer</h4><b>VIX</b> — 30-day S&P implied vol. &gt;35–40 = capitulation zone; sub-13 = complacency grind.<br><b>VVIX</b> — vol of VIX. Spiking BEFORE VIX = crash hedges being grabbed (early warning). Collapsing while VIX stays high = panic ending.<br><b>VIX9D vs VIX</b> — 9-day above 30-day = acute stress, bottom-zone marker.<br><b>SKEW Index</b> — elevated SKEW + low VIX = calm but paying up for crash insurance: fragile top.<br><b>Term structure</b> — backwardation (near above far) = extreme fear, bottoms form there; steep contango at low VIX = complacency.<h4>Your Parallel</h4>VIX backwardation and violent yen strengthening fire together at risk-off capitulation lows — your USD/JPY 159 gate and this complex confirm each other in Path 2.'},
+{t:'Options-Native Signals — Flow, Skew, Pain, GEX',b:'<h4>Put/Call Ratio</h4>Neutral 0.60–0.80. Above 1.0 = fear extreme — preceded rallies ~72% of the time within 20 sessions. Below 0.50 = call frenzy top zone.<h4>IV Rank</h4>&lt;20 premium cheap (ideal for long-only: buy direction + vol expansion) · 20–50 normal · &gt;50 rich — long options fight IV crush · &gt;80 extreme, often AT price bottoms but calls bought there bleed as IV collapses even if right.<h4>IV Skew</h4>Steep put skew = downside hedging demand; extremes then flattening = fear peaking, bottom tell. Inverted = blow-off.<h4>Open Interest &amp; Max Pain</h4>Big OI strikes are magnets/walls into expiry. Put walls below = support (dealer hedging buys); call walls cap rallies. Max pain attracts price in expiration week — use for exit targets.<h4>Gamma Exposure (GEX)<span class="tag">latest gen</span></h4>Negative dealer gamma: hedging sells weakness/buys strength — flushes accelerate; this is how capitulation lows print. The gamma FLIP is the regime line; reclaiming it confirms the bottom. Positive gamma pins price near big OI — vol dies, tops form quietly; losing the flip unleashes downside velocity.<h4>Unusual Options Activity</h4>Aggressive sweeps at the ask, far OTM, near-dated = informed positioning. Call-sweep clusters after long declines front-run bottoms; put sweeps into strength front-run tops. One input, not gospel — much of it is hedging.'},
+{t:'Volume — The Truth Serum',b:'<h4>Volume Climax / Capitulation</h4>Major bottoms are made on PANIC volume — a huge down-day spike with a long lower wick that exhausts sellers. Tops form on declining volume during the final push (buyers thinning) or churning high-volume days that go nowhere (distribution).<h4>OBV</h4>Cumulative flow; the divergence is everything. New price low + OBV higher low = accumulation under the surface. New high + OBV failure = rally on fumes.<h4>VWAP &amp; Anchored VWAP</h4>The institutional benchmark. Reclaiming VWAP after a flush = intraday bottom; losing it after a spike = intraday top. Anchored VWAP from a major high/low is durable support/resistance for defining exact entries on multi-day holds.<h4>MFI</h4>Volume-weighted RSI. &lt;20 oversold with volume confirmation; &gt;80 overbought.<h4>Breadth</h4>For index/ETF trades: McClellan &lt;−80 or &lt;20% of stocks above the 50-day = washout; a Zweig Breadth Thrust or 90% up-volume day after = powerful new-uptrend confirmation. New index highs with deteriorating A/D = narrowing leadership, late-cycle top structure.'},
+{t:'Reversal Patterns & Candles',b:'<h4>Major Patterns</h4><b>Double Bottom (W):</b> break above the middle peak on volume; second low may spring under the first.<br><b>Double Top (M):</b> break below the middle trough; second high on lighter volume.<br><b>Head &amp; Shoulders / Inverse:</b> neckline break; measured move = head-to-neckline projected.<br><b>Cup / Rounding Bottom:</b> accumulation arc; breakout above rim.<br><b>V-Bottom:</b> climax volume + huge lower wick + gap-up follow-through.<br><b>Rising Wedge:</b> narrowing up-channel on fading volume — breaks DOWN ~2/3 of the time.<br><b>Falling Wedge:</b> breaks up. <b>Megaphone:</b> instability; trade the lower-line break.<h4>Bottom Candles</h4>Hammer at a low · Bullish Engulfing · Morning Star · Piercing Line · Tweezer Bottom · Dragonfly Doji at support.<h4>Top Candles</h4>Shooting Star at a high · Bearish Engulfing · Evening Star · Dark Cloud Cover · Tweezer Top · Gravestone Doji at resistance.<h4>Structure<span class="tag">SMC</span></h4><b>BOS</b> (break of structure) continues the trend; <b>CHoCH</b> (change of character — first break against it) is the earliest structural reversal warning. Fractals mark the swing points these breaks are measured from.'},
+{t:'Timing Tools — MAs, Ichimoku, SAR, Supertrend, Fib, Pivots',b:'<h4>Moving Averages</h4>Golden/death cross (50/200) = regime, weeks–months. 9-EMA reclaim = your day-trade turn signal. 9/21 cross = swing trigger. Price vs the 20-SMA (Bollinger midline) = mean-reversion pivot. All LAG — context, not timing.<h4>Ichimoku</h4>Price breaking up through the cloud after a downtrend = bottom confirmation; Tenkan/Kijun crosses trigger it. Thin cloud = weak support.<h4>Parabolic SAR</h4>Dot flips mark mechanical entries/exits — best used as a trailing stop once a position is winning.<h4>Supertrend</h4>One unambiguous ATR ribbon: above = call bias, below = put bias. Flips often coincide with local turns on the traded timeframe.<h4>Fibonacci &amp; Pivots</h4>38.2/50/61.8 retracements + extensions for targets; classic and Camarilla pivots for intraday levels. Power comes from CONFLUENCE with walls, VWAP, and structure — a fib alone is a line, a fib on a put wall at an anchored VWAP is a level.<h4>MFI, ROC &amp; Momentum Exhaustion</h4>ROC extremes mark stretched moves; momentum exhaustion = successive pushes gaining less ground on less volume — the tape whispering before it turns.'}
+];
+(function buildLib(){const el=document.getElementById('library');
+el.innerHTML=LIB.map((s,i)=>'<div class="acc" id="acc'+i+'"><div class="acc-h" onclick="document.getElementById(\'acc'+i+'\').classList.toggle(\'open\')"><span>'+s.t+'</span><span>▾</span></div><div class="acc-b">'+s.b+'</div></div>').join('');})();
+</script>
+</body></html>
