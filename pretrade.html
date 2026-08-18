@@ -248,6 +248,10 @@
       <div><div class="lbl">Time Stop <button class="info-i" onclick="info('timestop')">i</button></div><input type="text" id="timestop" placeholder="Wed close"></div>
     </div>
     <div class="lbl">Sizing: could you lose 100% of this premium and shrug? <button class="info-i" onclick="info('sizing')">i</button></div>
+    <div class="row">
+      <div><div class="lbl"># Contracts</div><input type="number" id="qty" inputmode="numeric" placeholder="2" oninput="qtyCalc()"></div>
+      <div><div class="lbl">Total at Risk</div><div class="live" id="qtyLive" style="margin-top:2px;padding:11px 12px">—</div></div>
+    </div>
     <select id="sizing">
       <option value="">— Select —</option>
       <option value="yes">Yes — sized as an acceptable full loss</option>
@@ -524,11 +528,37 @@ async function fillContract(){
   const o = CHAIN.opts.find(x=>x.sym===sym);
   if(!o){ st.innerHTML='Select an expiration and strike above.'; return; }
   setVal('bid', o.bid, 2); setVal('ask', o.ask, 2);
-  setVal('delta', Math.abs(o.delta), 2);
-  setVal('theta', o.theta, 2); setVal('vega', o.vega, 2); setVal('gammag', o.gamma, 2);
+  // Greeks: use the feed's numbers when present; compute Black-Scholes when the feed sends blanks
+  const spot = CHAIN.spot || num('price');
+  let dl=o.delta, gm=o.gamma, th=o.theta, vg=o.vega;
+  if(spot && o.iv>0 && o.dte>0 && (!dl || !gm || !th || !vg)){
+    const bs = bsGreeks(spot, o.strike, Math.max(o.dte,0.5)/365, o.iv/100, 0.04, o.type);
+    if(!dl) dl=bs.delta; if(!gm) gm=bs.gamma; if(!th) th=bs.theta; if(!vg) vg=bs.vega;
+  }
+  setVal('delta', Math.abs(dl), 2);
+  setVal('theta', th, 2); setVal('vega', vg, 2); setVal('gammag', gm, 2);
   document.getElementById('dte').value = o.dte;
   document.getElementById('oi').value = o.oi;
   liveCalc();
+  qtyCalc();
+}
+function normCdf(x){
+  const t = 1/(1+0.2316419*Math.abs(x));
+  const d = 0.3989423*Math.exp(-x*x/2);
+  let p = d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274))));
+  return x>0 ? 1-p : p;
+}
+function bsGreeks(S,K,T,sigma,r,type){
+  const sqT = Math.sqrt(T);
+  const d1 = (Math.log(S/K)+(r+sigma*sigma/2)*T)/(sigma*sqT);
+  const d2 = d1 - sigma*sqT;
+  const pdf = Math.exp(-d1*d1/2)/Math.sqrt(2*Math.PI);
+  const isCall = type==='C';
+  const delta = isCall ? normCdf(d1) : normCdf(d1)-1;
+  const gamma = pdf/(S*sigma*sqT);
+  const vega = S*pdf*sqT/100; // per 1 IV point
+  const thetaYr = -S*pdf*sigma/(2*sqT) - (isCall ? r*K*Math.exp(-r*T)*normCdf(d2) : -r*K*Math.exp(-r*T)*normCdf(-d2));
+  return {delta, gamma, vega, theta: thetaYr/365};
 }
 
 /* ================= OVERNIGHT TAPE ================= */
@@ -546,7 +576,8 @@ async function pullOvernight(){
   const btn = document.getElementById('onBtn');
   btn.disabled = true; st.innerHTML = 'Pulling the overnight session…';
   try{
-    const resp = await fetch('https://kornis-ai-relay.rick-018.workers.dev/?quotes=1');
+    const tk = txt('ticker').toUpperCase();
+    const resp = await fetch('https://kornis-ai-relay.rick-018.workers.dev/?quotes=1'+(tk?('&sym='+encodeURIComponent(tk)):''));
     if(!resp.ok) throw new Error('relay returned '+resp.status);
     const j = await resp.json();
     const q = j.quotes || {};
@@ -576,8 +607,16 @@ async function pullOvernight(){
            : dist.toFixed(2)+' below trigger')
         + '</div></div>';
     }
-    if(!got && !jpyLine) throw new Error('no quotes returned');
-    document.getElementById('onGrid').innerHTML = html + jpyLine;
+    // Extended-hours tile for the entered ticker
+    const ext = q.EXT;
+    let extLine='';
+    if(ext && ext.price!=null){
+      const eu = ext.chgPct>=0;
+      extLine = '<div class="on-cell jpy" style="border-color:var(--line)"><div class="k">'+ext.ticker+' — EXTENDED / OVERNIGHT SESSION</div><div class="v" style="color:#fff">$'+ext.price.toFixed(2)+'</div>'
+        + '<div class="c '+(eu?'up':'dn')+'">'+(eu?'▲ +':'▼ ')+ext.chgPct.toFixed(2)+'% vs last regular close $'+ext.regularClose.toFixed(2)+'</div></div>';
+    }
+    if(!got && !jpyLine && !extLine) throw new Error('no quotes returned');
+    document.getElementById('onGrid').innerHTML = html + jpyLine + extLine;
     document.getElementById('onGrid').style.display = 'grid';
     const read = document.getElementById('onRead');
     read.style.display = 'block';
@@ -586,8 +625,39 @@ async function pullOvernight(){
     else if(reds>=3 && !greens) tone = '<b>Risk-off handoff</b> — the overnight sessions are selling. The open inherits pressure; put-side theses get a tailwind, and watch USD/JPY for the carry-unwind confirmation.';
     else tone = '<b>Mixed handoff</b> — the overnight sessions disagree. Let the first 30 minutes of New York pick a side before committing premium.';
     if(jpyVal!==null && jpyVal>=JPY_TRIGGER) tone += ' <b>USD/JPY is through the trigger</b> — Path 2 conditions on the macro side.';
-    read.innerHTML = tone;
-    ON = {esFutPct: q['ES=F']?.chgPct??null, ftsePct: q['^FTSE']?.chgPct??null, daxPct: q['^GDAXI']?.chgPct??null, nikkeiPct: q['^N225']?.chgPct??null, usdJpy: jpyVal, jpyTrigger: JPY_TRIGGER, source:'live', asOf:new Date().toLocaleTimeString()};
+    // Contract snapshot: last-close Greeks + overnight reprice estimate
+    let gkLine='';
+    if(ext && direction && tk){
+      try{
+        if(!CHAIN){ const cr = await fetch(RELAY+'/?chain='+encodeURIComponent(tk)); CHAIN = parseChain(await cr.json()); buildExpirations(); }
+        let o = CHAIN.opts.find(x=>x.sym===document.getElementById('strkSel').value);
+        if(!o){
+          const want = direction==='put'?'P':'C';
+          const spot0 = CHAIN.spot || ext.regularClose;
+          const cands = CHAIN.opts.filter(x=>x.type===want && x.dte>=3 && x.dte<=45);
+          if(cands.length){
+            const md = Math.min(...cands.map(x=>x.dte));
+            const ne = cands.filter(x=>x.dte===md);
+            ne.sort((p,q)=>Math.abs(p.strike-spot0)-Math.abs(q.strike-spot0));
+            o = ne[0];
+          }
+        }
+        if(o){
+          const spot0 = CHAIN.spot || ext.regularClose;
+          let dl=o.delta, gm=o.gamma, th=o.theta, vg=o.vega;
+          if((!dl||!gm||!th||!vg) && o.iv>0){
+            const bs = bsGreeks(spot0, o.strike, Math.max(o.dte,0.5)/365, o.iv/100, 0.04, o.type);
+            if(!dl) dl=bs.delta; if(!gm) gm=bs.gamma; if(!th) th=bs.theta; if(!vg) vg=bs.vega;
+          }
+          const mid = (o.bid+o.ask)/2;
+          const dS = ext.price - ext.regularClose;
+          const est = Math.max(0, mid + dl*dS + 0.5*gm*dS*dS + th*0.7);
+          gkLine = '<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:9px"><b>Your contract — $'+o.strike+' '+(o.type==='C'?'CALL':'PUT')+' ('+o.dte+' DTE)</b>, frozen at yesterday\u2019s close: mid $'+mid.toFixed(2)+' \u00b7 \u0394 '+dl.toFixed(2)+' \u00b7 \u0398 '+th.toFixed(2)+' \u00b7 Vega '+vg.toFixed(2)+' \u00b7 \u0393 '+gm.toFixed(2)+'. The overnight move of '+(dS>=0?'+':'')+'$'+dS.toFixed(2)+' implies your option \u2248 <b>$'+est.toFixed(2)+'</b> right now (delta/gamma estimate with overnight decay \u2014 the real chain reprices at 9:30).</div>';
+        }
+      }catch(e){ /* snapshot skipped */ }
+    }
+    read.innerHTML = tone + gkLine;
+    ON = {tickerExtendedHours: ext ? {ticker:ext.ticker, price:ext.price, chgPctVsClose:ext.chgPct} : null, esFutPct: q['ES=F']?.chgPct??null, ftsePct: q['^FTSE']?.chgPct??null, daxPct: q['^GDAXI']?.chgPct??null, nikkeiPct: q['^N225']?.chgPct??null, usdJpy: jpyVal, jpyTrigger: JPY_TRIGGER, source:'live', asOf:new Date().toLocaleTimeString()};
     st.innerHTML = 'Pulled at '+ON.asOf+'. Delayed up to 15–20 min on indices; verify on your platform before ordering.';
     document.getElementById('onManual').style.display='none';
   }catch(err){
@@ -601,6 +671,15 @@ function getOvernight(){
   const j = num('mJPY');
   if(j!==null) return {usdJpy:j, jpyTrigger:JPY_TRIGGER, source:'manual'};
   return null;
+}
+function qtyCalc(){
+  const q = num('qty'), b = num('bid'), a = num('ask');
+  const el = document.getElementById('qtyLive');
+  if(q===null || q<=0){ el.innerHTML='—'; return; }
+  const px = (b!==null && a!==null && (a+b)>0) ? (a+b)/2 : (a!==null ? a : b);
+  if(px===null){ el.innerHTML=q+' contract'+(q>1?'s':'')+' — enter bid/ask in Gate 8 for the dollar total.'; return; }
+  const total = q*px*100;
+  el.innerHTML = q+' × $'+px.toFixed(2)+' × 100 = <b>$'+total.toLocaleString(undefined,{maximumFractionDigits:0})+'</b> at the midpoint. This entire amount can go to zero.';
 }
 
 /* ================= DEALER GAMMA ENGINE ================= */
@@ -862,6 +941,8 @@ async function runAI(){
     delta:num('delta'), theta:num('theta'), vega:num('vega'), gamma:num('gammag'),
     bid:num('bid'), ask:num('ask'), dte:num('dte'), openInterest:num('oi'),
     overnightTape:(function(){const o=getOvernight(); return o||'not pulled';})(),
+    contracts:num('qty'),
+    totalPremiumAtRisk:(function(){const q=num('qty'),b=num('bid'),a=num('ask'); return (q&&b!==null&&a!==null)?Math.round(q*(a+b)/2*100):null;})(),
     entryLocation:document.getElementById('location').value,
     rsi:num('rsi'), macdLine:num('macdline'), macdSignal:num('signalline'),
     divergenceFade:document.getElementById('divergefade').checked,
@@ -918,6 +999,17 @@ FORMAT: Respond in plain text with these exact section headers in caps: CATALYST
     btn.textContent='RUN AI REVIEW AGAIN';
   }
 }
+/* handoff from the Decision Engine */
+(function(){try{
+const raw=localStorage.getItem('kHandoff');if(!raw)return;
+const hd=JSON.parse(raw);
+if(hd&&Date.now()-hd.ts<600000){
+if(hd.tk)document.getElementById('ticker').value=hd.tk;
+if(hd.dir)setDir(hd.dir);
+if(hd.thesis)document.getElementById('thesis').value=hd.thesis;
+}
+localStorage.removeItem('kHandoff');
+}catch(e){}})();
 </script>
 </body>
 </html>
