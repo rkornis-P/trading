@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kornis Chart</title>
+<style>
+:root{--bg:#05080f;--panel:#0b1220;--line:#1b2946;--text:#dce4f2;--dim:#67769a;
+--gold:#c9a030;--gold-soft:#e8c86a;--green:#3ddc84;--red:#ff5470;--amber:#ffb454;--blue:#5aa7ff;--purp:#b48cff}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);max-width:560px;margin:0 auto;padding:12px 10px 30px}
+.top{display:flex;gap:8px;align-items:center;margin-bottom:9px}
+.top input{flex:1;background:#0a1120;border:1px solid var(--line);border-radius:10px;color:#fff;font-size:16px;padding:10px 12px;outline:none;text-transform:uppercase;font-weight:700}
+.top input:focus{border-color:var(--gold)}
+.top button{background:linear-gradient(135deg,#a07818,var(--gold));color:#000;border:none;border-radius:10px;font-weight:800;font-size:13px;padding:11px 16px;cursor:pointer}
+.top a{color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;flex:none}
+.tfrow{display:flex;gap:6px;margin-bottom:8px}
+.tf{flex:1;background:#0a1120;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:8px 0;font-size:11px;font-weight:700;cursor:pointer;text-align:center}
+.tf.on{border-color:var(--gold);color:var(--gold-soft)}
+.togrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.tog{font-size:10px;padding:5px 10px;border-radius:14px;background:#0a1120;border:1px solid var(--line);color:var(--dim);font-weight:700;cursor:pointer}
+.tog.on{border-color:var(--gold);color:var(--gold-soft)}
+#legend{font-size:10.5px;color:var(--dim);min-height:32px;line-height:1.5;padding:2px 2px 6px;font-variant-numeric:tabular-nums}
+#legend b{color:#fff}
+#legend .u{color:var(--green)}#legend .d{color:var(--red)}#legend .g{color:var(--gold-soft)}
+#wrap{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;touch-action:pan-y}
+canvas{display:block;width:100%}
+#status{font-size:11px;color:var(--dim);background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-top:9px;line-height:1.5}
+</style></head><body>
+
+<div class="top">
+  <input id="tk" value="SPCX" autocapitalize="characters">
+  <button onclick="loadAll()">CHART</button>
+  <a href="hub.html">◈</a>
+</div>
+<div class="tfrow" id="tfs">
+  <div class="tf" data-i="5m" data-r="1d" onclick="setTF(this)">1D·5m</div>
+  <div class="tf" data-i="15m" data-r="5d" onclick="setTF(this)">5D·15m</div>
+  <div class="tf" data-i="1h" data-r="1mo" onclick="setTF(this)">1M·1h</div>
+  <div class="tf on" data-i="1d" data-r="6mo" onclick="setTF(this)">6M·1D</div>
+</div>
+<div class="togrow">
+  <span class="tog on" id="tEma" onclick="tg(this)">EMA 9/21</span>
+  <span class="tog on" id="tBB" onclick="tg(this)">Bollinger</span>
+  <span class="tog" id="tVwap" onclick="tg(this)">VWAP</span>
+  <span class="tog on" id="tLvl" onclick="tg(this)">Walls/Pain</span>
+  <span class="tog on" id="tRsi" onclick="tg(this)">RSI</span>
+  <span class="tog on" id="tMacd" onclick="tg(this)">MACD</span>
+</div>
+<div id="legend">Load a chart, then touch and drag across it — the crosshair reads out every value at that bar.</div>
+<div id="wrap"><canvas id="cv"></canvas></div>
+<div id="status">Timeframes: intraday for day-trade timing, 6M daily for structure. Walls/Pain draws the option-chain call wall, put wall, and max pain as live horizontal levels — your targets and defenses.</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+let IV='1d',RG='6mo';
+let BARS=null,LVL=null,CROSS=null;
+function setTF(el){document.querySelectorAll('.tf').forEach(t=>t.classList.remove('on'));
+el.classList.add('on');IV=el.dataset.i;RG=el.dataset.r;if(BARS)loadAll();}
+function tg(el){el.classList.toggle('on');draw();}
+function on(id){return document.getElementById(id).classList.contains('on');}
+function n2(v,d){return v==null||isNaN(v)?'—':(+v).toFixed(d==null?2:d);}
+
+/* indicator math */
+function emaAll(a,n){const k=2/(n+1),o=new Array(a.length).fill(null);let p=null;
+for(let i=0;i<a.length;i++){if(i===n-1){let s=0;for(let j=0;j<n;j++)s+=a[j];p=s/n;o[i]=p;}
+else if(i>=n){p=a[i]*k+p*(1-k);o[i]=p;}}return o;}
+function rsiAll(c,n){n=n||14;const o=new Array(c.length).fill(null);if(c.length<n+2)return o;
+let g=0,l=0;for(let i=1;i<=n;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}
+let ag=g/n,al=l/n;o[n]=al===0?100:100-100/(1+ag/al);
+for(let i=n+1;i<c.length;i++){const d=c[i]-c[i-1];ag=(ag*(n-1)+(d>0?d:0))/n;al=(al*(n-1)+(d<0?-d:0))/n;
+o[i]=al===0?100:100-100/(1+ag/al);}return o;}
+function macdAll(c){const e12=emaAll(c,12),e26=emaAll(c,26);
+const m=c.map((_,i)=>e12[i]!=null&&e26[i]!=null?e12[i]-e26[i]:null);
+const mv=m.filter(v=>v!=null),sg=emaAll(mv,9),sig=new Array(c.length).fill(null);
+const off=c.length-mv.length;for(let i=0;i<mv.length;i++)sig[i+off]=sg[i];
+return{m,sig,hist:c.map((_,i)=>m[i]!=null&&sig[i]!=null?m[i]-sig[i]:null)};}
+function bbAll(c,n,mult){n=n||20;mult=mult||2;const up=new Array(c.length).fill(null),lo=up.slice(),mid=up.slice();
+for(let i=n-1;i<c.length;i++){let s=0;for(let j=i-n+1;j<=i;j++)s+=c[j];const m=s/n;
+let v=0;for(let j=i-n+1;j<=i;j++)v+=(c[j]-m)**2;const sd=Math.sqrt(v/n);
+mid[i]=m;up[i]=m+mult*sd;lo[i]=m-mult*sd;}return{up,lo,mid};}
+function vwapAll(t,h,l,c,v){const o=new Array(c.length).fill(null);let cv=0,cpv=0,day=null;
+for(let i=0;i<c.length;i++){const d=new Date(t[i]*1000).toDateString();
+if(d!==day){day=d;cv=0;cpv=0;}
+const tp=(h[i]+l[i]+c[i])/3;cv+=v[i]||0;cpv+=tp*(v[i]||0);o[i]=cv?cpv/cv:null;}return o;}
+
+/* data */
+async function loadAll(){
+const tk=document.getElementById('tk').value.trim().toUpperCase();
+const st=document.getElementById('status');
+if(!tk)return;st.innerHTML='Pulling '+tk+' ('+RG+' of '+IV+' bars)…';
+try{
+const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i='+IV+'&r='+RG);
+const j=await r.json();const res=j?.chart?.result?.[0];const q=res?.indicators?.quote?.[0];
+if(!res||!q)throw new Error('no data for '+tk);
+const T=[],O=[],H=[],L=[],C=[],V=[];
+for(let i=0;i<q.close.length;i++)if(q.close[i]!=null&&q.high[i]!=null&&q.low[i]!=null){
+T.push(res.timestamp[i]);O.push(q.open[i]??q.close[i]);H.push(q.high[i]);L.push(q.low[i]);C.push(q.close[i]);V.push(q.volume?.[i]??0);}
+if(C.length<10)throw new Error('too few bars');
+BARS={tk,T,O,H,L,C,V,e9:emaAll(C,9),e21:emaAll(C,21),bb:bbAll(C),vw:vwapAll(T,H,L,C,V),rsi:rsiAll(C),macd:macdAll(C)};
+CROSS=null;
+st.innerHTML=tk+' · '+C.length+' bars · last $'+n2(C[C.length-1])+' · pulled '+new Date().toLocaleTimeString();
+draw();
+// levels from the chain (async, redraw when ready)
+LVL=null;
+fetch(RELAY+'/?chain='+encodeURIComponent(tk)).then(r=>r.json()).then(cj=>{
+const spot=cj?.data?.current_price??cj?.data?.close;const raw=cj?.data?.options||[];
+if(!raw.length||!spot)return;
+const now=new Date();const uni=[];
+for(const o of raw){const m=(o.option||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+const dte=Math.ceil((exp-now)/86400000);if(dte<0||dte>45)continue;
+uni.push({type:m[2],strike:+m[3]/1000,oi:+o.open_interest||0});}
+if(!uni.length)return;
+const ks=[...new Set(uni.map(o=>o.strike))].sort((a,b)=>a-b);
+let mp=null,best=1e18;
+for(const k of ks){let pain=0;for(const o of uni){
+if(o.type==='C'&&k>o.strike)pain+=(k-o.strike)*o.oi;
+if(o.type==='P'&&k<o.strike)pain+=(o.strike-k)*o.oi;}
+if(pain<best){best=pain;mp=k;}}
+let cw=null,pw=null,cm=0,pm=0;
+const oiBy={};for(const o of uni){oiBy[o.strike]=oiBy[o.strike]||{c:0,p:0};oiBy[o.strike][o.type==='C'?'c':'p']+=o.oi;}
+for(const k of ks){if(oiBy[k].c>cm&&k>=spot){cm=oiBy[k].c;cw=k;}
+if(oiBy[k].p>pm&&k<=spot){pm=oiBy[k].p;pw=k;}}
+LVL={cw,pw,mp};draw();}).catch(()=>{});
+}catch(e){st.innerHTML='<b>Failed:</b> '+(e.message||'connection')+'. Intraday needs the v4.2 worker deployed.';}}
+
+/* drawing */
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function draw(){
+if(!BARS)return;
+const dpr=window.devicePixelRatio||1;
+const W=document.getElementById('wrap').clientWidth;
+const showR=on('tRsi'),showM=on('tMacd');
+const Hpx=420+(showR?70:0)+(showM?70:0);
+cv.width=W*dpr;cv.height=Hpx*dpr;cv.style.height=Hpx+'px';
+ctx.setTransform(dpr,0,0,dpr,0,0);
+ctx.fillStyle='#0b1220';ctx.fillRect(0,0,W,Hpx);
+const{T,O,H,L,C,V}=BARS;const n=C.length;
+const padR=52,padL=4;
+const cw=(W-padL-padR)/n;
+const priceH=300,volH=60,gap=14;
+let hi=-1e18,lo=1e18;
+for(let i=0;i<n;i++){hi=Math.max(hi,H[i]);lo=Math.min(lo,L[i]);}
+if(on('tBB'))for(let i=0;i<n;i++){if(BARS.bb.up[i])hi=Math.max(hi,BARS.bb.up[i]);if(BARS.bb.lo[i])lo=Math.min(lo,BARS.bb.lo[i]);}
+if(on('tLvl')&&LVL){[LVL.cw,LVL.pw,LVL.mp].forEach(v=>{if(v!=null&&v>lo*0.7&&v<hi*1.3){hi=Math.max(hi,v);lo=Math.min(lo,v);}});}
+const span=(hi-lo)||1;hi+=span*0.04;lo-=span*0.04;
+const y=p=>10+(hi-p)/(hi-lo)*(priceH-20);
+const x=i=>padL+i*cw+cw/2;
+/* grid + y labels */
+ctx.strokeStyle='#141f38';ctx.fillStyle='#67769a';ctx.font='9px -apple-system';ctx.textAlign='left';
+for(let g=0;g<=5;g++){const p=lo+(hi-lo)*g/5;const yy=y(p);
+ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(W-padR,yy);ctx.stroke();
+ctx.fillText('$'+p.toFixed(p>100?0:2),W-padR+4,yy+3);}
+/* Bollinger fill */
+if(on('tBB')){ctx.beginPath();let started=false;
+for(let i=0;i<n;i++)if(BARS.bb.up[i]!=null){if(!started){ctx.moveTo(x(i),y(BARS.bb.up[i]));started=true;}else ctx.lineTo(x(i),y(BARS.bb.up[i]));}
+for(let i=n-1;i>=0;i--)if(BARS.bb.lo[i]!=null)ctx.lineTo(x(i),y(BARS.bb.lo[i]));
+ctx.closePath();ctx.fillStyle='rgba(90,167,255,0.06)';ctx.fill();
+line(BARS.bb.up,'rgba(90,167,255,0.5)',1,y,x);line(BARS.bb.lo,'rgba(90,167,255,0.5)',1,y,x);line(BARS.bb.mid,'rgba(90,167,255,0.35)',1,y,x);}
+/* candles */
+const bw=Math.max(1.5,cw*0.65);
+for(let i=0;i<n;i++){const up=C[i]>=O[i];
+ctx.strokeStyle=ctx.fillStyle=up?'#3ddc84':'#ff5470';
+ctx.beginPath();ctx.moveTo(x(i),y(H[i]));ctx.lineTo(x(i),y(L[i]));ctx.lineWidth=1;ctx.stroke();
+const t=y(Math.max(O[i],C[i])),b=y(Math.min(O[i],C[i]));
+ctx.fillRect(x(i)-bw/2,t,bw,Math.max(1,b-t));}
+/* EMAs */
+if(on('tEma')){line(BARS.e9,'#e8c86a',1.4,y,x);line(BARS.e21,'#b48cff',1.4,y,x);}
+if(on('tVwap'))line(BARS.vw,'#ffb454',1.4,y,x);
+/* levels */
+if(on('tLvl')&&LVL){lvl(LVL.cw,'#ff5470','CALL WALL',y,W,padR);lvl(LVL.pw,'#3ddc84','PUT WALL',y,W,padR);lvl(LVL.mp,'#c9a030','MAX PAIN',y,W,padR);}
+/* volume */
+const vTop=priceH+gap;let vmax=0;for(let i=0;i<n;i++)vmax=Math.max(vmax,V[i]);
+for(let i=0;i<n;i++){const h2=vmax?V[i]/vmax*volH:0;
+ctx.fillStyle=C[i]>=O[i]?'rgba(61,220,132,0.4)':'rgba(255,84,112,0.4)';
+ctx.fillRect(x(i)-bw/2,vTop+volH-h2,bw,h2);}
+ctx.fillStyle='#67769a';ctx.fillText('VOL',W-padR+4,vTop+10);
+/* RSI pane */
+let py=vTop+volH+gap;
+if(showR){pane(py,70,'RSI',W,padR);
+const ry=v=>py+8+(100-v)/100*(70-16);
+ctx.strokeStyle='rgba(255,180,84,0.35)';ctx.setLineDash([3,3]);
+ctx.beginPath();ctx.moveTo(padL,ry(70));ctx.lineTo(W-padR,ry(70));ctx.stroke();
+ctx.beginPath();ctx.moveTo(padL,ry(30));ctx.lineTo(W-padR,ry(30));ctx.stroke();ctx.setLineDash([]);
+ctx.strokeStyle='#e8c86a';ctx.lineWidth=1.4;ctx.beginPath();let s=false;
+for(let i=0;i<n;i++)if(BARS.rsi[i]!=null){if(!s){ctx.moveTo(x(i),ry(BARS.rsi[i]));s=true;}else ctx.lineTo(x(i),ry(BARS.rsi[i]));}
+ctx.stroke();py+=70+gap;}
+/* MACD pane */
+if(showM){pane(py,70,'MACD',W,padR);
+let mmax=0;for(let i=0;i<n;i++){if(BARS.macd.m[i]!=null)mmax=Math.max(mmax,Math.abs(BARS.macd.m[i]));if(BARS.macd.hist[i]!=null)mmax=Math.max(mmax,Math.abs(BARS.macd.hist[i]));}
+const my=v=>py+35-(v/(mmax||1))*27;
+for(let i=0;i<n;i++)if(BARS.macd.hist[i]!=null){
+ctx.fillStyle=BARS.macd.hist[i]>=0?'rgba(61,220,132,0.5)':'rgba(255,84,112,0.5)';
+const hh=my(0)-my(BARS.macd.hist[i]);ctx.fillRect(x(i)-bw/2,Math.min(my(0),my(BARS.macd.hist[i])),bw,Math.abs(hh));}
+mline(BARS.macd.m,'#e8c86a',my,x,n);mline(BARS.macd.sig,'#b48cff',my,x,n);}
+/* time axis */
+ctx.fillStyle='#67769a';ctx.font='9px -apple-system';ctx.textAlign='center';
+const step=Math.max(1,Math.floor(n/5));
+for(let i=0;i<n;i+=step){const d=new Date(T[i]*1000);
+const s=IV==='1d'?(d.getMonth()+1)+'/'+d.getDate():d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+ctx.fillText(s,x(i),priceH+10);}
+/* crosshair */
+if(CROSS!=null){const i=CROSS;
+ctx.strokeStyle='rgba(232,200,106,0.55)';ctx.setLineDash([4,3]);
+ctx.beginPath();ctx.moveTo(x(i),0);ctx.lineTo(x(i),Hpx);ctx.stroke();ctx.setLineDash([]);
+legend(i);}else legend(n-1);
+function line(arr,col,wd,yf,xf){ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.beginPath();let s=false;
+for(let i=0;i<n;i++)if(arr[i]!=null){if(!s){ctx.moveTo(xf(i),yf(arr[i]));s=true;}else ctx.lineTo(xf(i),yf(arr[i]));}ctx.stroke();}
+function mline(arr,col,yf,xf,nn){ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();let s=false;
+for(let i=0;i<nn;i++)if(arr[i]!=null){if(!s){ctx.moveTo(xf(i),yf(arr[i]));s=true;}else ctx.lineTo(xf(i),yf(arr[i]));}ctx.stroke();}
+function lvl(v,col,name,yf,Wd,pr){if(v==null)return;const yy=yf(v);if(yy<0||yy>priceH)return;
+ctx.strokeStyle=col;ctx.setLineDash([6,4]);ctx.lineWidth=1.2;
+ctx.beginPath();ctx.moveTo(padL,yy);ctx.lineTo(Wd-pr,yy);ctx.stroke();ctx.setLineDash([]);
+ctx.fillStyle=col;ctx.font='bold 8px -apple-system';ctx.textAlign='left';
+ctx.fillText(name+' $'+v,padL+4,yy-3);}
+function pane(top,h2,name,Wd,pr){ctx.strokeStyle='#141f38';
+ctx.beginPath();ctx.moveTo(padL,top);ctx.lineTo(Wd-pr,top);ctx.stroke();
+ctx.fillStyle='#67769a';ctx.font='9px -apple-system';ctx.textAlign='left';ctx.fillText(name,W-padR+4,top+12);}
+}
+function legend(i){const{T,O,H,L,C,V}=BARS;
+const d=new Date(T[i]*1000);const up=C[i]>=O[i];
+const ds=IV==='1d'?d.toLocaleDateString():d.toLocaleDateString()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+let s='<b>'+BARS.tk+'</b> '+ds+' · O '+n2(O[i])+' H '+n2(H[i])+' L '+n2(L[i])+' C <span class="'+(up?'u':'d')+'">'+n2(C[i])+'</span> · Vol '+(V[i]?(V[i]/1e6).toFixed(2)+'M':'—');
+s+='<br>';
+if(on('tEma'))s+='<span class="g">EMA9 '+n2(BARS.e9[i])+'</span> · EMA21 '+n2(BARS.e21[i])+' · ';
+if(on('tRsi'))s+='RSI '+n2(BARS.rsi[i],0)+' · ';
+if(on('tMacd'))s+='MACD '+n2(BARS.macd.m[i])+'/'+n2(BARS.macd.sig[i])+' · ';
+if(on('tLvl')&&LVL)s+='<span class="d">CW $'+n2(LVL.cw,0)+'</span> <span class="u">PW $'+n2(LVL.pw,0)+'</span> <span class="g">MP $'+n2(LVL.mp,0)+'</span>';
+document.getElementById('legend').innerHTML=s;}
+/* crosshair touch */
+function xToIdx(clientX){const r=cv.getBoundingClientRect();
+const W=r.width,padR=52,padL=4;const n=BARS.C.length;
+const cw=(W-padL-padR)/n;
+let i=Math.round((clientX-r.left-padL-cw/2)/cw);
+return Math.max(0,Math.min(n-1,i));}
+cv.addEventListener('touchstart',e=>{if(!BARS)return;CROSS=xToIdx(e.touches[0].clientX);draw();},{passive:true});
+cv.addEventListener('touchmove',e=>{if(!BARS)return;CROSS=xToIdx(e.touches[0].clientX);draw();},{passive:true});
+cv.addEventListener('touchend',()=>{setTimeout(()=>{CROSS=null;if(BARS)draw();},1400);},{passive:true});
+cv.addEventListener('mousemove',e=>{if(!BARS)return;CROSS=xToIdx(e.clientX);draw();});
+cv.addEventListener('mouseleave',()=>{CROSS=null;if(BARS)draw();});
+window.addEventListener('resize',()=>{if(BARS)draw();});
+loadAll();
+</script>
+</body></html>

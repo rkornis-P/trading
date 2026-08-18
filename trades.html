@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kornis Trades — Positions, Journal & Stats</title>
+<style>
+:root{--bg:#070c16;--panel:#0d1526;--panel2:#111c33;--line:#1d2b4a;--text:#dce4f2;--dim:#6b7a99;
+--gold:#c9a030;--gold-soft:#e8c86a;--green:#3ddc84;--red:#ff5470;--amber:#ffb454}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:14px 12px 90px;max-width:560px;margin:0 auto}
+.kicker{font-size:9.5px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700}
+h1{font-size:23px;font-weight:800;margin:2px 0 3px}
+.sub{font-size:11.5px;color:var(--dim);margin-bottom:14px}
+.sub a{color:var(--gold-soft);text-decoration:none;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 15px;margin-bottom:14px}
+h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:11px}
+label,.lbl{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+input,select,textarea{width:100%;background:#0a1120;border:1px solid var(--line);border-radius:9px;color:#fff;font-size:16px;padding:11px 12px;outline:none;font-family:inherit}
+input:focus{border-color:var(--gold)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.btn{width:100%;background:linear-gradient(135deg,#a07818,var(--gold),#e8c86a);color:#000;border:none;border-radius:10px;font-size:13px;font-weight:800;letter-spacing:.08em;padding:13px;cursor:pointer;margin:4px 0 10px}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--gold-soft)}
+.btn.small{width:auto;padding:9px 14px;font-size:11px;margin:0}
+.btn.danger{background:none;border:1px solid var(--red);color:var(--red)}
+.status{font-size:11.5px;color:var(--dim);background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:10px 12px;line-height:1.55}
+.dirbtn{display:flex;gap:8px;margin-bottom:10px}
+.dirbtn button{flex:1;background:#0a1120;border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:11px;font-weight:800;font-size:13px}
+.dirbtn button.onC{border-color:var(--green);color:var(--green)}
+.dirbtn button.onP{border-color:var(--red);color:var(--red)}
+.pos{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:11px}
+.pos-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.pos-tk{font-size:15px;font-weight:800}
+.pos-pl{font-size:15px;font-weight:800}
+.pos-sub{font-size:11px;color:var(--dim);line-height:1.5}
+.pos-verdict{margin-top:9px;font-size:12px;line-height:1.55;padding:9px 11px;border-radius:8px;background:#0a1120;border-left:3px solid var(--gold)}
+.pos-verdict.exit{border-left-color:var(--red)}
+.pos-verdict.scale{border-left-color:var(--amber)}
+.pos-verdict.hold{border-left-color:var(--green)}
+.pos-actions{display:flex;gap:8px;margin-top:10px}
+.up{color:var(--green)}.dn{color:var(--red)}.md{color:var(--amber)}.gd{color:var(--gold-soft)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.mcell{background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.mcell .mk{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.mcell .mv{font-size:16px;font-weight:800;margin-top:2px}
+.mcell .ms{font-size:10px;margin-top:1px;color:var(--dim)}
+.jrow{border-bottom:1px solid var(--line);padding:10px 2px;font-size:12px}
+.jrow .j1{display:flex;justify-content:space-between;font-weight:700}
+.jrow .j2{color:var(--dim);font-size:10.5px;margin-top:2px}
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:40}
+.tabbar button{flex:1;background:none;border:none;color:var(--dim);font-size:10px;padding:9px 0 max(9px, env(safe-area-inset-bottom));cursor:pointer}
+.tabbar button .ico{display:block;font-size:17px;margin-bottom:2px}
+.tabbar button.active{color:var(--gold-soft)}
+.sec{display:none}.sec.on{display:block}
+.small-note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:6px}
+</style></head><body>
+
+<div class="kicker">Kornis Protocol · Trades · v1.0</div>
+<h1>Trades <span style="color:var(--gold-soft)">⚑</span></h1>
+<div class="sub">Open positions with exit verdicts · closed journal · your real statistics. <a href="hub.html">← COMMAND</a></div>
+
+<!-- OPEN -->
+<div class="sec on" id="sec-open">
+  <div class="card">
+    <h2>Log a New Position</h2>
+    <div class="dirbtn"><button id="dC" onclick="setDir('C')">CALL</button><button id="dP" onclick="setDir('P')">PUT</button></div>
+    <div class="row3">
+      <div><label>Ticker</label><input id="fTk" style="text-transform:uppercase" autocapitalize="characters" placeholder="SPCX"></div>
+      <div><label>Strike</label><input id="fK" type="number" inputmode="decimal" placeholder="140"></div>
+      <div><label>Expiry</label><input id="fExp" type="date"></div>
+    </div>
+    <div class="row3">
+      <div><label>Entry $</label><input id="fEntry" type="number" step="0.01" inputmode="decimal" placeholder="3.17"></div>
+      <div><label># Contracts</label><input id="fQty" type="number" inputmode="numeric" placeholder="2"></div>
+      <div><label>Setup Tier</label><select id="fTier"><option>Tier 1</option><option selected>Tier 2</option><option>Tier 3</option><option>Untagged</option></select></div>
+    </div>
+    <div style="margin-bottom:10px"><label>Notes / setup (optional)</label><input id="fNotes" placeholder="e.g. bullish divergence + squeeze, Path 2"></div>
+    <button class="btn" onclick="addTrade()">ADD POSITION</button>
+    <div class="status" id="addStatus">Log the fill right after entry — cost basis is contracts × price × 100.</div>
+  </div>
+  <div class="card">
+    <h2>Open Positions <span id="openCount" style="color:var(--dim)"></span></h2>
+    <button class="btn ghost" id="refBtn" onclick="refreshAll()">↻ PULL CURRENT PRICES &amp; VERDICTS</button>
+    <div id="openList"><div class="status">No open positions. Log your next fill above.</div></div>
+  </div>
+</div>
+
+<!-- CLOSED -->
+<div class="sec" id="sec-closed">
+  <div class="card">
+    <h2>Closed Trades <span id="closedCount" style="color:var(--dim)"></span></h2>
+    <div id="closedList"><div class="status">Nothing closed yet.</div></div>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <button class="btn ghost" onclick="doExport()">COPY BACKUP TO CLIPBOARD</button>
+    <div style="margin:8px 0"><label>Restore: paste a backup and tap import</label><textarea id="impBox" style="height:60px;font-size:11px" placeholder="paste backup JSON"></textarea></div>
+    <button class="btn ghost" onclick="doImport()">IMPORT</button>
+    <div class="status" id="bkStatus">Trades live on this device. Back up occasionally — a copied backup pastes into any device.</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="sec" id="sec-stats">
+  <div class="card">
+    <h2>Your Numbers</h2>
+    <div id="statsOut"><div class="status">Close a few trades and your real statistics build here: win rate, expectancy, calls vs puts, tier performance.</div></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <button class="active" onclick="sec('open',this)"><span class="ico">◍</span>Open</button>
+  <button onclick="sec('closed',this)"><span class="ico">✓</span>Closed</button>
+  <button onclick="sec('stats',this)"><span class="ico">Σ</span>Stats</button>
+  <button onclick="location.href='hub.html'"><span class="ico">K</span>Command</button>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const KEY='kTrades_v1';
+function n2(v,d){return v==null||isNaN(v)?'—':(+v).toFixed(d==null?2:d);}
+function sec(s,btn){document.querySelectorAll('.sec').forEach(e=>e.classList.remove('on'));
+document.getElementById('sec-'+s).classList.add('on');
+document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+if(btn)btn.classList.add('active');window.scrollTo(0,0);
+if(s==='stats')renderStats();if(s==='closed')renderClosed();}
+let DIR='C';
+function setDir(d){DIR=d;
+document.getElementById('dC').className=d==='C'?'onC':'';
+document.getElementById('dP').className=d==='P'?'onP':'';}
+setDir('C');
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return[];}}
+function save(a){localStorage.setItem(KEY,JSON.stringify(a));}
+function addTrade(){
+const tk=document.getElementById('fTk').value.trim().toUpperCase();
+const k=parseFloat(document.getElementById('fK').value);
+const exp=document.getElementById('fExp').value;
+const entry=parseFloat(document.getElementById('fEntry').value);
+const qty=parseInt(document.getElementById('fQty').value);
+const st=document.getElementById('addStatus');
+if(!tk||!k||!exp||!entry||!qty){st.innerHTML='<b>Missing:</b> ticker, strike, expiry, entry price, and contracts are all required.';return;}
+const a=load();
+a.push({id:Date.now(),tk,type:DIR,strike:k,expiry:exp,entry,qty,
+tier:document.getElementById('fTier').value,notes:document.getElementById('fNotes').value.trim(),
+opened:new Date().toISOString().slice(0,10),status:'open',cur:null,curT:null});
+save(a);
+['fTk','fK','fEntry','fQty','fNotes'].forEach(i=>document.getElementById(i).value='');
+st.innerHTML='Logged. Cost basis $'+(entry*qty*100).toLocaleString(undefined,{maximumFractionDigits:0})+'. It appears below — pull verdicts anytime.';
+renderOpen();}
+function dteOf(t){return Math.ceil((new Date(t.expiry+'T16:00:00')-new Date())/86400000);}
+function plOf(t,price){return (price-t.entry)*t.qty*100;}
+function verdict(t,cur,theta){
+const dte=dteOf(t);
+const gainPct=cur!=null?(cur-t.entry)/t.entry*100:null;
+const per=[];let cls='hold',head='HOLD';
+if(dte<=0)return{cls:'exit',head:'EXPIRED / EXPIRING',body:'This contract is at expiration. Close or exercise decisions are due NOW.'};
+if(gainPct!=null){
+if(gainPct>=100){cls='scale';head='SCALE OUT — DOUBLE';per.push('Up '+gainPct.toFixed(0)+'%. Round-tripping a double is the cardinal sin — take at least half off and let the rest ride on house money.');}
+else if(gainPct>=50){cls='scale';head='SCALE / TRAIL';per.push('Up '+gainPct.toFixed(0)+'%. Each additional day is bought with decay — scale into strength or trail a stop at breakeven+.');}
+else if(gainPct<=-40){cls='exit';head='THESIS-WRONG CHECK';per.push('Down '+Math.abs(gainPct).toFixed(0)+'%. If the level that justified this trade has broken, this is the exit you promised yourself. If the thesis is intact, say why in one sentence — or close.');}
+else per.push((gainPct>=0?'Up ':'Down ')+Math.abs(gainPct).toFixed(0)+'% — inside normal range.');}
+if(dte<=7){cls='exit';head=head==='HOLD'?'DECAY CLIFF':head;per.push('Only '+dte+' DTE — theta is steepest here. ATM/OTM longs should be gone before this window.');}
+else if(dte<=21){if(cls==='hold')cls='scale';per.push(dte+' DTE — inside the final-21-day decay zone. Plan the exit, don\u2019t discover it.');}
+if(theta!=null&&theta<0)per.push('Decay ≈ $'+Math.abs(theta*t.qty*100).toFixed(0)+'/day across the position at current pricing.');
+const wknd=new Date().getDay()===5;
+if(wknd&&dte<=14)per.push('Friday: weekend decay on a short-dated contract is priced in by the close — exiting today beats Monday regret if the move has stalled.');
+return{cls,head,body:per.join(' ')};}
+function renderOpen(){
+const a=load().filter(t=>t.status==='open');
+document.getElementById('openCount').textContent=a.length?('· '+a.length):'';
+const el=document.getElementById('openList');
+if(!a.length){el.innerHTML='<div class="status">No open positions. Log your next fill above.</div>';return;}
+el.innerHTML=a.map(t=>{
+const dte=dteOf(t);
+const cur=t.cur;const pl=cur!=null?plOf(t,cur):null;
+const v=verdict(t,cur,t.theta);
+return '<div class="pos"><div class="pos-top">'
++'<span class="pos-tk">'+t.tk+' $'+t.strike+' '+(t.type==='C'?'CALL':'PUT')+'</span>'
++'<span class="pos-pl '+(pl==null?'md':pl>=0?'up':'dn')+'">'+(pl==null?'pull ↻':(pl>=0?'+$':'-$')+Math.abs(pl).toLocaleString(undefined,{maximumFractionDigits:0}))+'</span></div>'
++'<div class="pos-sub">'+t.qty+' @ $'+n2(t.entry)+' → '+(cur!=null?'now $'+n2(cur)+(t.curT?' ('+t.curT+')':''):'current unknown')+' · '+dte+' DTE · '+t.tier+(t.notes?' · '+t.notes:'')+'</div>'
++'<div class="pos-verdict '+v.cls+'"><b>'+v.head+'.</b> '+v.body+'</div>'
++'<div class="pos-actions">'
++'<button class="btn small ghost" onclick="closePrompt('+t.id+')">CLOSE…</button>'
++'<button class="btn small ghost" onclick="editCur('+t.id+')">SET PRICE</button>'
++'<button class="btn small danger" onclick="delTrade('+t.id+')">DELETE</button>'
++'</div></div>';}).join('');}
+function editCur(id){const p=prompt('Current option price (per share, e.g. 4.15):');
+if(p==null)return;const v=parseFloat(p);if(!isFinite(v))return;
+const a=load();const t=a.find(x=>x.id===id);if(!t)return;
+t.cur=v;t.curT='manual '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});save(a);renderOpen();}
+function closePrompt(id){const p=prompt('Exit price (per share):');
+if(p==null)return;const v=parseFloat(p);if(!isFinite(v))return;
+const a=load();const t=a.find(x=>x.id===id);if(!t)return;
+t.status='closed';t.exit=v;t.closed=new Date().toISOString().slice(0,10);
+t.pl=plOf(t,v);save(a);renderOpen();renderClosed();}
+function delTrade(id){if(!confirm('Delete this entry permanently?'))return;
+save(load().filter(x=>x.id!==id));renderOpen();renderClosed();}
+/* pull current prices from the chain */
+async function refreshAll(){
+const btn=document.getElementById('refBtn');btn.disabled=true;btn.textContent='PULLING…';
+const a=load();const open=a.filter(t=>t.status==='open');
+const tks=[...new Set(open.map(t=>t.tk))];
+for(const tk of tks){
+try{const r=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));const j=await r.json();
+const raw=j?.data?.options||[];
+for(const t of open.filter(x=>x.tk===tk)){
+const expStr=t.expiry.slice(2,4)+t.expiry.slice(5,7)+t.expiry.slice(8,10);
+const kStr=String(Math.round(t.strike*1000)).padStart(8,'0');
+const row=raw.find(o=>(o.option||'').endsWith(expStr+t.type+kStr));
+if(row&&(+row.bid>0||+row.ask>0)){t.cur=((+row.bid||0)+(+row.ask||0))/2;
+t.curT='live '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+t.theta=+row.theta||null;}}
+}catch(e){}}
+save(a);renderOpen();
+btn.disabled=false;btn.textContent='↻ PULL CURRENT PRICES & VERDICTS';}
+/* closed + stats */
+function renderClosed(){
+const a=load().filter(t=>t.status==='closed').sort((x,y)=>y.id-x.id);
+document.getElementById('closedCount').textContent=a.length?('· '+a.length):'';
+const el=document.getElementById('closedList');
+if(!a.length){el.innerHTML='<div class="status">Nothing closed yet.</div>';return;}
+el.innerHTML=a.map(t=>'<div class="jrow"><div class="j1"><span>'+t.tk+' $'+t.strike+' '+t.type
++'</span><span class="'+(t.pl>=0?'up':'dn')+'">'+(t.pl>=0?'+$':'-$')+Math.abs(t.pl).toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>'
++'<div class="j2">'+t.opened+' → '+t.closed+' · '+t.qty+' @ $'+n2(t.entry)+' → $'+n2(t.exit)+' · '+t.tier+(t.notes?' · '+t.notes:'')
++' &nbsp;<a href="javascript:delTrade('+t.id+')" style="color:var(--red)">✕</a></div></div>').join('');}
+function renderStats(){
+const a=load().filter(t=>t.status==='closed');
+const el=document.getElementById('statsOut');
+if(a.length<1){el.innerHTML='<div class="status">Close a few trades and your real statistics build here: win rate, expectancy, calls vs puts, tier performance.</div>';return;}
+const wins=a.filter(t=>t.pl>0),losses=a.filter(t=>t.pl<=0);
+const tot=a.reduce((s,t)=>s+t.pl,0);
+const aw=wins.length?wins.reduce((s,t)=>s+t.pl,0)/wins.length:0;
+const al=losses.length?losses.reduce((s,t)=>s+t.pl,0)/losses.length:0;
+const exp=tot/a.length;
+const best=Math.max(...a.map(t=>t.pl)),worst=Math.min(...a.map(t=>t.pl));
+function grp(f,label){const g=a.filter(f);if(!g.length)return '';
+const w=g.filter(t=>t.pl>0).length;
+return '<div class="mcell"><div class="mk">'+label+'</div><div class="mv '+(g.reduce((s,t)=>s+t.pl,0)>=0?'up':'dn')+'">$'+g.reduce((s,t)=>s+t.pl,0).toLocaleString(undefined,{maximumFractionDigits:0})+'</div><div class="ms">'+g.length+' trades · '+Math.round(w/g.length*100)+'% win</div></div>';}
+el.innerHTML='<div class="mgrid">'
++'<div class="mcell"><div class="mk">Total P/L</div><div class="mv '+(tot>=0?'up':'dn')+'">'+(tot>=0?'+$':'-$')+Math.abs(tot).toLocaleString(undefined,{maximumFractionDigits:0})+'</div><div class="ms">'+a.length+' closed trades</div></div>'
++'<div class="mcell"><div class="mk">Win Rate</div><div class="mv gd">'+Math.round(wins.length/a.length*100)+'%</div><div class="ms">'+wins.length+'W / '+losses.length+'L</div></div>'
++'<div class="mcell"><div class="mk">Avg Win / Avg Loss</div><div class="mv">$'+aw.toFixed(0)+' / $'+al.toFixed(0)+'</div><div class="ms">'+(al!==0?'ratio '+Math.abs(aw/al).toFixed(1)+':1':'')+'</div></div>'
++'<div class="mcell"><div class="mk">Expectancy</div><div class="mv '+(exp>=0?'up':'dn')+'">$'+exp.toFixed(0)+'</div><div class="ms">per trade, your real edge</div></div>'
++'<div class="mcell"><div class="mk">Best / Worst</div><div class="mv">$'+best.toFixed(0)+' / $'+worst.toFixed(0)+'</div><div class="ms">single trade extremes</div></div>'
++grp(t=>t.type==='C','Calls')+grp(t=>t.type==='P','Puts')
++grp(t=>t.tier==='Tier 1','Tier 1')+grp(t=>t.tier==='Tier 2','Tier 2')+grp(t=>t.tier==='Tier 3','Tier 3')
++'</div><div class="small-note">Expectancy is the number that matters: average dollars per trade across everything. Positive and stable across 30+ trades = a real edge. The tier breakdown shows whether your discipline (only Tier 1/2 setups) is where the money actually comes from.</div>';}
+function doExport(){const s=JSON.stringify(load());
+navigator.clipboard?.writeText(s).then(()=>{document.getElementById('bkStatus').innerHTML='Backup copied — paste it somewhere safe (notes app, email to yourself).';})
+.catch(()=>{document.getElementById('impBox').value=s;document.getElementById('bkStatus').innerHTML='Clipboard blocked — backup placed in the box above; copy it manually.';});}
+function doImport(){try{const a=JSON.parse(document.getElementById('impBox').value);
+if(!Array.isArray(a))throw 0;save(a);renderOpen();renderClosed();
+document.getElementById('bkStatus').innerHTML='Imported '+a.length+' trades.';}
+catch(e){document.getElementById('bkStatus').innerHTML='That doesn\u2019t look like a valid backup.';}}
+renderOpen();
+</script>
+</body></html>
