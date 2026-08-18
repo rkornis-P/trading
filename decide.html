@@ -567,6 +567,7 @@ async function runScan(){
     const all=STOCKS.concat(FUTS.map(f=>f[0]));
     const r=await fetch(RELAY+'/?scan='+encodeURIComponent(all.join(',')));
     const j=await r.json();const data=j.scan||{};
+    if(!Object.keys(data).length)throw new Error('worker returned no data — make sure the v4.1 worker is pasted and deployed');
     const rows=[];
     for(const s of STOCKS){const d=data[s];const sc=d?scoreSym(d.c):null;
     if(sc&&sc.score>=2)rows.push({tk:s,last:d.last??d.c[d.c.length-1],...sc});}
