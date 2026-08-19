@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kornis Indicator Checklist</title>
+<style>
+:root{--bg:#05080f;--panel:#0b1220;--panel2:#0f1728;--line:#1b2946;--text:#dce4f2;--dim:#67769a;
+--gold:#c9a030;--gold-soft:#e8c86a;--green:#3ddc84;--red:#ff5470;--amber:#ffb454}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:14px 12px;max-width:560px;margin:0 auto}
+header{padding:16px 0;border-bottom:2px solid var(--gold);margin-bottom:16px}
+h1{font-size:20px;font-weight:800;color:#fff;margin-bottom:2px}
+.sub{font-size:11px;color:var(--dim)}
+.close{position:absolute;top:14px;right:12px;background:none;border:none;color:var(--gold-soft);font-size:24px;cursor:pointer}
+
+.section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.section h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:10px}
+
+.indicator{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.indicator:last-child{border-bottom:none}
+.ind-name{font-size:11.5px;font-weight:600;color:#fff}
+.ind-sub{font-size:10px;color:var(--dim);margin-top:2px}
+.ind-values{text-align:right}
+.ind-current{font-size:13px;font-weight:700;margin-bottom:3px}
+.ind-target{font-size:10px;color:var(--dim)}
+.badge{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.badge.pass{background:var(--green)}.badge.warn{background:var(--amber)}.badge.fail{background:var(--red)}
+
+.greeks-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.greek-cell{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;text-align:center}
+.greek-label{font-size:9.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
+.greek-value{font-size:15px;font-weight:700;color:var(--gold-soft)}
+.greek-status{font-size:9px;color:var(--dim);margin-top:3px}
+
+.thesis-check{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:12px;margin-top:10px}
+.thesis-check label{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#fff;margin:0;cursor:pointer}
+.thesis-check input{width:18px;height:18px;cursor:pointer}
+
+.verdict{margin-top:16px;padding:14px;border-radius:8px;border:1px solid;text-align:center;font-size:13px;font-weight:600}
+.verdict.aligned{background:#10281C;border-color:var(--green);color:var(--green)}
+.verdict.caution{background:#2B2210;border-color:var(--amber);color:var(--amber)}
+.verdict.misaligned{background:#2C130D;border-color:var(--red);color:var(--red)}
+
+.note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:10px;padding:10px;background:var(--panel2);border-radius:8px;border-left:2px solid var(--gold)}
+</style>
+</head>
+<body>
+
+<button class="close" onclick="window.close()">✕</button>
+<header>
+  <h1>Indicator Checklist <span style="color:var(--gold-soft)">✓</span></h1>
+  <div class="sub">Real-time alignment of 6 indicators + Greeks against your intended direction.</div>
+</header>
+
+<div id="checklist"></div>
+
+<script>
+// Get parameters from parent window or localStorage
+const params=new URLSearchParams(window.location.search);
+const data={
+  direction:params.get('dir')||'call',
+  price:parseFloat(params.get('price'))||145,
+  iv:parseFloat(params.get('iv'))||45,
+  rsi:parseFloat(params.get('rsi'))||47,
+  macdLine:parseFloat(params.get('macdLine'))||-0.25,
+  macdSignal:parseFloat(params.get('macdSignal'))||-0.20,
+  bbPct:parseFloat(params.get('bbPct'))||41,
+  momentum:parseFloat(params.get('momentum'))||-0.19,
+  delta:parseFloat(params.get('delta'))||0.45,
+  theta:parseFloat(params.get('theta'))||-0.08,
+  vega:parseFloat(params.get('vega'))||0.22,
+  yen:parseFloat(params.get('yen'))||159.60,
+  path2Trigger:159
+};
+
+function render(){
+  const isCall=data.direction==='call';
+  const targets={
+    rsi:isCall?{min:50,max:100}:{min:0,max:50},
+    macd:isCall?{min:0}:{max:0},
+    bbPct:isCall?{min:70}:{max:30},
+    momentum:isCall?{min:0}:{max:0},
+    delta:isCall?{min:0.35,max:0.70}:{min:-0.70,max:-0.35},
+    theta:isCall?{max:-0.08}:{max:-0.08},
+    vega:{min:0.15}
+  };
+  
+  function check(val,target){
+    if(!target)return null;
+    if(target.min!=null&&val<target.min)return'fail';
+    if(target.max!=null&&val>target.max)return'fail';
+    return'pass';
+  }
+  function formatTarget(t){
+    if(t.min!=null&&t.max!=null)return t.min+' to '+t.max;
+    if(t.min!=null)return'>'+t.min;
+    if(t.max!=null)return'<'+t.max;
+    return'—';
+  }
+  
+  let html=`
+    <div class="section">
+      <h2>TECHNICAL INDICATORS</h2>
+      <div class="indicator">
+        <div><div class="ind-name">RSI (14)</div><div class="ind-sub">Momentum strength</div></div>
+        <div class="ind-values">
+          <div class="ind-current"><span class="badge ${check(data.rsi,targets.rsi)}"></span>${data.rsi.toFixed(1)}</div>
+          <div class="ind-target">Target: ${formatTarget(targets.rsi)}</div>
+        </div>
+      </div>
+      <div class="indicator">
+        <div><div class="ind-name">MACD Line vs Signal</div><div class="ind-sub">Momentum direction</div></div>
+        <div class="ind-values">
+          <div class="ind-current"><span class="badge ${check(data.macdLine>data.macdSignal?(isCall?0:null):(isCall?null:0))}"></span>${data.macdLine.toFixed(2)}/${data.macdSignal.toFixed(2)}</div>
+          <div class="ind-target">${isCall?'MACD > Signal':'MACD < Signal'}</div>
+        </div>
+      </div>
+      <div class="indicator">
+        <div><div class="ind-name">Bollinger %B (20,2)</div><div class="ind-sub">Position in bands</div></div>
+        <div class="ind-values">
+          <div class="ind-current"><span class="badge ${check(data.bbPct,targets.bbPct)}"></span>${data.bbPct.toFixed(1)}%</div>
+          <div class="ind-target">Target: ${formatTarget(targets.bbPct)}</div>
+        </div>
+      </div>
+      <div class="indicator">
+        <div><div class="ind-name">Momentum (12)</div><div class="ind-sub">Rate of change</div></div>
+        <div class="ind-values">
+          <div class="ind-current"><span class="badge ${check(data.momentum,targets.momentum)}"></span>${data.momentum.toFixed(2)}</div>
+          <div class="ind-target">${isCall?'Positive':'Negative'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>OPTION GREEKS</h2>
+      <div class="greeks-grid">
+        <div class="greek-cell">
+          <div class="greek-label">Delta</div>
+          <div class="greek-value" style="color:${check(data.delta,targets.delta)==='pass'?'var(--green)':'var(--red)'}">${data.delta.toFixed(2)}</div>
+          <div class="greek-status">Target: ${formatTarget(targets.delta)}</div>
+        </div>
+        <div class="greek-cell">
+          <div class="greek-label">Theta ($/day)</div>
+          <div class="greek-value" style="color:var(--amber)">${data.theta.toFixed(3)}</div>
+          <div class="greek-status">Daily decay</div>
+        </div>
+        <div class="greek-cell">
+          <div class="greek-label">Vega ($/IV%)</div>
+          <div class="greek-value" style="color:${check(data.vega,targets.vega)==='pass'?'var(--green)':'var(--amber)'}">${data.vega.toFixed(2)}</div>
+          <div class="greek-status">Target: ${formatTarget(targets.vega)}</div>
+        </div>
+        <div class="greek-cell">
+          <div class="greek-label">Gamma</div>
+          <div class="greek-value" style="color:var(--blue)">—</div>
+          <div class="greek-status">Delta accelerator</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>MACRO GATES</h2>
+      <div class="thesis-check">
+        <label><input type="checkbox" id="path2" ${data.yen>=data.path2Trigger?'checked':''}> Path 2 Active (JPY ≥ ${data.path2Trigger})</label>
+        <div class="note" style="margin-top:6px;margin-bottom:0">USD/JPY: <b>${data.yen.toFixed(2)}</b> ${data.yen>=data.path2Trigger?'🔴 TRIGGER LIVE':'🟡 '+((data.path2Trigger-data.yen).toFixed(2))+' below'}</div>
+      </div>
+      <div class="thesis-check" style="margin-top:10px">
+        <label><input type="checkbox" id="thesis"> Thesis remains intact</label>
+      </div>
+    </div>
+
+    <div id="verdict" class="verdict aligned">
+      ✓ <span id="verdictText">75% Aligned · Ready to run the full gates</span>
+    </div>
+
+    <div class="note">
+      <b>How to use:</b> All values auto-filled from your form. Indicators not hitting targets don't fail the trade — they just tell you the setup is weaker than ideal. The full 11-gate discipline in pretrade.html makes the final call.
+    </div>
+  `;
+  
+  document.getElementById('checklist').innerHTML=html;
+  
+  // Verdict logic
+  const passCount=[
+    check(data.rsi,targets.rsi),
+    data.macdLine>data.macdSignal?(isCall?'pass':null):(isCall?null:'pass'),
+    check(data.bbPct,targets.bbPct),
+    check(data.momentum,targets.momentum),
+    check(data.delta,targets.delta),
+    check(data.vega,targets.vega)
+  ].filter(x=>x==='pass').length;
+  
+  const pct=Math.round(passCount/6*100);
+  let verdictCls='misaligned',verdictMsg='';
+  if(pct>=75){verdictCls='aligned';verdictMsg='✓ '+pct+'% Aligned · Ready to run the full gates';}
+  else if(pct>=50){verdictCls='caution';verdictMsg='⚠ '+pct+'% Aligned · Setup is weaker than ideal';}
+  else{verdictCls='misaligned';verdictMsg='✕ '+pct+'% Aligned · Strong headwinds';}
+  
+  const verdictEl=document.getElementById('verdict');
+  verdictEl.className='verdict '+verdictCls;
+  document.getElementById('verdictText').textContent=verdictMsg;
+}
+
+render();
+</script>
+</body>
+</html>
