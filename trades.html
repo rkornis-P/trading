@@ -64,6 +64,23 @@ input:focus{border-color:var(--gold)}
 #modal input{margin-bottom:10px}
 #modal .btns{display:flex;gap:10px}
 #modal .btns button{flex:1}
+
+/* Chat for Position Review */
+#chatWrapPos{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#chatWrapPos.open{display:flex}
+#chatModalPos{background:var(--panel);border:1px solid var(--red);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;overflow:hidden}
+#chatHeaderPos{padding:16px;border-bottom:1px solid var(--line);flex-shrink:0}
+#chatHeaderPos h3{font-size:12px;letter-spacing:.12em;color:var(--red);text-transform:uppercase;margin:0}
+#chatMessagesPos{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.chatMsgPos{max-width:85%;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word}
+.chatMsgPos.user{align-self:flex-end;background:linear-gradient(135deg,#8a1414,#d94141);color:#fff;border-bottom-right-radius:3px;font-weight:500}
+.chatMsgPos.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--text)}
+.chatMsgPos.ai b{color:var(--red)}
+#chatInputPos{padding:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0;background:var(--panel2)}
+#chatInputPos textarea{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:#fff;padding:8px 10px;font-size:13px;resize:none;height:40px;font-family:inherit;outline:none}
+#chatInputPos textarea:focus{border-color:var(--red)}
+#chatInputPos button{flex:none;width:40px;height:40px;background:var(--red);border:none;border-radius:8px;color:#fff;font-weight:800;cursor:pointer;font-size:14px}
+#chatInputPos button:disabled{opacity:.5;cursor:wait}
 </style>
 </head><body>
 
@@ -94,7 +111,22 @@ input:focus{border-color:var(--gold)}
   <div class="card">
     <h2>Open Positions <span id="openCount" style="color:var(--dim)"></span></h2>
     <button class="btn ghost" id="refBtn" onclick="refreshAll()">↻ PULL CURRENT PRICES & VERDICTS</button>
+    <button class="btn ghost" style="border-color:var(--red);color:var(--red)" id="reviewBtn" onclick="openChatPos()" style="margin-top:6px">🤖 POSITION REVIEW</button>
     <div id="openList"><div class="status">No open positions. Log your next fill above.</div></div>
+  </div>
+</div>
+
+<!-- Claude Position Review Chat Modal -->
+<div id="chatWrapPos" onclick="if(event.target===this)closeChatPos()">
+  <div id="chatModalPos" onclick="event.stopPropagation()">
+    <div id="chatHeaderPos">
+      <h3>Claude Position Review</h3>
+    </div>
+    <div id="chatMessagesPos"></div>
+    <div id="chatInputPos">
+      <textarea id="chatTextareaPos" placeholder="Ask about your positions… (e.g., 'Should I scale out?')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatPos();}"></textarea>
+      <button id="chatBtnPos" onclick="sendChatPos()">➤</button>
+    </div>
   </div>
 </div>
 
@@ -363,6 +395,66 @@ function doImport(){try{const a=JSON.parse(document.getElementById('impBox').val
   if(!Array.isArray(a))throw 0;save(a);renderOpen();renderClosed();
   document.getElementById('bkStatus').innerHTML='Imported '+a.length+' trades.';
 }catch(e){document.getElementById('bkStatus').innerHTML='That doesn\'t look like a valid backup.';}}
+
+/* ================= CLAUDE POSITION REVIEW ================= */
+let CHAT_HISTORY_POS=[];
+function openChatPos(){
+  const open=load().filter(t=>t.status==='open');
+  if(!open.length){alert('No open positions to review.');return;}
+  CHAT_HISTORY_POS=[];
+  document.getElementById('chatMessagesPos').innerHTML='';
+  document.getElementById('chatTextareaPos').value='';
+  document.getElementById('chatWrapPos').classList.add('open');
+  const posStr=open.map(t=>`${t.tk} $${t.strike} ${t.type==='C'?'CALL':'PUT'} @ $${n2(t.entry)} (${t.qty}x, P/L: ${t.cur!=null?'$'+(plOf(t,t.cur)).toLocaleString():' unknown'}, Target: ${t.target}, Stop: ${t.stop})`).join('; ');
+  const greeting='Open positions: '+posStr+'. What\'s your read? "Should I scale?" "Is this Path 2?" etc.';
+  addChatMsgPos('ai',greeting);
+}
+function closeChatPos(){
+  document.getElementById('chatWrapPos').classList.remove('open');
+  CHAT_HISTORY_POS=[];
+}
+function addChatMsgPos(role,text){
+  const msg=document.createElement('div');
+  msg.className='chatMsgPos '+role;
+  msg.innerHTML=role==='ai'?text.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'):text;
+  document.getElementById('chatMessagesPos').appendChild(msg);
+  document.getElementById('chatMessagesPos').scrollTop=document.getElementById('chatMessagesPos').scrollHeight;
+}
+async function sendChatPos(){
+  const txt_input=document.getElementById('chatTextareaPos').value.trim();
+  if(!txt_input)return;
+  addChatMsgPos('user',txt_input);
+  document.getElementById('chatTextareaPos').value='';
+  document.getElementById('chatBtnPos').disabled=true;
+  const typing=document.createElement('div');typing.className='chatTyping';typing.textContent='Claude is thinking…';
+  document.getElementById('chatMessagesPos').appendChild(typing);
+  CHAT_HISTORY_POS.push({role:'user',content:txt_input});
+  try{
+    const open=load().filter(t=>t.status==='open');
+    const posCtx=open.map(t=>({
+      tk:t.tk,type:t.type,strike:t.strike,entry:n2(t.entry),qty:t.qty,dte:dteOf(t),
+      current:t.cur?n2(t.cur):null,pl:t.cur?plOf(t,t.cur):null,theta:t.theta?n2(t.theta):null,
+      target:t.target,stop:t.stop,timeStop:t.timeStop,notes:t.notes
+    }));
+    const systemPrompt=`You are Claude, reviewing open option positions for a day trader (Rick). He holds 1-3 day positions, scalps into strength, exits on target/stop hits.
+
+OPEN POSITIONS:
+${JSON.stringify(posCtx,null,2)}
+
+Analyze the positions: What's the plan? Scale out? Hold? Risk management calls? Be terse and blunt — is he sized right? Is he aligned with the macro (Path 1 vs Path 2)?`;
+    const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,system:systemPrompt,messages:CHAT_HISTORY_POS})});
+    const j=await r.json();
+    if(j.error)throw new Error(j.error.message||'API error');
+    const reply=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()||'(no reply)';
+    typing.remove();addChatMsgPos('ai',reply);
+    CHAT_HISTORY_POS.push({role:'assistant',content:reply});
+  }catch(e){
+    typing.remove();addChatMsgPos('ai','<b>Failed:</b> '+(e.message||'connection')+'. Check relay.');
+  }finally{
+    document.getElementById('chatBtnPos').disabled=false;
+  }
+}
 
 renderOpen();
 </script>

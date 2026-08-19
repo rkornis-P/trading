@@ -60,6 +60,24 @@
   .greeks-cell.itm{background:rgba(47,182,115,.1);border-radius:3px}
   .greeks-status{font-size:10.5px;color:var(--dim);margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
   
+  /* Chat Modal */
+  #chatWrap{display:none;position:fixed;inset:0;background:rgba(4,8,16,.78);z-index:100;align-items:flex-end;justify-content:center}
+  #chatWrap.open{display:flex}
+  #chatModal{background:var(--panel);border:1px solid var(--gold);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;overflow:hidden}
+  #chatHeader{padding:16px;border-bottom:1px solid var(--line);flex-shrink:0}
+  #chatHeader h3{font-size:12px;letter-spacing:.12em;color:var(--gold-soft);text-transform:uppercase;margin:0}
+  #chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .chatMsg{max-width:85%;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word}
+  .chatMsg.user{align-self:flex-end;background:linear-gradient(135deg,#8a6a14,#c9a030);color:#0a0a0a;border-bottom-right-radius:3px;font-weight:500}
+  .chatMsg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--text)}
+  .chatMsg.ai b{color:var(--gold-soft)}
+  .chatTyping{font-size:11px;color:var(--dim);padding:6px 12px;font-style:italic}
+  #chatInput{padding:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0;background:var(--panel2)}
+  #chatInput textarea{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:#fff;padding:8px 10px;font-size:13px;resize:none;height:40px;font-family:inherit;outline:none}
+  #chatInput textarea:focus{border-color:var(--gold)}
+  #chatInput button{flex:none;width:40px;height:40px;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:800;cursor:pointer;font-size:14px}
+  #chatInput button:disabled{opacity:.5;cursor:wait}
+  
   #modalWrap{display:none;position:fixed;inset:0;background:rgba(4,8,16,.78);z-index:100;align-items:flex-end;justify-content:center}
   #modalWrap.open{display:flex}
   #modal{background:var(--panel);border:1px solid var(--gold);border-bottom:none;border-radius:16px 16px 0 0;max-width:640px;width:100%;max-height:75vh;overflow-y:auto;padding:22px 20px 34px}
@@ -102,6 +120,8 @@
       <div class="greeks-matrix" id="greeksMatrix"></div>
       <div class="greeks-status" id="greeksNote"></div>
     </div>
+    
+    <button class="gx-btn" onclick="openChat()" style="background:var(--panel2);border-color:var(--gold);color:#fff;margin-top:12px">🤖 CLAUDE REVIEW</button>
   </div>
 
   <div class="card">
@@ -157,6 +177,20 @@
     <div style="margin-top:16px"><label><input type="checkbox" id="sizing" style="width:auto"> Position is appropriately sized (can afford a 100% loss as a shrug, not a wound)</label></div>
   </div>
 
+</div>
+
+<!-- Claude Chat Modal -->
+<div id="chatWrap" onclick="if(event.target===this)closeChat()">
+  <div id="chatModal" onclick="event.stopPropagation()">
+    <div id="chatHeader">
+      <h3>Claude Review — Setup Analysis</h3>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="chatInput">
+      <textarea id="chatTextarea" placeholder="Ask about this setup… (e.g., 'Does this match my thesis?')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <button id="chatBtn" onclick="sendChat()">➤</button>
+    </div>
+  </div>
 </div>
 
 <!-- Modal -->
@@ -286,6 +320,76 @@ const INFO={
   thesis:{t:'Thesis in One Sentence',b:'The entire premise in a single conditional sentence. "If X happens, then Y follows and the option makes money." This filters noise: if you cannot say the thesis in one sentence, you don\'t understand the setup well enough to trade it.'},
   delta:{t:'Delta',b:'Two readings in one number. First: how much the option gains per $1 stock move — 0.45 delta earns about $45 per contract per dollar. Second: a rough probability the option finishes in the money — 0.45 is priced as a coin-flip-ish shot. The gate wants 0.35–0.55: real participation without lottery pricing.'}
 };
+
+/* ================= CLAUDE CHAT ================= */
+let CHAT_HISTORY=[];
+function openChat(){
+  CHAT_HISTORY=[];
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('chatTextarea').value='';
+  document.getElementById('chatWrap').classList.add('open');
+  const greeting='I\'ve loaded your setup. Ask me anything: "Does this match Path 2?" "What\'s the risk?" "Should I size this down?" etc.';
+  addChatMessage('ai',greeting);
+}
+function closeChat(){
+  document.getElementById('chatWrap').classList.remove('open');
+  CHAT_HISTORY=[];
+}
+function addChatMessage(role,text){
+  const msg=document.createElement('div');
+  msg.className='chatMsg '+role;
+  msg.innerHTML=role==='ai'?text.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'):text;
+  document.getElementById('chatMessages').appendChild(msg);
+  document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+}
+function buildChatContext(){
+  const ctx={
+    ticker:txt('ticker'),direction:direction==='call'?'CALL':'PUT',thesis:txt('thesis'),
+    price:num('price'),iv:num('iv'),ivRank:num('ivrank'),atr:num('atr'),
+    rsi:num('rsi'),macdLine:num('macdline'),macdSignal:num('signalline'),
+    momentum:num('momentum'),delta:num('delta'),gamma:num('gamma'),theta:num('theta'),vega:num('vega'),
+    strike:num('strike'),dte:num('dte'),location:txt('location'),
+    target:txt('target'),stop:txt('stop'),timeStop:txt('timestop')
+  };
+  return ctx;
+}
+async function sendChat(){
+  const txt_input=document.getElementById('chatTextarea').value.trim();
+  if(!txt_input)return;
+  addChatMessage('user',txt_input);
+  document.getElementById('chatTextarea').value='';
+  document.getElementById('chatBtn').disabled=true;
+  const typing=document.createElement('div');typing.className='chatTyping';typing.textContent='Claude is thinking…';
+  document.getElementById('chatMessages').appendChild(typing);
+  CHAT_HISTORY.push({role:'user',content:txt_input});
+  try{
+    const ctx=buildChatContext();
+    const systemPrompt=`You are Claude, reviewing a trade setup against the Kornis Protocol. The user is a disciplined long-only options day trader (calls/puts only, 1-3 day holds). 
+
+KORNIS PROTOCOL:
+- Dual-path macro: Path 1 = wash cycle; Path 2 = carry-unwind (trigger USD/JPY ≥159)
+- Confluence over single signals; signal hierarchy: Tier 1 > Tier 2 > Tier 3
+- Vehicle selection by IV: rich IV → deep ITM ~0.70 delta; fair IV → ATM 0.45-0.55; OTM only at Tier 1 confluence
+- Exit discipline: don't round-trip a double; scale into strength; final 21 DTE = exit plan
+- The Eleven Gates are sacred: if setup hasn't run them, remind once
+
+CURRENT SETUP:
+${JSON.stringify(ctx,null,2)}
+
+Be terse, blunt, production-ready. Challenge weak setups. This is a second opinion, not a recommendation.`;
+    const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:800,system:systemPrompt,messages:CHAT_HISTORY})});
+    const j=await r.json();
+    if(j.error)throw new Error(j.error.message||'API error');
+    const reply=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()||'(no reply)';
+    typing.remove();addChatMessage('ai',reply);
+    CHAT_HISTORY.push({role:'assistant',content:reply});
+  }catch(e){
+    typing.remove();addChatMessage('ai','<b>Failed:</b> '+(e.message||'connection')+'. Check relay.');
+  }finally{
+    document.getElementById('chatBtn').disabled=false;
+  }
+}
 function info(key){
   const d=INFO[key];if(!d)return;
   document.getElementById('mTitle').textContent=d.t;
