@@ -84,8 +84,16 @@
   #modal h3{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:10px}
   #modal .body{font-family:'Source Serif 4',Georgia,serif;font-size:16px;line-height:1.62;color:var(--text)}
   #modal .where{margin-top:12px;font-size:13px;color:var(--dim);font-family:'Source Serif 4',Georgia,serif;border-top:1px solid var(--line);padding-top:10px}
-  #modal .close{width:100%;margin-top:16px;background:var(--navy);border:1px solid var(--gold);color:#fff;border-radius:8px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:13px;cursor:pointer}
-</style>
+<div class="foot">Kornis Protocol · Private Analytics · Not Investment Advice</div>
+
+<!-- Navigation Bar -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:50;max-width:560px;margin:0 auto;width:100%">
+  <a href="hub.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">K·COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">SCAN·ENGINE</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:12px 0;color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line);border-bottom:2px solid var(--gold)">GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700">TRADES</a>
+</div>
 </head>
 <body>
 
@@ -177,6 +185,15 @@
     <div style="margin-top:16px"><label><input type="checkbox" id="sizing" style="width:auto"> Position is appropriately sized (can afford a 100% loss as a shrug, not a wound)</label></div>
   </div>
 
+</div>
+
+<!-- Navigation Bar -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:50;max-width:560px;margin:0 auto;width:100%">
+  <a href="hub.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">K·COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">SCAN·ENGINE</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:12px 0;color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line);border-bottom:2px solid var(--gold)">GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700">TRADES</a>
 </div>
 
 <!-- Claude Chat Modal -->
@@ -283,6 +300,20 @@ async function fetchIVAndGreeks(){
     document.getElementById('iv').value=atmOpt.iv.toFixed(1);
     document.getElementById('dte').value=atmOpt.dte;
     
+    // Fetch technicals (RSI, MACD, ATR) from chart
+    try{
+      const tr=await fetch(RELAY+'/?tech='+encodeURIComponent(tk));
+      const tj=await tr.json();
+      if(tj?.data){
+        const tech=tj.data;
+        if(tech.rsi!=null)document.getElementById('rsi').value=tech.rsi.toFixed(0);
+        if(tech.macd_line!=null)document.getElementById('macdline').value=tech.macd_line.toFixed(2);
+        if(tech.macd_signal!=null)document.getElementById('signalline').value=tech.macd_signal.toFixed(2);
+        if(tech.atr!=null)document.getElementById('atr').value=tech.atr.toFixed(2);
+        if(tech.momentum!=null)document.getElementById('momentum').value=tech.momentum.toFixed(2);
+      }
+    }catch(e){}
+    
     // Build Greeks matrix for 9 strikes (±4 from ATM)
     const atm=opts[0];const nearby=opts.slice(0,9);
     buildGreeksMatrix(spot,atm.iv/100,atm.dte,nearby,direction);
@@ -303,7 +334,7 @@ function buildGreeksMatrix(spot,iv,dte,strikes,dir){
     const g=blackScholes(spot,s.strike,T,r,iv,type);
     if(!g)continue;
     const isITM=(type==='call'&&s.strike<=spot)||(type==='put'&&s.strike>=spot);
-    html+=`<div class="greeks-row">
+    html+=`<div class="greeks-row" onclick="fillGreeks(${s.strike},${g.delta.toFixed(3)},${g.gamma.toFixed(4)},${g.theta.toFixed(4)},${g.vega.toFixed(3)})" style="cursor:pointer;background:rgba(201,160,48,0.05)">
       <div class="greeks-strike">$${s.strike.toFixed(0)}</div>
       <div class="greeks-cell delta ${isITM?'itm':''}">${(g.delta).toFixed(2)}</div>
       <div class="greeks-cell gamma">${(g.gamma).toFixed(3)}</div>
@@ -313,7 +344,15 @@ function buildGreeksMatrix(spot,iv,dte,strikes,dir){
   }
   document.getElementById('greeksMatrix').innerHTML=html;
   document.getElementById('greeksContainer').style.display='block';
-  document.getElementById('greeksNote').innerHTML=`<b>ITM highlighted.</b> Delta = probability & $-per-$1-move. Theta = daily decay. Vega = move per 1% IV. Pick a strike and enter its Greeks above.`;
+  document.getElementById('greeksNote').innerHTML=`<b>Click any row to fill the Greeks in the Contract section above.</b> Delta = probability & $/move. Theta = daily decay. Vega = $/1% IV.`;
+}
+
+function fillGreeks(strike,delta,gamma,theta,vega){
+  document.getElementById('strike').value=strike.toFixed(2);
+  document.getElementById('delta').value=delta;
+  document.getElementById('gamma').value=gamma;
+  document.getElementById('theta').value=theta;
+  document.getElementById('vega').value=vega;
 }
 
 const INFO={
