@@ -81,6 +81,31 @@ input:focus{border-color:var(--gold)}
 #chatInputPos textarea:focus{border-color:var(--red)}
 #chatInputPos button{flex:none;width:40px;height:40px;background:var(--red);border:none;border-radius:8px;color:#fff;font-weight:800;cursor:pointer;font-size:14px}
 #chatInputPos button:disabled{opacity:.5;cursor:wait}
+
+/* Alarms */
+.alarms-section{background:var(--panel);border:1px solid var(--amber);border-left:3px solid var(--amber);border-radius:12px;padding:14px;margin-bottom:14px}
+.alarms-section h2{font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin-bottom:10px}
+.alarm-btn{width:100%;background:var(--amber);color:#000;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:10px}
+.alarm-btn:hover{opacity:.9}
+.alarm-item{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.alarm-item.triggered{background:#2B2210;border-color:var(--amber)}
+.alarm-label{flex:1}
+.alarm-label b{color:var(--amber)}
+.alarm-actions{display:flex;gap:6px}
+.alarm-actions button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer}
+.alarm-actions button:hover{border-color:var(--gold);color:var(--gold-soft)}
+.alarm-empty{font-size:10px;color:var(--dim);padding:8px;text-align:center}
+
+#alarmModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#alarmModal.open{display:flex}
+#alarmModalBox{background:var(--panel);border:1px solid var(--amber);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 20px 34px}
+#alarmModal h3{font-size:12px;letter-spacing:.12em;color:var(--amber);text-transform:uppercase;margin-bottom:14px}
+#alarmModal label{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+#alarmModal input,#alarmModal select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:10px;margin-bottom:10px;font-size:14px}
+#alarmModal input:focus{border-color:var(--amber)}
+#alarmModal .btns{display:flex;gap:10px}
+#alarmModal .btns button{flex:1;background:var(--amber);color:#000;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer}
+#alarmModal .btns button.cancel{background:var(--panel2);border:1px solid var(--line);color:var(--amber)}
 </style>
 </head><body>
 
@@ -114,6 +139,12 @@ input:focus{border-color:var(--gold)}
     <button class="btn ghost" style="border-color:var(--red);color:var(--red)" id="reviewBtn" onclick="openChatPos()" style="margin-top:6px">🤖 POSITION REVIEW</button>
     <div id="openList"><div class="status">No open positions. Log your next fill above.</div></div>
   </div>
+
+  <div class="alarms-section">
+    <h2>⏰ Price & Time Alarms</h2>
+    <button class="alarm-btn" onclick="openAlarmModal()">+ SET NEW ALARM</button>
+    <div id="alarmsList"><div class="alarm-empty">No active alarms</div></div>
+  </div>
 </div>
 
 <!-- Claude Position Review Chat Modal -->
@@ -126,6 +157,42 @@ input:focus{border-color:var(--gold)}
     <div id="chatInputPos">
       <textarea id="chatTextareaPos" placeholder="Ask about your positions… (e.g., 'Should I scale out?')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatPos();}"></textarea>
       <button id="chatBtnPos" onclick="sendChatPos()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alarm Modal -->
+<div id="alarmModal" onclick="if(event.target===this)closeAlarmModal()">
+  <div id="alarmModalBox" onclick="event.stopPropagation()">
+    <h3>Set Price or Time Alarm</h3>
+    <label>Alarm Type</label>
+    <select id="alarmType" onchange="updateAlarmForm()">
+      <option value="price">Price Alert (e.g., SPCX hits $140)</option>
+      <option value="time">Time Alert (e.g., 3:50 PM ET)</option>
+    </select>
+    
+    <div id="priceForm">
+      <label>Ticker</label>
+      <input id="alarmTicker" type="text" placeholder="SPCX" autocapitalize="characters">
+      <label>Alert When Price Reaches ($)</label>
+      <input id="alarmPrice" type="number" placeholder="140.00" step="0.01">
+      <label>Condition</label>
+      <select id="alarmCondition">
+        <option value="above">Above or Equal</option>
+        <option value="below">Below or Equal</option>
+      </select>
+    </div>
+
+    <div id="timeForm" style="display:none">
+      <label>Alert At (HH:MM ET)</label>
+      <input id="alarmTime" type="time">
+      <label>Alert Message</label>
+      <input id="alarmMsg" type="text" placeholder="e.g., Check SPCX unlock reaction">
+    </div>
+
+    <div class="btns">
+      <button class="cancel" onclick="closeAlarmModal()">CANCEL</button>
+      <button onclick="saveAlarm()">SET ALARM</button>
     </div>
   </div>
 </div>
@@ -154,10 +221,11 @@ input:focus{border-color:var(--gold)}
 </div>
 
 <div class="tabbar">
-  <button class="active" onclick="sec('open',this)"><span class="ico">◍</span>Open</button>
-  <button onclick="sec('closed',this)"><span class="ico">✓</span>Closed</button>
-  <button onclick="sec('stats',this)"><span class="ico">Σ</span>Stats</button>
-  <button onclick="location.href='hub.html'"><span class="ico">K</span>Command</button>
+  <a href="hub.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">K</span>COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">⊕</span>SCAN</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">✓</span>GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">📈</span>CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--gold-soft);text-decoration:none;font-size:10px;border-bottom:2px solid var(--gold)"><span style="display:block;font-size:13px;margin-bottom:2px">⚑</span>TRADES</a>
 </div>
 
 <!-- Exit Prompt Modal -->
@@ -455,6 +523,133 @@ Analyze the positions: What's the plan? Scale out? Hold? Risk management calls? 
     document.getElementById('chatBtnPos').disabled=false;
   }
 }
+
+/* ================= ALARMS ================= */
+const ALARMS_KEY='kAlarms_v1';
+function loadAlarms(){try{return JSON.parse(localStorage.getItem(ALARMS_KEY))||[];}catch(e){return[];}}
+function saveAlarms(a){localStorage.setItem(ALARMS_KEY,JSON.stringify(a));}
+
+function openAlarmModal(){
+  document.getElementById('alarmModal').classList.add('open');
+  document.getElementById('alarmTicker').value='SPCX';
+  document.getElementById('alarmPrice').value='';
+  document.getElementById('alarmTime').value='';
+  document.getElementById('alarmMsg').value='';
+  updateAlarmForm();
+}
+function closeAlarmModal(){
+  document.getElementById('alarmModal').classList.remove('open');
+}
+function updateAlarmForm(){
+  const type=document.getElementById('alarmType').value;
+  document.getElementById('priceForm').style.display=type==='price'?'block':'none';
+  document.getElementById('timeForm').style.display=type==='time'?'block':'none';
+}
+function saveAlarm(){
+  const type=document.getElementById('alarmType').value;
+  const a=loadAlarms();
+  if(type==='price'){
+    const tk=document.getElementById('alarmTicker').value.trim().toUpperCase();
+    const price=parseFloat(document.getElementById('alarmPrice').value);
+    const cond=document.getElementById('alarmCondition').value;
+    if(!tk||!price){alert('Ticker and price required');return;}
+    a.push({id:Date.now(),type:'price',ticker:tk,price,condition:cond,triggered:false});
+  }else{
+    const time=document.getElementById('alarmTime').value;
+    const msg=document.getElementById('alarmMsg').value.trim()||'Alarm triggered';
+    if(!time){alert('Time required');return;}
+    a.push({id:Date.now(),type:'time',time,message:msg,triggered:false});
+  }
+  saveAlarms(a);
+  closeAlarmModal();
+  renderAlarms();
+}
+function deleteAlarm(id){
+  const a=loadAlarms().filter(x=>x.id!==id);
+  saveAlarms(a);
+  renderAlarms();
+}
+function renderAlarms(){
+  const a=loadAlarms();
+  const el=document.getElementById('alarmsList');
+  if(!a.length){el.innerHTML='<div class="alarm-empty">No active alarms</div>';return;}
+  el.innerHTML=a.map(x=>{
+    let label='';
+    if(x.type==='price'){
+      label='<b>'+x.ticker+'</b> '+x.condition+' $'+x.price.toFixed(2);
+    }else{
+      label='<b>'+x.time+'</b> ET — '+x.message;
+    }
+    return '<div class="alarm-item '+(x.triggered?'triggered':'')+'">'
+      +'<span class="alarm-label">'+label+(x.triggered?' ✓ TRIGGERED':'')+'</span>'
+      +'<div class="alarm-actions"><button onclick="deleteAlarm('+x.id+')">✕</button></div>'
+      +'</div>';
+  }).join('');
+}
+
+/* Check alarms every second */
+async function checkAlarms(){
+  const a=loadAlarms();
+  for(const alarm of a){
+    if(alarm.triggered)continue;
+    if(alarm.type==='price'){
+      try{
+        const r=await fetch(RELAY+'/?quotes=1');
+        const j=await r.json();
+        const quotes=j?.quotes||{};
+        const q=quotes[alarm.ticker];
+        if(!q)continue;
+        const price=q.price;
+        const hit=(alarm.condition==='above'&&price>=alarm.price)||(alarm.condition==='below'&&price<=alarm.price);
+        if(hit){
+          alarm.triggered=true;
+          saveAlarms(a);
+          triggerAlarm(alarm.ticker+' hit $'+price.toFixed(2)+' — '+alarm.condition+' $'+alarm.price.toFixed(2));
+          renderAlarms();
+        }
+      }catch(e){}
+    }else if(alarm.type==='time'){
+      const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/New_York'});
+      if(now.includes(alarm.time.slice(0,5))){
+        alarm.triggered=true;
+        saveAlarms(a);
+        triggerAlarm(alarm.message);
+        renderAlarms();
+      }
+    }
+  }
+}
+function triggerAlarm(msg){
+  // Visual alert
+  const notif=document.createElement('div');
+  notif.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#ffb454;color:#000;padding:20px;border-radius:12px;z-index:1000;font-weight:700;max-width:300px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.8)';
+  notif.textContent='⏰ '+msg;
+  document.body.appendChild(notif);
+  setTimeout(()=>notif.remove(),5000);
+  
+  // Audio alert
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=800;gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.5);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.5);
+  }catch(e){}
+  
+  // Browser notification
+  if('Notification' in window&&Notification.permission==='granted'){
+    new Notification('Kornis Alert',{body:msg,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23c9a030"/><text x="50" y="60" font-size="60" text-anchor="middle" fill="%23000" font-weight="bold">K</text></svg>'});
+  }
+}
+
+// Request notification permission
+if('Notification' in window&&Notification.permission==='default'){
+  Notification.requestPermission();
+}
+
+// Start checking alarms
+setInterval(checkAlarms,1000);
 
 renderOpen();
 </script>
