@@ -55,6 +55,15 @@ canvas{display:block;width:100%}
 <div id="wrap"><canvas id="cv"></canvas></div>
 <div id="status">Timeframes: intraday for day-trade timing, daily for structure, weekly for macro. Walls/Pain draws the option-chain call wall, put wall, and max pain as live horizontal levels.</div>
 
+<!-- Navigation Bar -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:50;max-width:560px;margin:0 auto;width:100%">
+  <a href="hub.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">K·COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">SCAN·ENGINE</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:12px 0;color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line);border-bottom:2px solid var(--gold)">CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700">TRADES</a>
+</div>
+
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 let IV='1d',RG='6mo';
