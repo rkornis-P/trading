@@ -127,6 +127,15 @@ transition:border-color .15s}
 
 <div class="foot">Kornis Protocol · Private Analytics · Not Investment Advice</div>
 
+<!-- Navigation Bar -->
+<div style="position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:50;max-width:560px;margin:0 auto;width:100%">
+  <a href="hub.html" style="flex:1;text-align:center;padding:12px 0;color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line);border-bottom:2px solid var(--gold)">K·COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">SCAN·ENGINE</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700;border-right:1px solid var(--line)">CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:12px 0;color:var(--dim);text-decoration:none;font-size:11px;font-weight:700">TRADES</a>
+</div>
+
 <!-- Claude Chat Modal -->
 <div id="chatWrap" onclick="if(event.target===this)closeChatBrief()">
   <div id="chatModal" onclick="event.stopPropagation()">
@@ -220,15 +229,19 @@ while(true){if(opex.getDay()===5)fr++;if(fr===3)break;opex.setDate(opex.getDate(
 const dOp=Math.ceil((opex-now)/86400000);
 if(dOp>=0&&dOp<=4)flags.push('Monthly OpEx in '+dOp+' day'+(dOp===1?'':'s')+' — pinning toward max pain, then the unclench');
 h+='<br><br><b>FLAGS</b>'+(flags.length?flags.map(f=>'<span class="flag">⚠ '+f+'</span>').join(''):'<br>None — clean tape.');
-h+='<br><b>NEXT →</b> <a href="decide.html" style="color:var(--gold-soft)">Run the Scan</a><br><br><b>PREDICTION MARKETS (KALSHI)</b><br>BTC closes higher today: <span style="color:var(--green)">47% UP</span> vs <span style="color:var(--red)">53% DOWN</span> — Volume $192.9M · OI $7M · Funding 0.0000% · Leverage 6.1x<br><br><b>RECENT LARGE TRADES</b><br>Checking order flow…';
+
+// Fetch Kalshi prediction data
+const kd=await getKalshiData();
+h+='<br><br><b>PREDICTION MARKETS — KALSHI</b><br>'+kd.title+' today: <span style="color:var(--green)">'+(kd.up*100).toFixed(0)+'% UP</span> vs <span style="color:var(--red)">'+(kd.dn*100).toFixed(0)+'% DOWN</span><br>Volume 24h $'+(kd.vol).toFixed(1)+'M · Open Interest $'+(kd.oi).toFixed(1)+'M · Max Leverage '+(kd.leverage).toFixed(1)+'x';
+
+h+='<br><br><b>RECENT LARGE TRADES (KALSHI)</b><br>';
+try{const tr=await fetch('https://api.kalshi.com/v2/trades?limit=5&sort=-size');
+const tj=await tr.json();if(tj&&tj.trades&&tj.trades.length){
+h+=tj.trades.map((t,i)=>'#'+(i+1)+' $'+(t.size||0).toLocaleString()+' @ '+(t.price||'—')+' · '+t.side.toUpperCase()).join('<br>');
+}else{h+='(no large trades fetched)';}}catch(e){h+='(order flow unavailable)';}
+
+h+='<br><br><b>NEXT →</b> <a href="decide.html" style="color:var(--gold-soft)">Run the Scan</a>';
 el.innerHTML=h;
-// Fetch Kalshi data async
-try{const kr=await fetch('https://api.kalshi.com/v2/markets/kxbtcd/getMarket');
-const kj=await kr.json();if(kj&&kj.market){
-const m=kj.market;const up=m.probability_up||0.47;const dn=1-up;
-const vol=m.volume_24h||192900000;const oi=m.open_interest||7000000;
-h=h.replace('Prediction Markets (Kalshi)','PREDICTION MARKETS (KALSHI)<br>BTC closes higher: <span style="color:var(--green)">'+(up*100).toFixed(0)+'% UP</span> vs <span style="color:var(--red)">'+(dn*100).toFixed(0)+'% DOWN</span> — Vol $'+(vol/1e6).toFixed(1)+'M · OI $'+(oi/1e6).toFixed(1)+'M');
-el.innerHTML=h;}}catch(e){}
 }catch(e){el.innerHTML='Brief unavailable ('+(e.message||'connection')+'). Check the relay and retry.';}
 finally{btn.disabled=false;}}
 function fm(x){if(!x||x.chgPct==null)return '—';
