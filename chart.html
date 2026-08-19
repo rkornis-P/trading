@@ -12,8 +12,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .top input:focus{border-color:var(--gold)}
 .top button{background:linear-gradient(135deg,#a07818,var(--gold));color:#000;border:none;border-radius:10px;font-weight:800;font-size:13px;padding:11px 16px;cursor:pointer}
 .top a{color:var(--gold-soft);text-decoration:none;font-size:11px;font-weight:700;flex:none}
-.tfrow{display:flex;gap:6px;margin-bottom:8px}
-.tf{flex:1;background:#0a1120;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:8px 0;font-size:11px;font-weight:700;cursor:pointer;text-align:center}
+.tfrow{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.tf{flex:1;min-width:60px;background:#0a1120;border:1px solid var(--line);color:var(--dim);border-radius:8px;padding:8px 6px;font-size:10px;font-weight:700;cursor:pointer;text-align:center}
 .tf.on{border-color:var(--gold);color:var(--gold-soft)}
 .togrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
 .tog{font-size:10px;padding:5px 10px;border-radius:14px;background:#0a1120;border:1px solid var(--line);color:var(--dim);font-weight:700;cursor:pointer}
@@ -32,10 +32,16 @@ canvas{display:block;width:100%}
   <a href="hub.html">◈</a>
 </div>
 <div class="tfrow" id="tfs">
-  <div class="tf" data-i="5m" data-r="1d" onclick="setTF(this)">1D·5m</div>
-  <div class="tf" data-i="15m" data-r="5d" onclick="setTF(this)">5D·15m</div>
-  <div class="tf" data-i="1h" data-r="1mo" onclick="setTF(this)">1M·1h</div>
-  <div class="tf on" data-i="1d" data-r="6mo" onclick="setTF(this)">6M·1D</div>
+  <div class="tf" data-i="5m" data-r="1d" onclick="setTF(this)">5m</div>
+  <div class="tf" data-i="15m" data-r="1d" onclick="setTF(this)">15m</div>
+  <div class="tf" data-i="30m" data-r="5d" onclick="setTF(this)">30m</div>
+  <div class="tf" data-i="45m" data-r="5d" onclick="setTF(this)">45m</div>
+  <div class="tf" data-i="1h" data-r="1mo" onclick="setTF(this)">1h</div>
+  <div class="tf" data-i="4h" data-r="3mo" onclick="setTF(this)">4h</div>
+  <div class="tf on" data-i="1d" data-r="6mo" onclick="setTF(this)">1D</div>
+  <div class="tf" data-i="1wk" data-r="1y" onclick="setTF(this)">1W</div>
+  <div class="tf" data-i="1mo" data-r="5y" onclick="setTF(this)">1M</div>
+  <div class="tf" data-i="3mo" data-r="max" onclick="setTF(this)">YTD</div>
 </div>
 <div class="togrow">
   <span class="tog on" id="tEma" onclick="tg(this)">EMA 9/21</span>
@@ -47,7 +53,7 @@ canvas{display:block;width:100%}
 </div>
 <div id="legend">Load a chart, then touch and drag across it — the crosshair reads out every value at that bar.</div>
 <div id="wrap"><canvas id="cv"></canvas></div>
-<div id="status">Timeframes: intraday for day-trade timing, 6M daily for structure. Walls/Pain draws the option-chain call wall, put wall, and max pain as live horizontal levels — your targets and defenses.</div>
+<div id="status">Timeframes: intraday for day-trade timing, daily for structure, weekly for macro. Walls/Pain draws the option-chain call wall, put wall, and max pain as live horizontal levels.</div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
