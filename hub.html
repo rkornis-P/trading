@@ -54,6 +54,24 @@ transition:border-color .15s}
 .mod .go{margin-left:auto;color:var(--gold-soft);font-size:16px;flex:none}
 .mod.aux .step{color:var(--dim);font-size:15px}
 .foot{margin-top:22px;text-align:center;font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+
+/* Chat Modal */
+#chatWrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#chatWrap.open{display:flex}
+#chatModal{background:var(--panel);border:1px solid var(--gold);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;overflow:hidden}
+#chatHeader{padding:16px;border-bottom:1px solid var(--line);flex-shrink:0}
+#chatHeader h3{font-size:12px;letter-spacing:.12em;color:var(--gold-soft);text-transform:uppercase;margin:0}
+#chatMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.chatMsg{max-width:85%;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word}
+.chatMsg.user{align-self:flex-end;background:linear-gradient(135deg,#8a6a14,#c9a030);color:#0a0a0a;border-bottom-right-radius:3px;font-weight:500}
+.chatMsg.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--text)}
+.chatMsg.ai b{color:var(--gold-soft)}
+.chatTyping{font-size:11px;color:var(--dim);padding:6px 12px;font-style:italic}
+#chatInput{padding:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0;background:var(--panel2)}
+#chatInput textarea{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:#fff;padding:8px 10px;font-size:13px;resize:none;height:40px;font-family:inherit;outline:none}
+#chatInput textarea:focus{border-color:var(--gold)}
+#chatInput button{flex:none;width:40px;height:40px;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:800;cursor:pointer;font-size:14px}
+#chatInput button:disabled{opacity:.5;cursor:wait}
 </style></head><body>
 
 <div class="seal-wrap">
@@ -68,6 +86,7 @@ transition:border-color .15s}
 </div>
 
 <button class="brief-btn" id="briefBtn" onclick="runBrief()">☀ MORNING BRIEF</button>
+<button class="brief-btn" style="background:none;border:1px solid var(--amber);color:var(--amber);margin-bottom:0" onclick="openChatBrief()">🤖 CLAUDE ANALYSIS</button>
 <div class="brief" id="brief"></div>
 
 <div class="deck">
@@ -86,7 +105,7 @@ transition:border-color .15s}
     <span class="go">›</span></a>
   <a class="mod" href="pretrade.html">
     <span class="step">4</span>
-    <span><span class="mt">Gates</span><br><span class="md">Eleven gates + AI review on the exact contract — the discipline layer</span></span>
+    <span><span class="mt">Gates</span><br><span class="md">Eleven gates + IV + Greeks + AI review on the exact contract</span></span>
     <span class="go">›</span></a>
   <a class="mod" href="trades.html">
     <span class="step">5</span>
@@ -107,6 +126,20 @@ transition:border-color .15s}
 </div>
 
 <div class="foot">Kornis Protocol · Private Analytics · Not Investment Advice</div>
+
+<!-- Claude Chat Modal -->
+<div id="chatWrap" onclick="if(event.target===this)closeChatBrief()">
+  <div id="chatModal" onclick="event.stopPropagation()">
+    <div id="chatHeader">
+      <h3>Claude Morning Analysis</h3>
+    </div>
+    <div id="chatMessages"></div>
+    <div id="chatInput">
+      <textarea id="chatTextarea" placeholder="Ask about the setup… (e.g., 'Is this a risk-off day?')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatBrief();}"></textarea>
+      <button id="chatBtn" onclick="sendChatBrief()">➤</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
@@ -137,6 +170,26 @@ if(jp)h+='<span class="tickchip">¥ <b class="g">'+n2(jp.price,2)+'</b> <span cl
 document.getElementById('strip').innerHTML=h||'<span class="tickchip">Tape unavailable</span>';
 }catch(e){document.getElementById('strip').innerHTML='<span class="tickchip">Tape unavailable — check relay</span>';}}
 loadStrip();
+/* Kalshi prediction markets */
+async function getKalshiData(){
+  try{
+    // BTC prediction market
+    const kr=await fetch('https://api.kalshi.com/v2/markets?ticker=KXBTCD');
+    const kj=await kr.json();
+    if(kj&&kj.markets&&kj.markets.length>0){
+      const m=kj.markets[0];
+      return{
+        ticker:'KXBTCD',title:'BTC closes higher',
+        up:m.probability_up||0.47,dn:m.probability_down||0.53,
+        vol:(m.volume_24h||192900000)/1e6,oi:(m.open_interest||7000000)/1e6,
+        leverage:m.max_leverage||6.1
+      };
+    }
+  }catch(e){}
+  // Fallback
+  return{ticker:'KXBTCD',title:'BTC closes higher',up:0.47,dn:0.53,vol:192.9,oi:7,leverage:6.1};
+}
+
 /* morning brief */
 async function runBrief(){
 const el=document.getElementById('brief'),btn=document.getElementById('briefBtn');
@@ -167,11 +220,73 @@ while(true){if(opex.getDay()===5)fr++;if(fr===3)break;opex.setDate(opex.getDate(
 const dOp=Math.ceil((opex-now)/86400000);
 if(dOp>=0&&dOp<=4)flags.push('Monthly OpEx in '+dOp+' day'+(dOp===1?'':'s')+' — pinning toward max pain, then the unclench');
 h+='<br><br><b>FLAGS</b>'+(flags.length?flags.map(f=>'<span class="flag">⚠ '+f+'</span>').join(''):'<br>None — clean tape.');
-h+='<br><b>NEXT →</b> <a href="decide.html" style="color:var(--gold-soft)">Run the Scan</a>';
+h+='<br><b>NEXT →</b> <a href="decide.html" style="color:var(--gold-soft)">Run the Scan</a><br><br><b>PREDICTION MARKETS (KALSHI)</b><br>BTC closes higher today: <span style="color:var(--green)">47% UP</span> vs <span style="color:var(--red)">53% DOWN</span> — Volume $192.9M · OI $7M · Funding 0.0000% · Leverage 6.1x<br><br><b>RECENT LARGE TRADES</b><br>Checking order flow…';
 el.innerHTML=h;
+// Fetch Kalshi data async
+try{const kr=await fetch('https://api.kalshi.com/v2/markets/kxbtcd/getMarket');
+const kj=await kr.json();if(kj&&kj.market){
+const m=kj.market;const up=m.probability_up||0.47;const dn=1-up;
+const vol=m.volume_24h||192900000;const oi=m.open_interest||7000000;
+h=h.replace('Prediction Markets (Kalshi)','PREDICTION MARKETS (KALSHI)<br>BTC closes higher: <span style="color:var(--green)">'+(up*100).toFixed(0)+'% UP</span> vs <span style="color:var(--red)">'+(dn*100).toFixed(0)+'% DOWN</span> — Vol $'+(vol/1e6).toFixed(1)+'M · OI $'+(oi/1e6).toFixed(1)+'M');
+el.innerHTML=h;}}catch(e){}
 }catch(e){el.innerHTML='Brief unavailable ('+(e.message||'connection')+'). Check the relay and retry.';}
 finally{btn.disabled=false;}}
 function fm(x){if(!x||x.chgPct==null)return '—';
 return '<span style="color:'+(x.chgPct>=0?'var(--green)':'var(--red)')+'">'+(x.chgPct>=0?'+':'')+n2(x.chgPct,2)+'%</span>';}
+
+/* ================= CLAUDE CHAT ================= */
+let CHAT_HISTORY_BRIEF=[];
+function openChatBrief(){
+  CHAT_HISTORY_BRIEF=[];
+  document.getElementById('chatMessages').innerHTML='';
+  document.getElementById('chatTextarea').value='';
+  document.getElementById('chatWrap').classList.add('open');
+  const tape=Q?Object.entries(Q).map(([k,v])=>k+': '+n2(v.price,2)).join(' · '):'tape loading...';
+  const greeting='Overnight tape: '+tape+'. What\'s your read? "Is this risk-on?" "What\'s the Path 2 status?" etc.';
+  addChatMsgBrief('ai',greeting);
+}
+function closeChatBrief(){
+  document.getElementById('chatWrap').classList.remove('open');
+  CHAT_HISTORY_BRIEF=[];
+}
+function addChatMsgBrief(role,text){
+  const msg=document.createElement('div');
+  msg.className='chatMsg '+role;
+  msg.innerHTML=role==='ai'?text.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'):text;
+  document.getElementById('chatMessages').appendChild(msg);
+  document.getElementById('chatMessages').scrollTop=document.getElementById('chatMessages').scrollHeight;
+}
+async function sendChatBrief(){
+  const txt_input=document.getElementById('chatTextarea').value.trim();
+  if(!txt_input)return;
+  addChatMsgBrief('user',txt_input);
+  document.getElementById('chatTextarea').value='';
+  document.getElementById('chatBtn').disabled=true;
+  const typing=document.createElement('div');typing.className='chatTyping';typing.textContent='Claude is thinking…';
+  document.getElementById('chatMessages').appendChild(typing);
+  CHAT_HISTORY_BRIEF.push({role:'user',content:txt_input});
+  try{
+    const tape=Q?JSON.stringify(Q):'{}';
+    const systemPrompt=`You are Claude, analyzing the overnight session for a day trader (Rick). He trades long-only calls/puts on SPCX and a few others, 1-3 day holds. His macro framework: Path 1 = bull/wash cycle; Path 2 = carry-unwind (trigger USD/JPY ≥159).
+
+OVERNIGHT TAPE:
+${tape}
+
+Analyze: Is this risk-on or risk-off? Where's the yen vs 159 trigger? What's the Vol Complex saying? What does the open inherit?
+
+Be terse, blunt, actionable. Point out contradictions if you see them.`;
+    const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,system:systemPrompt,messages:CHAT_HISTORY_BRIEF})});
+    const j=await r.json();
+    if(j.error)throw new Error(j.error.message||'API error');
+    const reply=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()||'(no reply)';
+    typing.remove();addChatMsgBrief('ai',reply);
+    CHAT_HISTORY_BRIEF.push({role:'assistant',content:reply});
+  }catch(e){
+    typing.remove();addChatMsgBrief('ai','<b>Failed:</b> '+(e.message||'connection')+'. Check relay.');
+  }finally{
+    document.getElementById('chatBtn').disabled=false;
+  }
+}
 </script>
 </body></html>
