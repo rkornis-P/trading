@@ -161,12 +161,39 @@ async function loadAll(){
   loadChain(tk);draw();health();
   if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12)};draw();health();}},45000);
 }
+let CHAIN_RETRY=null;
 function loadChain(tk){
   const st=document.getElementById('status');
-  fetch(RELAY+'/?chain='+encodeURIComponent(tk)).then(r=>r.json()).then(cj=>{
+  fetch(RELAY+'/?chain='+encodeURIComponent(tk)).then(r=>r.text()).then(txt=>{
+    let cj;
+    try{cj=JSON.parse(txt);}
+    catch(e){
+      /* rate-limited or non-JSON: fall back to cache, schedule retry */
+      const isRL=txt.indexOf('1015')>-1||txt.indexOf('rate')>-1;
+      const cached=chainCache(tk);
+      if(cached){st.textContent+=' · chain rate-limited — using cached ('+cached.age+'m old)';procChain(tk,cached.cj,st,true);}
+      else st.textContent+=' · chain '+(isRL?'RATE-LIMITED (1015) — retrying in 90s':'bad response');
+      if(!CHAIN_RETRY)CHAIN_RETRY=setTimeout(()=>{CHAIN_RETRY=null;loadChain(tk);},90000);
+      return;
+    }
+    localStorage.setItem('kChain_'+tk,JSON.stringify({ts:Date.now(),cj}));
+    procChain(tk,cj,st,false);
+  }).catch(e=>{
+    const cached=chainCache(tk);
+    if(cached){st.textContent+=' · chain offline — cached ('+cached.age+'m)';procChain(tk,cached.cj,st,true);}
+    else st.textContent+=' · chain FETCH FAILED ('+(e.message||'network')+')';
+    if(!CHAIN_RETRY)CHAIN_RETRY=setTimeout(()=>{CHAIN_RETRY=null;loadChain(tk);},90000);
+  });
+}
+function chainCache(tk){
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+tk));
+    if(c&&Date.now()-c.ts<45*60000)return{cj:c.cj,age:Math.round((Date.now()-c.ts)/60000)};}catch(e){}
+  return null;
+}
+function procChain(tk,cj,st,fromCache){
     const spot=cj?.data?.current_price??cj?.data?.close??cj?.current_price;
     const raw=cj?.data?.options||cj?.options||[];
-    if(!raw.length||!spot){st.textContent+=' · chain: EMPTY (spot='+(spot||'none')+', opts='+raw.length+')';return;}
+    if(!raw.length||!spot){if(!fromCache)st.textContent+=' · chain: EMPTY (spot='+(spot||'none')+', opts='+raw.length+')';return;}
     const now=new Date();const uni=[];let noMatch=0;
     for(const o of raw){const m=(o.option||o.symbol||o.contract||'').match(/(\d{6})([CP])(\d{8})$/);if(!m){noMatch++;continue;}
       const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
@@ -223,7 +250,6 @@ function loadChain(tk){
         document.getElementById('g_iv').textContent=ivNote+(iv*100).toFixed(0);
         document.getElementById('g_dte').textContent=o.dte;}}
     draw();
-  }).catch(e=>{document.getElementById('status').textContent+=' · chain FETCH FAILED ('+(e.message||'network')+')';});
 }
 
 /* ---------- drawing ---------- */
