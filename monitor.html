@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Position Monitor · Kornis Protocol</title>
+<style>
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.45;padding:16px 12px 90px;max-width:600px;margin:0 auto}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+.sub{text-align:center;font-size:10px;color:var(--dim);margin-bottom:12px;letter-spacing:.06em}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px;margin-bottom:11px}
+.card h2{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:9px}
+label{display:block;font-size:9.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:3px;font-weight:600}
+input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:9px;margin-bottom:9px;font-size:14px}
+input:focus,select:focus{border-color:var(--gold);outline:none}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+button{background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-weight:800;cursor:pointer;width:100%;font-size:13px;letter-spacing:.04em}
+button.stop{background:var(--red);color:#fff}
+button:disabled{opacity:.5}
+.score{display:flex;align-items:center;justify-content:center;gap:14px;padding:6px 0 10px}
+.score .num{font-size:38px;font-weight:800}
+.score .lbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em}
+.hgrid{display:flex;flex-direction:column;gap:6px}
+.hitem{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px}
+.hitem .lamp{width:11px;height:11px;border-radius:50%;flex:none;background:var(--dim)}
+.hitem.ok .lamp{background:var(--green);box-shadow:0 0 7px rgba(47,182,115,.6)}
+.hitem.bad .lamp{background:var(--red);box-shadow:0 0 7px rgba(224,91,68,.6)}
+.hitem.warn .lamp{background:var(--amber);box-shadow:0 0 7px rgba(224,169,63,.6)}
+.hitem .nm{font-weight:700;width:88px;flex:none}
+.hitem .dt{color:var(--dim);font-size:11px}
+#status{font-size:10.5px;color:var(--dim);text-align:center;padding:6px 0}
+#liveBar{display:none;background:var(--panel2);border:1px solid var(--gold);border-radius:9px;padding:9px 12px;margin-bottom:11px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+#liveBar b{color:var(--gold-soft)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:11px 0;color:var(--dim);text-decoration:none;font-size:9.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+#alertBanner{display:none;position:fixed;top:14px;left:12px;right:12px;background:var(--red);color:#fff;padding:14px;border-radius:11px;z-index:1000;font-weight:800;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.7);font-size:14px}
+#alertBanner.warn{background:var(--amber);color:#000}
+.inf{margin-left:auto;flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;padding:0;line-height:1;width:20px}
+.inf:active{border-color:var(--gold);color:var(--gold-soft)}
+#imWrap{display:none;position:fixed;inset:0;background:rgba(4,8,16,.82);z-index:200;align-items:flex-end;justify-content:center}
+#imWrap.open{display:flex}
+#imBox{background:var(--panel);border:1px solid var(--gold);border-bottom:none;border-radius:14px 14px 0 0;width:100%;max-width:600px;max-height:75vh;overflow-y:auto;padding:18px 16px 30px}
+#imBox h3{font-size:12px;letter-spacing:.12em;color:var(--gold-soft);text-transform:uppercase;margin-bottom:10px}
+#imBox .body{font-size:13.5px;line-height:1.6;color:var(--text)}
+#imBox .body b{color:var(--gold-soft)}
+#imBox .body .gg{color:var(--green);font-weight:700}
+#imBox .body .rr{color:var(--red);font-weight:700}
+#imBox .close{width:100%;margin-top:14px;background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:8px;padding:11px;font-weight:700;cursor:pointer}
+</style></head><body>
+
+<h1>Position Monitor</h1>
+<div class="sub">PROACTIVE HEALTH CHECKS · 5-MIN TAPE · ALERTS WHEN THE SETUP DECAYS</div>
+
+<div id="alertBanner"></div>
+
+<div class="card" id="setupCard">
+  <h2>Arm the Monitor</h2>
+  <div class="row">
+    <div><label>Ticker</label><input id="tk" placeholder="SPCX" autocapitalize="characters" value="SPCX"></div>
+    <div><label>Direction</label><select id="dir"><option value="long">LONG / CALLS ▲</option><option value="short">SHORT / PUTS ▼</option></select></div>
+  </div>
+  <div class="row3">
+    <div><label>Entry (stock $)</label><input id="entry" type="number" step="0.01" placeholder="136.00"></div>
+    <div><label>Stop (stock $)</label><input id="stop" type="number" step="0.01" placeholder="134.50"></div>
+    <div><label>Target (stock $)</label><input id="target" type="number" step="0.01" placeholder="138.00"></div>
+  </div>
+  <button onclick="armMonitor()">▶ START MONITORING</button>
+</div>
+
+<div id="liveBar">
+  <span><b id="lvTk">—</b> <span id="lvDir"></span></span>
+  <span id="lvPx" style="font-weight:800">—</span>
+  <span id="lvPL" style="font-size:12px">—</span>
+</div>
+
+<div class="card" id="healthCard" style="display:none">
+  <h2>Setup Health <span id="hbTime" style="color:var(--dim);float:right;letter-spacing:0"></span></h2>
+  <div class="score"><span class="num" id="scoreNum">—</span><span class="lbl">of 7<br>aligned</span></div>
+  <div class="hgrid">
+    <div class="hitem" id="h_vwap"><span class="lamp"></span><span class="nm">VWAP</span><span class="dt" id="d_vwap">—</span><button class="inf" onclick="info('vwap')">i</button></div>
+    <div class="hitem" id="h_ema"><span class="lamp"></span><span class="nm">9 EMA hold</span><span class="dt" id="d_ema">—</span><button class="inf" onclick="info('ema')">i</button></div>
+    <div class="hitem" id="h_align"><span class="lamp"></span><span class="nm">EMA/SMA</span><span class="dt" id="d_align">—</span><button class="inf" onclick="info('align')">i</button></div>
+    <div class="hitem" id="h_rsi"><span class="lamp"></span><span class="nm">RSI 14</span><span class="dt" id="d_rsi">—</span><button class="inf" onclick="info('rsi')">i</button></div>
+    <div class="hitem" id="h_macd"><span class="lamp"></span><span class="nm">MACD hist</span><span class="dt" id="d_macd">—</span><button class="inf" onclick="info('macd')">i</button></div>
+    <div class="hitem" id="h_mom"><span class="lamp"></span><span class="nm">Momentum</span><span class="dt" id="d_mom">—</span><button class="inf" onclick="info('mom')">i</button></div>
+    <div class="hitem" id="h_vol"><span class="lamp"></span><span class="nm">Volume</span><span class="dt" id="d_vol">—</span><button class="inf" onclick="info('vol')">i</button></div>
+  </div>
+  <div style="margin-top:10px" class="hgrid">
+    <div class="hitem" id="h_stop"><span class="lamp"></span><span class="nm">Stop dist</span><span class="dt" id="d_stop">—</span><button class="inf" onclick="info('stop')">i</button></div>
+    <div class="hitem" id="h_tgt"><span class="lamp"></span><span class="nm">Target dist</span><span class="dt" id="d_tgt">—</span><button class="inf" onclick="info('tgt')">i</button></div>
+    <div class="hitem" id="h_clock"><span class="lamp"></span><span class="nm">Clock</span><span class="dt" id="d_clock">—</span><button class="inf" onclick="info('clock')">i</button></div>
+  </div>
+  <div id="status">idle</div>
+  <button class="stop" onclick="disarm()">■ STOP MONITOR</button>
+</div>
+
+<div id="imWrap" onclick="if(event.target===this)closeInfo()">
+  <div id="imBox">
+    <h3 id="imTitle">—</h3>
+    <div class="body" id="imBody"></div>
+    <button class="close" onclick="closeInfo()">CLOSE</button>
+  </div>
+</div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="playbook.html">PLAYBOOK</a>
+  <a href="monitor.html" class="on">MONITOR</a>
+  <a href="pretrade.html">GATES</a>
+  <a href="trades.html">TRADES</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+let ARMED=null, TIMER=null, LAST_SCORE=null, ALERTED={};
+
+/* ---------- info modal ---------- */
+const INFO={
+vwap:{t:'VWAP — Volume Weighted Average Price',b:'The average price everyone paid today, weighted by volume. It is the fairest "line in the sand" for the session: institutions benchmark their fills against it.<br><br><span class="gg">GREEN:</span> price is on YOUR side of VWAP — buyers (long) or sellers (short) are in control of the day.<br><span class="rr">RED:</span> price crossed VWAP against you. The side you bet on has lost the session average. This is the single most important intraday flip — when VWAP goes red, the scalp premise is usually gone.<br><br><b>Action on red:</b> tighten to the 9 EMA. Two closes on the wrong side of VWAP = exit, don\'t negotiate.'},
+ema:{t:'9 EMA Hold — Your Ride Line',b:'The 9-period exponential moving average on the 5-minute chart. It hugs price closely and defines the rhythm of a scalp: strong moves ride it like a rail.<br><br><span class="gg">GREEN:</span> price is closing on your side of the 9 EMA — the move is still breathing normally.<br><span class="rr">RED:</span> a 5m candle CLOSED across the line against you. Per the scalp rules, this IS the exit signal — not a warning about one.<br><br><b>Action on red:</b> exit the scalp or cut to half immediately. Re-enter only if price reclaims the line and holds it for two candles.'},
+align:{t:'EMA/SMA Alignment — Trend Agreement',b:'Compares the fast 9 EMA to the slower 20 SMA. When the fast line is on your side of the slow line, the short-term trend agrees with your position.<br><br><span class="gg">GREEN:</span> 9 EMA above 20 SMA (long) or below it (short) — you are trading WITH the 5-minute trend.<br><span class="rr">RED:</span> the lines have crossed against you. You are now fighting the trend, not riding it. Scalps against alignment need everything else perfect.<br><br><b>Action on red:</b> if VWAP and 9 EMA are also red, the trio is unanimous — the move is over. Exit.'},
+rsi:{t:'RSI 14 — Fuel Gauge',b:'Relative Strength Index measures how stretched the recent move is, 0–100.<br><br><span class="gg">GREEN (long):</span> RSI between 45–75 — rising with runway left before overbought.<br><span class="gg">GREEN (short):</span> RSI 25–55 — falling with room before oversold.<br><span class="rr">RED:</span> either the tank is empty (RSI rolled out of your zone — momentum faded) or the move is over-stretched (above 75 long / below 25 short) where snapbacks live.<br><br><b>Action on red:</b> over-stretched with profit on the table = take some off into strength. Faded = watch the 9 EMA closely, it usually breaks next.'},
+macd:{t:'MACD Histogram — Acceleration',b:'The histogram measures whether momentum is ACCELERATING or DECELERATING — it turns before price does, which makes it your earliest warning.<br><br><span class="gg">GREEN:</span> the bars are growing in your direction (or holding on your side of zero). The engine is still pulling.<br><span class="rr">RED:</span> two shrinking bars, or bars flipped to the wrong side of zero. Deceleration precedes reversal — this lamp usually goes red 2–4 candles before the 9 EMA breaks.<br><br><b>Action on red:</b> don\'t exit on this alone — but stop adding, move your stop up, and treat the next 9 EMA test as decisive.'},
+mom:{t:'Momentum 12 — Raw Thrust',b:'Simply: today\'s price minus the price 12 bars ago. Positive = the last hour of tape is net rising. Negative = net falling.<br><br><span class="gg">GREEN:</span> thrust is pointed your way.<br><span class="rr">RED:</span> the last hour has gone net against you even if the current candle looks fine. Slow bleeds show up here first.<br><br><b>Action on red:</b> a red momentum lamp with green everything else is noise. Red momentum + red MACD together = the fade is real; tighten the stop.'},
+vol:{t:'Volume With vs Against — The Veto',b:'Sums the volume of the last six 5m candles that moved WITH your position vs the ones that moved AGAINST it. Price can drift, but volume tells you where the real money is pushing.<br><br><span class="gg">GREEN:</span> more volume behind your direction — the crowd is on your side.<br><span class="rr">RED:</span> the heavier volume is on the candles moving against you. A rally on light volume with heavy red bars underneath is a fake — this lamp catches it.<br><br><b>Action on red:</b> volume holds the VETO in the checklist. If this is red while price still looks fine, believe the volume, not the price. Scale down or out.'},
+stop:{t:'Stop Distance — Runway Left',b:'How far price sits from your stop, measured against your total risk (entry-to-stop distance).<br><br><span class="gg">GREEN:</span> more than half your runway remains.<br><span style="color:var(--amber);font-weight:700">AMBER:</span> inside 25% of the stop — one bad candle can take you out. Decision time: is the setup still valid (hold) or decaying (exit on YOUR terms at a better price than the stop)?<br><span class="rr">RED:</span> stop level touched. The alert fires — execute, no debate. A stop hit that you honor is a small planned loss; one you negotiate becomes Wednesday.'},
+tgt:{t:'Target Distance — Payday Proximity',b:'How far price is from your first target.<br><br><span style="color:var(--amber);font-weight:700">AMBER:</span> within 25% of target — get the sell order resting NOW if it isn\'t already. Targets get hit in seconds and missed in hesitation.<br><br><b>When it hits:</b> the alert says it — sell HALF, move the stop to breakeven. The rest is a free runner. Never round-trip a double: if the position doubles, half comes off, always, no exceptions.'},
+clock:{t:'Clock — The No-Overnight Rule',b:'Your own rule, enforced: scalps and day trades die at the closing bell, never in your sleep.<br><br><span class="gg">GREEN:</span> before 2:15 PM CT — full trading.<br><span style="color:var(--amber);font-weight:700">AMBER (2:15 CT):</span> wind-down begins. No NEW entries. Start scaling winners, cut laggards.<br><span class="rr">RED (2:45 CT):</span> FLAT NOW. Everything closes, market order if you must. The last 30 minutes belong to institutions and MOC games — your edge is gone and theta plus gap risk own the night.<br><br>This lamp exists because "I\'ll just hold this one overnight" is how scalpers become bagholders.'}
+};
+function info(k){
+  const d=INFO[k];if(!d)return;
+  document.getElementById('imTitle').textContent=d.t;
+  document.getElementById('imBody').innerHTML=d.b;
+  document.getElementById('imWrap').classList.add('open');
+}
+function closeInfo(){document.getElementById('imWrap').classList.remove('open');}
+
+function armMonitor(){
+  const tk=document.getElementById('tk').value.trim().toUpperCase();
+  const dir=document.getElementById('dir').value;
+  const entry=parseFloat(document.getElementById('entry').value);
+  const stop=parseFloat(document.getElementById('stop').value);
+  const target=parseFloat(document.getElementById('target').value);
+  if(!tk||!entry||!stop){alert('Ticker, entry, and stop are required. Target optional but recommended.');return;}
+  ARMED={tk,dir,entry,stop,target};ALERTED={};LAST_SCORE=null;
+  document.getElementById('setupCard').style.display='none';
+  document.getElementById('healthCard').style.display='block';
+  document.getElementById('liveBar').style.display='flex';
+  document.getElementById('lvTk').textContent=tk;
+  document.getElementById('lvDir').textContent=dir==='long'?'▲ LONG':'▼ SHORT';
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+  tick();TIMER=setInterval(tick,45000);
+}
+function disarm(){
+  if(TIMER)clearInterval(TIMER);TIMER=null;ARMED=null;
+  document.getElementById('setupCard').style.display='block';
+  document.getElementById('healthCard').style.display='none';
+  document.getElementById('liveBar').style.display='none';
+}
+
+/* ---------- data fetch: tolerant of relay/yahoo shapes ---------- */
+async function getBars(tk){
+  const urls=[RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d',
+              RELAY+'/?hist='+encodeURIComponent(tk)+'&interval=5m&range=1d'];
+  for(const u of urls){
+    try{
+      const r=await fetch(u);const j=await r.json();
+      const b=parseBars(j);
+      if(b&&b.c.length>30)return b;
+    }catch(e){}
+  }
+  return null;
+}
+function parseBars(j){
+  try{
+    // Yahoo chart shape
+    const res=j?.chart?.result?.[0]||j?.data?.chart?.result?.[0];
+    if(res){
+      const q=res.indicators.quote[0];
+      return clean({t:res.timestamp,o:q.open,h:q.high,l:q.low,c:q.close,v:q.volume});
+    }
+    // candle-array shapes
+    const arr=j?.data?.candles||j?.candles||j?.data;
+    if(Array.isArray(arr)&&arr.length&&arr[0].c!==undefined){
+      return clean({t:arr.map(x=>x.t),o:arr.map(x=>x.o),h:arr.map(x=>x.h),l:arr.map(x=>x.l),c:arr.map(x=>x.c),v:arr.map(x=>x.v)});
+    }
+    if(j?.c&&Array.isArray(j.c))return clean(j);
+    if(j?.data?.c&&Array.isArray(j.data.c))return clean(j.data);
+  }catch(e){}
+  return null;
+}
+function clean(b){
+  const t=[],o=[],h=[],l=[],c=[],v=[];
+  for(let i=0;i<b.c.length;i++){
+    if(b.c[i]==null)continue;
+    t.push(b.t?b.t[i]:i);o.push(b.o[i]);h.push(b.h[i]);l.push(b.l[i]);c.push(b.c[i]);v.push(b.v?b.v[i]||0:0);
+  }
+  return{t,o,h,l,c,v};
+}
+
+/* ---------- indicators ---------- */
+function ema(arr,p){const k=2/(p+1);let e=arr[0];const out=[e];for(let i=1;i<arr.length;i++){e=arr[i]*k+e*(1-k);out.push(e);}return out;}
+function sma(arr,p){const out=[];for(let i=0;i<arr.length;i++){if(i<p-1){out.push(null);continue;}let s=0;for(let j=i-p+1;j<=i;j++)s+=arr[j];out.push(s/p);}return out;}
+function rsi(c,p){p=p||14;const out=new Array(c.length).fill(null);let g=0,l=0;
+  for(let i=1;i<=p;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}
+  g/=p;l/=p;out[p]=100-100/(1+(l===0?100:g/l));
+  for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;out[i]=100-100/(1+(l===0?100:g/l));}
+  return out;}
+function macdHist(c){const e12=ema(c,12),e26=ema(c,26);const line=c.map((_,i)=>e12[i]-e26[i]);const sig=ema(line,9);return c.map((_,i)=>line[i]-sig[i]);}
+function vwap(b){const out=[];let pv=0,vv=0;for(let i=0;i<b.c.length;i++){const tp=(b.h[i]+b.l[i]+b.c[i])/3;pv+=tp*(b.v[i]||0);vv+=(b.v[i]||0);out.push(vv?pv/vv:b.c[i]);}return out;}
+function momentum(c,p){p=p||12;return c.map((x,i)=>i<p?null:x-c[i-p]);}
+
+/* ---------- health evaluation ---------- */
+function setLamp(id,state,txt){
+  const el=document.getElementById('h_'+id);
+  el.className='hitem '+(state===1?'ok':state===0?'bad':'warn');
+  document.getElementById('d_'+id).textContent=txt;
+  return state===1?1:0;
+}
+async function tick(){
+  if(!ARMED)return;
+  document.getElementById('status').textContent='checking…';
+  const b=await getBars(ARMED.tk);
+  const now=new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('hbTime').textContent=now;
+  if(!b){document.getElementById('status').textContent='data unavailable — relay/hist shape mismatch, will retry';return;}
+  const n=b.c.length-1, px=b.c[n], L=ARMED.dir==='long';
+  document.getElementById('lvPx').textContent='$'+px.toFixed(2);
+  const pl=(L?px-ARMED.entry:ARMED.entry-px);
+  const plEl=document.getElementById('lvPL');
+  plEl.textContent=(pl>=0?'+':'')+pl.toFixed(2);
+  plEl.style.color=pl>=0?'var(--green)':'var(--red)';
+
+  const e9=ema(b.c,9), s20=sma(b.c,20), vw=vwap(b), rs=rsi(b.c,14), mh=macdHist(b.c), mo=momentum(b.c,12);
+  let score=0;
+
+  // 1 VWAP side
+  const vwOK=L?px>=vw[n]:px<=vw[n];
+  score+=setLamp('vwap',vwOK?1:0,'px '+px.toFixed(2)+' vs vwap '+vw[n].toFixed(2));
+  // 2 9EMA hold (close across against you = fail)
+  const emaOK=L?b.c[n]>=e9[n]:b.c[n]<=e9[n];
+  score+=setLamp('ema',emaOK?1:0,'9ema '+e9[n].toFixed(2));
+  // 3 alignment
+  const alignOK=s20[n]!=null&&(L?e9[n]>=s20[n]:e9[n]<=s20[n]);
+  score+=setLamp('align',alignOK?1:0,'20sma '+(s20[n]?s20[n].toFixed(2):'—'));
+  // 4 RSI zone
+  const r=rs[n];
+  const rsiOK=r!=null&&(L?(r>=45&&r<=75):(r<=55&&r>=25));
+  score+=setLamp('rsi',rsiOK?1:0,r!=null?r.toFixed(1):'—');
+  // 5 MACD hist direction, 2 bars
+  const mOK=L?(mh[n]>mh[n-1]&&mh[n-1]>=mh[n-2]||mh[n]>0&&mh[n]>=mh[n-1]):(mh[n]<mh[n-1]&&mh[n-1]<=mh[n-2]||mh[n]<0&&mh[n]<=mh[n-1]);
+  score+=setLamp('macd',mOK?1:0,mh[n].toFixed(3)+' / '+mh[n-1].toFixed(3));
+  // 6 momentum sign
+  const moOK=mo[n]!=null&&(L?mo[n]>0:mo[n]<0);
+  score+=setLamp('mom',moOK?1:0,mo[n]!=null?mo[n].toFixed(2):'—');
+  // 7 volume: is volume expanding on bars moving WITH you vs against
+  let withV=0,agV=0;
+  for(let i=n-5;i<=n;i++){if(i<1)continue;const up=b.c[i]>=b.c[i-1];if((L&&up)||(!L&&!up))withV+=b.v[i];else agV+=b.v[i];}
+  const volOK=withV>=agV;
+  score+=setLamp('vol',volOK?1:0,'with '+(withV/1e3).toFixed(0)+'k vs against '+(agV/1e3).toFixed(0)+'k');
+
+  document.getElementById('scoreNum').textContent=score;
+  document.getElementById('scoreNum').style.color=score>=5?'var(--green)':score>=4?'var(--amber)':'var(--red)';
+
+  // stop / target proximity
+  const stopDist=Math.abs(px-ARMED.stop);
+  const range=Math.abs(ARMED.entry-ARMED.stop)||1;
+  const stopPct=stopDist/range;
+  setLamp('stop',stopPct>0.5?1:stopPct>0.25?2:0,'$'+stopDist.toFixed(2)+' away');
+  if(ARMED.target){
+    const tgtDist=Math.abs(ARMED.target-px);
+    setLamp('tgt',tgtDist<=range*0.25?2:1,'$'+tgtDist.toFixed(2)+' away');
+  }else{setLamp('tgt',1,'not set');}
+  // clock: CT close discipline
+  const ny=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));
+  const mins=ny.getHours()*60+ny.getMinutes();
+  const clockOK=mins<14*60+15?1:mins<14*60+45?2:0; // warn 2:15 CT, red 2:45 CT
+  setLamp('clock',clockOK,ny.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · flat by 2:45');
+
+  document.getElementById('status').textContent='live · next check 45s';
+
+  /* -------- proactive alerts -------- */
+  // score deterioration
+  if(LAST_SCORE!=null&&score<=4&&LAST_SCORE>=5)fireAlert('warn','Setup decaying: '+LAST_SCORE+' → '+score+' of 7. Tighten up.','decay');
+  if(score<=3)fireAlert('bad','Setup BROKEN: '+score+'/7 aligned. Exit per plan.','broken');
+  // critical singles
+  if(!emaOK)fireAlert('warn','9 EMA lost. Scalp rule: that is the exit line.','ema');
+  if(!vwOK&&LAST_SCORE!=null)fireAlert('warn','VWAP flipped against the position.','vwap');
+  // stop proximity
+  const hitStop=L?px<=ARMED.stop:px>=ARMED.stop;
+  if(hitStop)fireAlert('bad','STOP LEVEL HIT at $'+px.toFixed(2)+'. Execute.','stophit');
+  else if(stopPct<=0.25)fireAlert('warn','Within 25% of stop ($'+stopDist.toFixed(2)+' away).','stopnear');
+  // target
+  if(ARMED.target){const hitT=L?px>=ARMED.target:px<=ARMED.target;
+    if(hitT)fireAlert('good','TARGET HIT $'+px.toFixed(2)+' — scale half, stop to breakeven.','tgthit');}
+  // clock
+  if(clockOK===2)fireAlert('warn','2:15 CT — begin winding down. Flat by 2:45.','clock215');
+  if(clockOK===0)fireAlert('bad','2:45 CT — FLAT NOW. No overnights.','clock245');
+
+  LAST_SCORE=score;
+}
+function fireAlert(kind,msg,key){
+  if(ALERTED[key])return; ALERTED[key]=true;
+  setTimeout(()=>{delete ALERTED[key];},15*60*1000); // re-arm after 15 min
+  const ban=document.getElementById('alertBanner');
+  ban.textContent=(kind==='bad'?'🚨 ':kind==='good'?'✅ ':'⚠️ ')+msg;
+  ban.className=kind==='warn'?'warn':'';
+  ban.style.display='block';
+  setTimeout(()=>{ban.style.display='none';},8000);
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const beeps=kind==='bad'?3:kind==='good'?2:1;
+    for(let i=0;i<beeps;i++){
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=kind==='bad'?620:880;
+      const t0=ctx.currentTime+i*0.35;
+      g.gain.setValueAtTime(0.35,t0);g.gain.exponentialRampToValueAtTime(0.01,t0+0.28);
+      o.start(t0);o.stop(t0+0.3);
+    }
+  }catch(e){}
+  if('Notification' in window&&Notification.permission==='granted')
+    new Notification('Kornis Monitor',{body:msg});
+}
+</script>
+</body></html>

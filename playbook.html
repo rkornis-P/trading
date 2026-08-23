@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Playbook · Kornis Protocol</title>
+<style>
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13.5px;line-height:1.45;padding:16px 12px 90px;max-width:600px;margin:0 auto}
+h1{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+.sub{text-align:center;font-size:10px;color:var(--dim);margin-bottom:12px;letter-spacing:.06em}
+details{background:var(--panel);border:1px solid var(--line);border-radius:11px;margin-bottom:9px;overflow:hidden}
+summary{padding:12px 14px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-soft);font-weight:700;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:after{content:"+";float:right;color:var(--dim)}
+details[open] summary:after{content:"–"}
+.bd{padding:0 14px 12px}
+table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:8px}
+th{color:var(--dim);font-size:9px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:4px 6px;border-bottom:1px solid var(--gold)}
+td{padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.k{color:var(--gold-soft);font-weight:700;white-space:nowrap}
+.rule{background:#1a1205;border:1px solid var(--amber);border-radius:8px;padding:7px 11px;margin:8px 0;font-size:11.5px;text-align:center}
+.rule b{color:var(--amber)}
+.g{color:var(--green)} .r{color:var(--red)}
+ol{margin-left:18px;font-size:12px}
+ol li{padding:2.5px 0}
+ol b{color:var(--gold-soft)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:11px 0;color:var(--dim);text-decoration:none;font-size:9.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<h1>The Playbook</h1>
+<div class="sub">SCALPER-FIRST · VEHICLE · GREEKS · ENTRIES · WHALE LEVELS · TAP TO EXPAND</div>
+
+<details open>
+<summary>⚡ Scalp Rules (Your Style)</summary>
+<div class="bd">
+<table>
+<tr><th>Item</th><th>Rule</th></tr>
+<tr><td class="k">Opening play</td><td><b>5-min Opening Range:</b> mark the HIGH and LOW of the first 5m candle (8:30–8:35). Break above on expanding volume = long trigger. Break below = short trigger. No more waiting for 15m closes on scalps.</td></tr>
+<tr><td class="k">Trigger chart</td><td>5m candles. 15m is for CONTEXT only (trend + walls).</td></tr>
+<tr><td class="k">Vehicle</td><td>5–10 DTE, 0.65–0.75Δ. Never 0–2 DTE. Under-$1 expected moves → shares beat options.</td></tr>
+<tr><td class="k">Ride line</td><td>9 EMA on the 5m. In while it holds, out when a candle closes across it against you.</td></tr>
+<tr><td class="k">Time stop</td><td>Scalp not working in 30–45 min = out flat. Capital has better places to be.</td></tr>
+<tr><td class="k">Day's end</td><td>ALL positions flat by 2:45 PM CT. No overnights, ever. Last entry 2:00 PM.</td></tr>
+</table>
+<div class="rule"><b>Lunch rule:</b> 11:00–12:30 CT = half size or no trades. Thin tape lies.</div>
+</div>
+</details>
+
+<details>
+<summary>1 · Vehicle by Holding Period</summary>
+<div class="bd">
+<table>
+<tr><th>Strategy</th><th>Expiry</th><th>Delta</th><th>Theta/day</th></tr>
+<tr><td class="k">Scalp (min–3hr)</td><td>5–10 DTE</td><td>0.65–0.75</td><td>never own &gt;4%/day decay</td></tr>
+<tr><td class="k">Day trade</td><td>7–14 DTE</td><td>0.60–0.70</td><td>≤ 3%</td></tr>
+<tr><td class="k">Weekly</td><td>14–25 DTE</td><td>0.60–0.70</td><td>≤ 2%</td></tr>
+<tr><td class="k">21-day swing</td><td>30–45 DTE, exit by 21</td><td>≈ 0.70</td><td>≤ 1%</td></tr>
+</table>
+<div class="rule"><b>IV override:</b> IV Rank &gt;50 → deeper ITM (0.70–0.80Δ) · &lt;30 → ATM okay · OTM only on a Tier-1 catalyst firing today</div>
+</div>
+</details>
+
+<details>
+<summary>2 · Greeks Pass/Fail</summary>
+<div class="bd">
+<table>
+<tr><th>Greek</th><th>Test</th></tr>
+<tr><td class="k">Delta</td><td>Matches the strategy table</td></tr>
+<tr><td class="k">Theta</td><td>Theta ÷ price ≤ the %/day limit</td></tr>
+<tr><td class="k">Vega</td><td>After a vol spike, keep it small: deep ITM or fewer days held</td></tr>
+<tr><td class="k">Gamma</td><td>Scalps: friend. Swings: near-expiry gamma = theta twin, avoid</td></tr>
+<tr><td class="k">IV Rank</td><td>Prefer &lt;50 when buying premium; else apply override</td></tr>
+</table>
+<b style="font-size:11px;color:var(--dim)">LIQUIDITY GATE (fail any = walk):</b>
+<table>
+<tr><td>Spread ≤ $0.30 and ≤ 5% of mid · OI ≥ 500 · day volume ≥ 100 · limit at MID only</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>3 · Entry Values (5m scalp / 15m day)</summary>
+<div class="bd">
+<table>
+<tr><th>Signal</th><th class="g">LONG</th><th class="r">SHORT</th></tr>
+<tr><td class="k">VWAP</td><td>Above / reclaim holds</td><td>Below / rejects it</td></tr>
+<tr><td class="k">9EMA vs 20SMA</td><td>EMA above, price riding</td><td>EMA below, price failing</td></tr>
+<tr><td class="k">RSI 14</td><td>Up thru 40–50, never open &gt;70</td><td>Down thru 60–50, never open &lt;30</td></tr>
+<tr><td class="k">MACD hist</td><td>Green + growing 2 bars</td><td>Red + growing 2 bars</td></tr>
+<tr><td class="k">BB %B</td><td>Rising thru 50 or snap from &lt;0</td><td>Falling thru 50 or fade from &gt;100</td></tr>
+<tr><td class="k">Momentum</td><td>Above 0 / rising 3</td><td>Below 0 / falling 3</td></tr>
+<tr><td class="k">Volume ⚖</td><td>Expands with move</td><td>Expands with drop</td></tr>
+</table>
+<div class="rule"><b>5 of 7 or NO TRADE. Volume holds the veto.</b></div>
+</div>
+</details>
+
+<details>
+<summary>4 · Averages & Whale Levels</summary>
+<div class="bd">
+<table>
+<tr><td class="k">9 EMA 5m</td><td>Scalp ride line</td></tr>
+<tr><td class="k">20 SMA 15m/1h</td><td>First wall — first touch usually rejects</td></tr>
+<tr><td class="k">50 SMA 1h/1D</td><td>Swing target / trend ceiling</td></tr>
+<tr><td class="k">200 SMA 1D</td><td>Regime: above = buy dips, below = sell rips</td></tr>
+</table>
+<table>
+<tr><td class="k">Call Wall</td><td class="r">CEILING — sell longs into it</td></tr>
+<tr><td class="k">Put Wall</td><td class="g">FLOOR — take put profits into it</td></tr>
+<tr><td class="k">Max Pain</td><td>Friday/OpEx pin magnet</td></tr>
+<tr><td class="k">Dealer Γ</td><td>Positive = chop, fade edges · Negative = trends run</td></tr>
+</table>
+</div>
+</details>
+
+<details>
+<summary>5 · The Sequence (every trade)</summary>
+<div class="bd">
+<ol>
+<li><b>Thesis</b> in one sentence</li>
+<li><b>Macro gate:</b> ¥ vs 159 · SPY/QQQ agree</li>
+<li><b>Level map:</b> y'day H/L · premkt H/L · walls · max pain</li>
+<li><b>Stack:</b> 1D trend → 1h structure → 5m trigger</li>
+<li><b>Confluence:</b> 5 of 7, volume not vetoing</li>
+<li><b>Vehicle + Greeks + liquidity</b> pass</li>
+<li><b>Exits written first:</b> T1 half · T2 runner · stop (structure or 1–1.5× ATR) · time stop</li>
+<li><b>BRACKET ON THE TICKET</b> — no bracket, no trade</li>
+<li><b>Manage by rule:</b> half at T1 · stop→breakeven · never round-trip a double · flat by 2:45</li>
+<li><b>Journal same day</b></li>
+</ol>
+</div>
+</details>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="playbook.html" class="on">PLAYBOOK</a>
+  <a href="monitor.html">MONITOR</a>
+  <a href="pretrade.html">GATES</a>
+  <a href="trades.html">TRADES</a>
+</div>
+</body></html>
