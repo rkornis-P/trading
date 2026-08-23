@@ -66,7 +66,7 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
   <div class="tf" data-i="1d" data-r="3mo" onclick="setTF(this)">1D</div>
 </div>
 
-<canvas id="cv" height="300"></canvas>
+<canvas id="cv" height="340"></canvas>
 <div id="status">Enter ticker → PULL. Auto-refreshes every 45s.</div>
 
 <div class="strip" id="gkStrip">
@@ -169,7 +169,10 @@ function loadChain(tk){
     for(const o of raw){const m=(o.option||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
       const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
       const dte=Math.ceil((exp-now)/86400000);if(dte<0||dte>45)continue;
-      uni.push({type:m[2],strike:+m[3]/1000,oi:+o.open_interest||0,iv:+o.implied_volatility||0,dte});}
+      const iv=+(o.implied_volatility??o.iv??o.impliedVolatility??(o.greeks&&o.greeks.iv)??0)||0;
+      const dDelta=+(o.delta??(o.greeks&&o.greeks.delta)??0)||0;
+      uni.push({type:m[2],strike:+m[3]/1000,oi:+o.open_interest||0,iv,dDelta,dte,
+        mid:((+o.bid||0)+(+o.ask||+o.mid||0))/2});}
     if(!uni.length)return;
     /* walls + max pain (exact chart.html logic) */
     const ks=[...new Set(uni.map(o=>o.strike))].sort((a,b)=>a-b);
@@ -183,20 +186,36 @@ function loadChain(tk){
     for(const k of ks){if(oiBy[k].c>cm&&k>=spot){cm=oiBy[k].c;cw=k;}
       if(oiBy[k].p>pm&&k<=spot){pm=oiBy[k].p;pw=k;}}
     LVL={cw,pw,mp};
-    /* auto Greeks: nearest 0.70Δ-side contract in direction, else ATM */
+    /* auto Greeks: nearest ~0.70Δ contract in direction — with IV fallbacks */
     const isL=document.getElementById('dir').value==='long';
-    const side=uni.filter(o=>o.type===(isL?'C':'P')&&o.iv>0&&o.dte>=5).sort((a,b)=>Math.abs(a.strike-spot)-Math.abs(b.strike-spot));
+    const side=uni.filter(o=>o.type===(isL?'C':'P')&&o.dte>=5).sort((a,b)=>Math.abs(a.strike-spot)-Math.abs(b.strike-spot));
     if(side.length){
-      /* prefer strike ~6-8% ITM for ≈0.70Δ */
       const targetK=isL?spot*0.95:spot*1.05;
       side.sort((a,b)=>Math.abs(a.strike-targetK)-Math.abs(b.strike-targetK));
-      const o=side[0];const g=bsG(spot,o.strike,o.dte/365,0.05,o.iv,isL);
-      if(g){GRK={...g,iv:o.iv*100,dte:o.dte,strike:o.strike};
-        document.getElementById('g_d').textContent=g.d.toFixed(2);
+      const o=side[0];
+      let iv=o.iv,ivNote='';
+      if(!iv||iv<=0){
+        /* back-solve IV from the option's mid price if we have one */
+        if(o.mid&&o.mid>0.05){
+          let lo=0.05,hi=3.0;
+          for(let it=0;it<40;it++){const mid2=(lo+hi)/2;
+            const g2=bsG(spot,o.strike,o.dte/365,0.05,mid2,isL);
+            const px2=isL?Math.max(spot-o.strike,0)+ (g2?g2.v*0:0):0; /* placeholder */
+            /* proper BS price */
+            const st=Math.sqrt(o.dte/365);const d1=(Math.log(spot/o.strike)+(0.05+.5*mid2*mid2)*(o.dte/365))/(mid2*st);const d2=d1-mid2*st;
+            const price=isL?spot*nCDF(d1)-o.strike*Math.exp(-0.05*o.dte/365)*nCDF(d2)
+                          :o.strike*Math.exp(-0.05*o.dte/365)*nCDF(-d2)-spot*nCDF(-d1);
+            if(price>o.mid)hi=mid2;else lo=mid2;}
+          iv=(lo+hi)/2;ivNote='~';
+        }else{iv=0.55;ivNote='~';}
+      }
+      const g=bsG(spot,o.strike,o.dte/365,0.05,iv,isL);
+      if(g){GRK={...g,iv:iv*100,dte:o.dte,strike:o.strike};
+        document.getElementById('g_d').textContent=(o.dDelta?Math.abs(o.dDelta):Math.abs(g.d)).toFixed(2);
         document.getElementById('g_g').textContent=g.g.toFixed(3);
         document.getElementById('g_t').textContent=g.t.toFixed(2);
         document.getElementById('g_v').textContent=g.v.toFixed(2);
-        document.getElementById('g_iv').textContent=(o.iv*100).toFixed(0);
+        document.getElementById('g_iv').textContent=ivNote+(iv*100).toFixed(0);
         document.getElementById('g_dte').textContent=o.dte;}}
     draw();
   }).catch(()=>{});
@@ -207,7 +226,7 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 function draw(){
   if(!BARS)return;
   const dpr=window.devicePixelRatio||1;
-  const W=cv.clientWidth,Hh=300;cv.width=W*dpr;cv.height=Hh*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=cv.clientWidth,Hh=340,MH=44,PH=Hh-MH-6;cv.height=Hh*dpr;cv.width=W*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,Hh);
   const n=BARS.C.length,show=Math.min(n,IV==='1d'?60:78),s0=n-show;
   const padR=52,cw=(W-padR)/show;
@@ -217,7 +236,7 @@ function draw(){
   const E=parseFloat(document.getElementById('entry').value),S=parseFloat(document.getElementById('stop').value),Tg=parseFloat(document.getElementById('target').value);
   for(const v of [E,S,Tg])if(v&&v>lo*0.85&&v<hi*1.15){hi=Math.max(hi,v);lo=Math.min(lo,v);}
   const pad=(hi-lo)*0.04;hi+=pad;lo-=pad;
-  const y=v=>Hh-8-((v-lo)/(hi-lo))*(Hh-16);
+  const y=v=>PH-8-((v-lo)/(hi-lo))*(PH-16);
   const x=i=>(i-s0)*cw+cw/2;
   /* BB fill */
   ctx.beginPath();let started=false;
@@ -245,6 +264,21 @@ function draw(){
   /* last price */
   const last=BARS.C[n-1];
   ctx.fillStyle='#fff';ctx.font='800 10px sans-serif';ctx.fillText(n2(last),W-padR+2,y(last)+3);
+  /* MACD strip */
+  const mh=BARS.macd.hist;let mmax=0;
+  for(let i=s0;i<n;i++)if(mh[i]!=null)mmax=Math.max(mmax,Math.abs(mh[i]));
+  if(mmax>0){
+    const zy=PH+6+MH/2;
+    ctx.strokeStyle='rgba(138,147,166,0.4)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,zy);ctx.lineTo(W-padR,zy);ctx.stroke();
+    const bw2=Math.max(1.5,cw*0.55);
+    for(let i=s0;i<n;i++){if(mh[i]==null)continue;
+      const grow=i>0&&mh[i-1]!=null&&Math.abs(mh[i])>=Math.abs(mh[i-1]);
+      ctx.fillStyle=mh[i]>=0?(grow?'#2FB673':'rgba(47,182,115,0.4)'):(grow?'#E05B44':'rgba(224,91,68,0.4)');
+      const bh=(Math.abs(mh[i])/mmax)*(MH/2-2);
+      ctx.fillRect(x(i)-bw2/2,mh[i]>=0?zy-bh:zy,bw2,Math.max(1,bh));}
+    ctx.fillStyle='#8A93A6';ctx.font='700 8px sans-serif';ctx.fillText('MACD',W-padR+2,zy+3);
+  }
 }
 window.addEventListener('resize',draw);
 document.getElementById('dir').addEventListener('change',()=>{if(BARS){loadChain(BARS.tk);health();}});
