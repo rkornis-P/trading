@@ -15,12 +15,12 @@ h1{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold
 .seg div.onL{background:var(--green);color:#000;border-color:var(--green)}
 .seg div.onS{background:var(--red);color:#fff;border-color:var(--red)}
 .strat{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px}
-.strat div{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:8px 2px;text-align:center;cursor:pointer}
-.strat div.on{background:var(--gold);border-color:var(--gold)}
+.strat>div{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:8px 2px;text-align:center;cursor:pointer;transition:all .12s}
+.strat>div.on{background:linear-gradient(135deg,#8a6a14,#BF9000)!important;border-color:#E8C86A!important;box-shadow:0 0 12px rgba(191,144,0,.55);transform:scale(1.04)}
 .strat .t{font-size:10.5px;font-weight:800;color:var(--gold-soft)}
-.strat div.on .t{color:#000}
+.strat>div.on .t{color:#000!important}
 .strat .d{font-size:8px;color:var(--dim)}
-.strat div.on .d{color:#333}
+.strat>div.on .d{color:#3a2c00!important}
 button.go{background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-weight:800;cursor:pointer;width:100%;font-size:13px;letter-spacing:.06em;margin-bottom:10px}
 #status{font-size:10.5px;color:var(--dim);text-align:center;padding:4px 0 10px}
 .best{background:linear-gradient(160deg,#1a1408,#121B2E);border:1.5px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:10px}
@@ -80,7 +80,7 @@ let DIR='long';
 function setDir(d){DIR=d;
   document.getElementById('segL').className=d==='long'?'onL':'';
   document.getElementById('segS').className=d==='short'?'onS':'';}
-function setStrat(el){document.querySelectorAll('.strat div').forEach(x=>x.classList.remove('on'));el.classList.add('on');}
+function setStrat(el){document.querySelectorAll('.strat>div').forEach(x=>x.classList.remove('on'));el.classList.add('on');}
 
 function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
 function nPDF(x){return Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);}
