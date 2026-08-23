@@ -162,17 +162,20 @@ async function loadAll(){
   if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12)};draw();health();}},45000);
 }
 function loadChain(tk){
+  const st=document.getElementById('status');
   fetch(RELAY+'/?chain='+encodeURIComponent(tk)).then(r=>r.json()).then(cj=>{
-    const spot=cj?.data?.current_price??cj?.data?.close;const raw=cj?.data?.options||[];
-    if(!raw.length||!spot)return;
-    const now=new Date();const uni=[];
-    for(const o of raw){const m=(o.option||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+    const spot=cj?.data?.current_price??cj?.data?.close??cj?.current_price;
+    const raw=cj?.data?.options||cj?.options||[];
+    if(!raw.length||!spot){st.textContent+=' · chain: EMPTY (spot='+(spot||'none')+', opts='+raw.length+')';return;}
+    const now=new Date();const uni=[];let noMatch=0;
+    for(const o of raw){const m=(o.option||o.symbol||o.contract||'').match(/(\d{6})([CP])(\d{8})$/);if(!m){noMatch++;continue;}
       const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
-      const dte=Math.ceil((exp-now)/86400000);if(dte<0||dte>45)continue;
+      const dte=Math.ceil((exp-now)/86400000);if(dte<0||dte>60)continue;
       const iv=+(o.implied_volatility??o.iv??o.impliedVolatility??(o.greeks&&o.greeks.iv)??0)||0;
       const dDelta=+(o.delta??(o.greeks&&o.greeks.delta)??0)||0;
       uni.push({type:m[2],strike:+m[3]/1000,oi:+o.open_interest||0,iv,dDelta,dte,
         mid:((+o.bid||0)+(+o.ask||+o.mid||0))/2});}
+    st.textContent+=' · chain: '+raw.length+' raw, '+uni.length+' parsed'+(noMatch?', '+noMatch+' regex-miss':'');
     if(!uni.length)return;
     /* walls + max pain (exact chart.html logic) */
     const ks=[...new Set(uni.map(o=>o.strike))].sort((a,b)=>a-b);
@@ -188,7 +191,9 @@ function loadChain(tk){
     LVL={cw,pw,mp};
     /* auto Greeks: nearest ~0.70Δ contract in direction — with IV fallbacks */
     const isL=document.getElementById('dir').value==='long';
-    const side=uni.filter(o=>o.type===(isL?'C':'P')&&o.dte>=5).sort((a,b)=>Math.abs(a.strike-spot)-Math.abs(b.strike-spot));
+    let side=uni.filter(o=>o.type===(isL?'C':'P')&&o.dte>=3);
+    if(!side.length)side=uni.filter(o=>o.type===(isL?'C':'P'));
+    if(!side.length)side=uni.slice();
     if(side.length){
       const targetK=isL?spot*0.95:spot*1.05;
       side.sort((a,b)=>Math.abs(a.strike-targetK)-Math.abs(b.strike-targetK));
@@ -218,7 +223,7 @@ function loadChain(tk){
         document.getElementById('g_iv').textContent=ivNote+(iv*100).toFixed(0);
         document.getElementById('g_dte').textContent=o.dte;}}
     draw();
-  }).catch(()=>{});
+  }).catch(e=>{document.getElementById('status').textContent+=' · chain FETCH FAILED ('+(e.message||'network')+')';});
 }
 
 /* ---------- drawing ---------- */
