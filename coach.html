@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Coach · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:10px 8px 84px;max-width:640px;margin:0 auto}
+h1{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:8px}
+.sec{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:10px 0 5px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.grid input,.grid select{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px 6px;font-size:13px}
+.grid .w2{grid-column:span 2}
+.row{display:flex;gap:6px;margin-top:8px}
+button.big{flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-weight:800;font-size:13px;cursor:pointer;letter-spacing:.04em}
+button.ghost{flex:1;background:var(--panel);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:12px;font-weight:700;font-size:12px;cursor:pointer}
+button.ghost.live{background:var(--gold);color:#000}
+#clockbar{display:flex;gap:5px;margin-top:8px}
+.ck{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 4px;text-align:center}
+.ck .l{font-size:8.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.ck .v{font-size:13px;font-weight:800;color:var(--gold-soft)}
+.ck.hot .v{color:var(--red)}
+.ck.warn .v{color:var(--amber)}
+#status{font-size:10px;color:var(--dim);text-align:center;padding:6px 0}
+#card{display:none;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:8px}
+#card.show{display:block}
+#verdict{display:inline-block;font-size:15px;font-weight:800;letter-spacing:.08em;padding:5px 14px;border-radius:7px;margin-bottom:9px;background:var(--panel2);border:1px solid var(--line)}
+#verdict.HOLD{color:var(--green);border-color:var(--green)}
+#verdict.TRIM{color:var(--amber);border-color:var(--amber)}
+#verdict.EXIT{color:var(--red);border-color:var(--red)}
+#verdict.TIGHTEN{color:var(--gold-soft);border-color:var(--gold)}
+#vtime{font-size:9.5px;color:var(--dim);margin-left:8px}
+#cbody{font-size:13px;line-height:1.6;white-space:pre-wrap}
+#cbody b{color:var(--gold-soft)}
+.snap{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+.sp{flex:1;min-width:56px;background:var(--panel2);border:1px solid var(--line);border-radius:7px;padding:5px 3px;text-align:center}
+.sp .l{font-size:8px;color:var(--dim);text-transform:uppercase}
+.sp .v{font-size:12px;font-weight:800}
+.sp .v.g{color:var(--green)}.sp .v.r{color:var(--red)}.sp .v.a{color:var(--amber)}
+#histWrap{margin-top:12px}
+.hitem{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:6px;cursor:pointer}
+.hitem .hh{display:flex;justify-content:space-between;font-size:11px;font-weight:800}
+.hitem .hh .hv.HOLD{color:var(--green)}.hitem .hh .hv.TRIM{color:var(--amber)}.hitem .hh .hv.EXIT{color:var(--red)}.hitem .hh .hv.TIGHTEN{color:var(--gold-soft)}
+.hitem .hb{display:none;font-size:12px;line-height:1.55;color:var(--text);margin-top:7px;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:7px}
+.hitem.open .hb{display:block}
+.hitem .ht{color:var(--dim);font-weight:400}
+#clearH{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);border-radius:8px;padding:8px;font-size:11px;cursor:pointer;margin-top:2px}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<h1>Coach — Every 15 Minutes, A Lesson</h1>
+
+<div class="sec">The Position</div>
+<div class="grid">
+  <input id="tk" placeholder="SPCX" value="SPCX" autocapitalize="characters">
+  <select id="side"><option value="CALL">CALL ▲</option><option value="PUT">PUT ▼</option></select>
+  <input id="strike" type="number" step="0.5" placeholder="Strike">
+  <input id="qty" type="number" step="1" placeholder="# Cts" value="1">
+  <input id="exp" type="date" class="w2">
+  <input id="oentry" type="number" step="0.01" placeholder="Opt entry $" class="w2">
+</div>
+<div class="sec">The Plan (stock levels)</div>
+<div class="grid">
+  <input id="stop" type="number" step="0.01" placeholder="Stop" class="w2">
+  <input id="target" type="number" step="0.01" placeholder="Target" class="w2">
+</div>
+
+<div class="row">
+  <button class="big" onclick="coach(true)">COACH ME NOW</button>
+  <button class="ghost" id="autoBtn" onclick="toggleAuto()">AUTO 15m: OFF</button>
+</div>
+<div id="clockbar">
+  <div class="ck" id="ckNow"><div class="l">CT time</div><div class="v" id="v_now">—</div></div>
+  <div class="ck" id="ckNext"><div class="l">Next check</div><div class="v" id="v_next">—</div></div>
+  <div class="ck" id="ckFlat"><div class="l">Flat by</div><div class="v" id="v_flat">2:45</div></div>
+  <div class="ck" id="ckDte"><div class="l">DTE</div><div class="v" id="v_dte">—</div></div>
+</div>
+<div id="status">Fill the position → COACH ME NOW, or arm AUTO to get a briefing at every quarter-hour candle close.</div>
+
+<div id="card">
+  <span id="verdict">—</span><span id="vtime"></span>
+  <div id="cbody"></div>
+  <div class="snap" id="snap"></div>
+</div>
+
+<div id="histWrap">
+  <div class="sec">Coaching Log — your education archive (tap to expand)</div>
+  <div id="hist"></div>
+  <button id="clearH" onclick="clearLog()">clear log</button>
+</div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="cockpit.html">COCKPIT</a>
+  <a href="picker.html">PICKER</a>
+  <a class="on" href="coach.html">COACH</a>
+  <a href="trades.html">TRADES</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+let AUTO=false, timer=null, busy=false;
+
+/* ---------- persistence ---------- */
+const F=['tk','side','strike','qty','exp','oentry','stop','target'];
+function saveP(){const o={};F.forEach(k=>o[k]=document.getElementById(k).value);localStorage.setItem('kCoach_pos',JSON.stringify(o));}
+function loadP(){try{const o=JSON.parse(localStorage.getItem('kCoach_pos'));if(o)F.forEach(k=>{if(o[k]!==undefined&&o[k]!=='')document.getElementById(k).value=o[k];});}catch(e){}}
+F.forEach(k=>document.getElementById(k).addEventListener('change',saveP));
+
+/* ---------- CT clock ---------- */
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function ctMin(){const n=ctNow();return n.getHours()*60+n.getMinutes();}
+function fmtT(d){let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+ap;}
+function dte(){const e=document.getElementById('exp').value;if(!e)return null;const d=Math.ceil((new Date(e+'T16:00:00')-ctNow())/86400000);return d;}
+function clockTick(){
+  const n=ctNow();document.getElementById('v_now').textContent=fmtT(n);
+  const d=dte();const dEl=document.getElementById('v_dte');dEl.textContent=d===null?'—':d;
+  const ck=document.getElementById('ckDte');ck.className='ck'+(d!==null&&d<=21?(d<=7?' hot':' warn'):'');
+  const m=ctMin();const fl=document.getElementById('ckFlat');
+  fl.className='ck'+(m>=14*60+15?' hot':(m>=13*60+30?' warn':''));
+  if(AUTO){const nx=nextQuarter();document.getElementById('v_next').textContent=fmtT(nx);}
+  else document.getElementById('v_next').textContent='off';
+}
+function nextQuarter(){const n=ctNow();const q=new Date(n);q.setSeconds(20);q.setMilliseconds(0);
+  const add=15-(n.getMinutes()%15);q.setMinutes(n.getMinutes()+add);return q;}
+setInterval(clockTick,5000);
+
+/* ---------- data fetch ---------- */
+async function getHist(tk){
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d');
+  const j=await r.json();
+  const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no history');
+  const q=res.indicators.quote[0];const ts=res.timestamp||[];
+  const bars=[];
+  for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;
+    bars.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+  return bars;
+}
+function ema(vals,p){const k=2/(p+1);let e=vals[0];const out=[e];
+  for(let i=1;i<vals.length;i++){e=vals[i]*k+e*(1-k);out.push(e);}return out;}
+function sma(vals,p,i){if(i+1<p)return null;let s=0;for(let j=i-p+1;j<=i;j++)s+=vals[j];return s/p;}
+function rsi(closes,p){if(closes.length<p+1)return null;let g=0,l=0;
+  for(let i=closes.length-p;i<closes.length;i++){const d=closes[i]-closes[i-1];if(d>0)g+=d;else l-=d;}
+  if(l===0)return 100;const rs=g/l;return 100-100/(1+rs);}
+function analyze(bars){
+  const c=bars.map(b=>b.c);const n=c.length-1;
+  const px=c[n];
+  const e9=ema(c,9)[n];const s20=sma(c,20,n);
+  let cumPV=0,cumV=0;bars.forEach(b=>{cumPV+=((b.h+b.l+b.c)/3)*b.v;cumV+=b.v;});
+  const vwap=cumV?cumPV/cumV:px;
+  const r=rsi(c,14);
+  const e12=ema(c,12),e26=ema(c,26);
+  const macdLine=c.map((_,i)=>e12[i]-e26[i]);const sig=ema(macdLine,9);
+  const h1=macdLine[n]-sig[n],h0=macdLine[n-1]-sig[n-1],hm=macdLine[n-2]-sig[n-2];
+  const vAvg=bars.slice(-20).reduce((a,b)=>a+b.v,0)/Math.min(20,bars.length);
+  const vLast=bars[n].v;
+  const hi=Math.max(...bars.map(b=>b.h)),lo=Math.min(...bars.map(b=>b.l));
+  return {px,e9,s20,vwap,rsi:r,macdH:h1,macdGrow:(h1>h0&&h0>hm),macdShrink:(h1<h0),volRatio:vAvg?vLast/vAvg:1,dayHi:hi,dayLo:lo,
+    last3:bars.slice(-3).map(b=>({c:+b.c.toFixed(2),v:b.v}))};
+}
+/* ---------- the coach ---------- */
+async function coach(manual){
+  if(busy)return;busy=true;
+  const tk=document.getElementById('tk').value.trim().toUpperCase();
+  const st=document.getElementById('status');
+  if(!tk){st.textContent='Ticker first.';busy=false;return;}
+  saveP();
+  st.textContent='Pulling 5m data + building briefing…';
+  try{
+    const bars=await getHist(tk);
+    const A=analyze(bars);
+    const side=document.getElementById('side').value;
+    const strike=parseFloat(document.getElementById('strike').value)||null;
+    const oentry=parseFloat(document.getElementById('oentry').value)||null;
+    const qty=parseInt(document.getElementById('qty').value)||1;
+    const stop=parseFloat(document.getElementById('stop').value)||null;
+    const target=parseFloat(document.getElementById('target').value)||null;
+    const D=dte();
+    const m=ctMin();const mins245=(14*60+45)-m;const mins200=(14*60)-m;
+    const lunch=(m>=11*60&&m<12*60+30);
+    const openMkt=(m>=8*60+30&&m<15*60);
+
+    const dat={
+      ticker:tk,position:side+' $'+(strike??'?')+' x'+qty+(D!==null?(' exp in '+D+' DTE'):''),
+      option_entry:oentry,stock_now:+A.px.toFixed(2),
+      plan_stop:stop,plan_target:target,
+      day_high:+A.dayHi.toFixed(2),day_low:+A.dayLo.toFixed(2),
+      vwap:+A.vwap.toFixed(2),ema9_5m:+A.e9.toFixed(2),sma20_5m:A.s20?+A.s20.toFixed(2):null,
+      rsi14_5m:A.rsi?+A.rsi.toFixed(1):null,
+      macd_hist:+A.macdH.toFixed(3),macd_growing:A.macdGrow,macd_shrinking:A.macdShrink,
+      last_bar_vol_vs_20avg:+A.volRatio.toFixed(2),last_3_bars:A.last3,
+      clock_CT:fmtT(ctNow()),market_open:openMkt,lunch_window:lunch,
+      mins_to_200pm_last_entry:mins200,mins_to_245_flat:mins245,dte:D
+    };
+
+    const sys='You are the Kornis Protocol position coach for a scalper/day trader (long options only, hates overnights). '+
+      'RULES YOU ENFORCE: 9EMA on 5m is the ride line, close across it = exit signal. 20SMA first touch usually rejects. '+
+      'VWAP loss = character change. Never round-trip a double; half off at target 1, stop to breakeven. '+
+      'Volume has absolute veto. Lunch 11:00-12:30 CT = no new risk. Last entry 2:00 PM CT. FLAT BY 2:45 CT unless runner is protected by a profit-locking stop. '+
+      'Exit any swing by 21 DTE. Respect the stop as written; never widen it. '+
+      'FORMAT — reply EXACTLY in this shape, nothing else:\n'+
+      'VERDICT: one of HOLD | TIGHTEN | TRIM | EXIT\n'+
+      'WHY: exactly 3 short bullet lines starting with "- ", each citing a number from the data\n'+
+      'LESSON: 2-3 sentences teaching the ONE concept most in play right now, in plain language, so the trader learns the craft\n'+
+      'NEXT: one line — the specific price or clock event to watch before the next 15-minute check\n'+
+      'Be blunt. If data conflicts, volume and the stop win. If past 2:30 CT with no protected runner, verdict is EXIT.';
+
+    const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,system:sys,
+        messages:[{role:'user',content:'15-minute check-in. Position and live data:\n'+JSON.stringify(dat,null,1)}]})});
+    const j=await resp.json();
+    if(j.error)throw new Error(j.error.message||'relay error');
+    const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    render(txt,A,dat);
+    st.textContent=(AUTO?'Auto-coaching armed — next check at the quarter-hour.':'Briefing complete.');
+  }catch(e){
+    st.textContent='Coach failed: '+e.message+(manual?'':' — will retry next cycle.');
+  }
+  busy=false;
+}
+
+function render(txt,A,dat){
+  const card=document.getElementById('card');card.classList.add('show');
+  let verdict='HOLD';
+  const vm=txt.match(/VERDICT:\s*(HOLD|TIGHTEN|TRIM|EXIT)/i);
+  if(vm)verdict=vm[1].toUpperCase();
+  const vEl=document.getElementById('verdict');vEl.textContent=verdict;vEl.className=verdict;
+  document.getElementById('vtime').textContent=fmtT(ctNow())+' CT';
+  const body=txt.replace(/VERDICT:.*(\n|$)/i,'').trim();
+  document.getElementById('cbody').textContent=body;
+  const sn=document.getElementById('snap');
+  const rows=[
+    ['Stock','$'+dat.stock_now,''],
+    ['vs 9EMA',(dat.stock_now>=dat.ema9_5m?'above':'below'),(dat.stock_now>=dat.ema9_5m?'g':'r')],
+    ['vs VWAP',(dat.stock_now>=dat.vwap?'above':'below'),(dat.stock_now>=dat.vwap?'g':'r')],
+    ['RSI',dat.rsi14_5m??'—',(dat.rsi14_5m>70?'a':'')],
+    ['Vol×',dat.last_bar_vol_vs_20avg,(dat.last_bar_vol_vs_20avg>=1.5?'g':(dat.last_bar_vol_vs_20avg<0.7?'a':''))],
+    ['Flat in',(dat.mins_to_245_flat>0?dat.mins_to_245_flat+'m':'PAST'),(dat.mins_to_245_flat<=30?'r':(dat.mins_to_245_flat<=75?'a':''))]
+  ];
+  sn.innerHTML=rows.map(r=>'<div class="sp"><div class="l">'+r[0]+'</div><div class="v '+r[2]+'">'+r[1]+'</div></div>').join('');
+  speak(verdict,txt);
+  logIt(verdict,txt,dat);
+}
+
+/* ---------- voice ---------- */
+function speak(verdict,txt){
+  if(!('speechSynthesis' in window))return;
+  let nx='';const nm=txt.match(/NEXT:\s*(.+)/i);if(nm)nx=nm[1];
+  const msg='Coach says '+verdict+'. '+nx;
+  try{const u=new SpeechSynthesisUtterance(msg);u.rate=1.02;u.pitch=(verdict==='EXIT'?0.9:1);speechSynthesis.speak(u);}catch(e){}
+}
+
+/* ---------- log ---------- */
+function getLog(){try{return JSON.parse(localStorage.getItem('kCoachLog'))||[];}catch(e){return[];}}
+function logIt(verdict,txt,dat){
+  const L=getLog();
+  L.unshift({t:Date.now(),tk:dat.ticker,px:dat.stock_now,verdict,txt});
+  while(L.length>60)L.pop();
+  localStorage.setItem('kCoachLog',JSON.stringify(L));
+  drawLog();
+}
+function drawLog(){
+  const L=getLog();const h=document.getElementById('hist');
+  if(!L.length){h.innerHTML='<div style="color:var(--dim);font-size:11px;padding:6px 2px">No sessions yet. Every briefing lands here so you can re-read the lessons after the close.</div>';return;}
+  h.innerHTML=L.map((e,i)=>{
+    const d=new Date(e.t);const ct=d.toLocaleString('en-US',{timeZone:'America/Chicago',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
+    return '<div class="hitem" onclick="this.classList.toggle(String.fromCharCode(111,112,101,110))">'+
+      '<div class="hh"><span>'+e.tk+' $'+e.px+' <span class="ht">'+ct+' CT</span></span><span class="hv '+e.verdict+'">'+e.verdict+'</span></div>'+
+      '<div class="hb"></div></div>';
+  }).join('');
+  const items=h.querySelectorAll('.hitem .hb');
+  L.forEach((e,i)=>{if(items[i])items[i].textContent=e.txt;});
+}
+function clearLog(){if(confirm('Clear all coaching history?')){localStorage.removeItem('kCoachLog');drawLog();}}
+
+/* ---------- auto ---------- */
+function toggleAuto(){
+  AUTO=!AUTO;
+  const b=document.getElementById('autoBtn');
+  b.textContent='AUTO 15m: '+(AUTO?'ON':'OFF');
+  b.classList.toggle('live',AUTO);
+  if(timer){clearTimeout(timer);timer=null;}
+  if(AUTO){schedule();document.getElementById('status').textContent='Armed. First auto-briefing at the next quarter-hour candle close.';}
+  else{document.getElementById('status').textContent='Auto-coaching off.';}
+  clockTick();
+}
+function schedule(){
+  if(!AUTO)return;
+  const wait=nextQuarter()-ctNow();
+  timer=setTimeout(async()=>{
+    const m=ctMin();
+    if(m>=8*60+30&&m<15*60+15){await coach(false);}
+    schedule();
+  },Math.max(wait,5000));
+}
+
+loadP();clockTick();drawLog();
+</script>
+</body></html>
