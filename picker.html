@@ -112,7 +112,12 @@ async function pick(){
   const s=document.querySelector('.strat div.on');
   const dteLo=+s.dataset.lo,dteHi=+s.dataset.hi,dLo=+s.dataset.dlo,dHi=+s.dataset.dhi;
   st.textContent='Reading chain…';out.innerHTML='';
-  let R;try{R=await getChain(tk);}catch(e){st.textContent='⚠ '+e.message;return;}
+  let R;try{R=await getChain(tk);}
+  catch(e){
+    st.textContent='⚠ '+e.message+' — auto-retrying every 90s, leave this page open';
+    setTimeout(pick,90000);
+    return;
+  }
   const cj=R.cj;
   const spot=cj?.data?.current_price??cj?.data?.close??cj?.current_price;
   const raw=cj?.data?.options||cj?.options||[];
