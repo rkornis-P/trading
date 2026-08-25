@@ -127,9 +127,11 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
+  <a href="watchlist.html">SCAN</a>
   <a href="cockpit.html" class="on">COCKPIT</a>
   <a href="picker.html">PICKER</a>
-  <a href="playbook.html">PLAYBOOK</a>
+  <a href="coach.html">COACH</a>
+  <a href="ledger.html">LEDGER</a>
   <a href="trades.html">TRADES</a>
 </div>
 
@@ -435,7 +437,7 @@ if('Notification' in window&&Notification.permission==='default')Notification.re
 const INFO={
 vwap:{t:'VWAP',b:'Average price everyone paid today, volume-weighted — the session\'s line in the sand (pink line on the chart).<br><br><span class="gg">GREEN:</span> price on your side; your crowd controls the day.<br><span class="rr">RED:</span> the session average has flipped against you.<br><br><b>Do:</b> on red, tighten to the 9 EMA. Two closes on the wrong side of VWAP = exit, don\'t negotiate.'},
 ema:{t:'9 EMA — Ride Line',b:'Gold line on the chart. Strong scalps ride it like a rail.<br><br><span class="gg">GREEN:</span> closing on your side — the move is breathing normally.<br><span class="rr">RED:</span> a candle CLOSED across it against you. That IS the scalp exit, not a warning about one.<br><br><b>Do:</b> exit or cut to half. Re-enter only after price reclaims it and holds two candles.'},
-align:{t:'Trend — 9EMA vs 20SMA',b:'Gold line vs blue line. When the fast is on your side of the slow, the short-term trend agrees with you.<br><br><span class="rr">RED:</span> the lines crossed against you — now you\'re fighting the tape.<br><br><b>Do:</b> if VWAP + 9EMA are also red, the trio is unanimous. Exit.'},
+align:{t:'Trend — 9EMA vs 20SMA',b:'Gold (9 EMA) vs blue (20 SMA): the argument between the PRESENT and the recent past. Four states:<br><br><b>1 RIDE</b> <span class="gg">9 over 20, both rising, price on the 9</span> — the only fully open state. Enter the pullback that kisses the 9 and holds.<br><b>2 STRETCHED</b> — price 3–4 ATRs above the 9: a chase, not an entry. The 9 is an anchor; snapbacks feed on late buyers.<br><b>3 BRAID</b> <span class="rr">lines flat &amp; twisted, price whipping through</span> — chop. Every cross in a braid is a lie. NO TRADE.<br><b>4 CROSS</b> — 9 under 20 after a trend: no-new-longs gate; first structural short sign.<br><br><b>The 20 is the first wall:</b> first touch usually REJECTS (buy it, stop below) — second/third touch usually BREAKS (the resting orders are eaten).<br><br><b>Gap = health:</b> new price high on a NARROWER 9-to-20 gap = the move is dying while the chart still looks fine.<br><br><b>Do:</b> 60 seconds before every trigger — which state, which touch, expanding or narrowing. Full masterclass in PLAYBOOK 4a.'},
 rsi:{t:'RSI 14 — Fuel Gauge',b:'<span class="gg">GREEN long:</span> 45–75 with room to run. <span class="gg">GREEN short:</span> 25–55.<br><span class="rr">RED:</span> fuel gone (rolled out of zone) or over-stretched (&gt;75 / &lt;25) where snapbacks live.<br><br><b>Do:</b> stretched with profit showing = take some off into strength. Faded = watch the 9 EMA; it breaks next.'},
 macd:{t:'MACD Histogram — Acceleration',b:'Turns before price — your earliest warning.<br><br><span class="rr">RED:</span> bars shrinking or flipped against you. Deceleration precedes reversal, usually 2–4 candles ahead of the 9 EMA break.<br><br><b>Do:</b> don\'t exit on this alone — stop adding, raise the stop, treat the next 9 EMA test as decisive.'},
 mom:{t:'Momentum 12',b:'Price now minus price 12 bars ago — raw thrust of the last hour.<br><br><span class="rr">RED:</span> the last hour is net against you even if the current candle looks fine. Slow bleeds show here first.<br><br><b>Do:</b> red alone is noise. Red + red MACD together = the fade is real; tighten.'},
