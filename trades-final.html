@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kornis Trades — Positions, Journal & Stats</title>
+<style>
+:root{--bg:#070c16;--panel:#0d1526;--panel2:#111c33;--line:#1d2b4a;--text:#dce4f2;--dim:#6b7a99;
+--gold:#c9a030;--gold-soft:#e8c86a;--green:#3ddc84;--red:#ff5470;--amber:#ffb454}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);padding:14px 12px 90px;max-width:560px;margin:0 auto}
+.kicker{font-size:9.5px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase;font-weight:700}
+h1{font-size:23px;font-weight:800;margin:2px 0 3px}
+.sub{font-size:11.5px;color:var(--dim);margin-bottom:14px}
+.sub a{color:var(--gold-soft);text-decoration:none;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 15px;margin-bottom:14px}
+h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:11px}
+label,.lbl{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+input,select,textarea{width:100%;background:#0a1120;border:1px solid var(--line);border-radius:9px;color:#fff;font-size:16px;padding:11px 12px;outline:none;font-family:inherit}
+input:focus{border-color:var(--gold)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.btn{width:100%;background:linear-gradient(135deg,#a07818,var(--gold),#e8c86a);color:#000;border:none;border-radius:10px;font-size:13px;font-weight:800;letter-spacing:.08em;padding:13px;cursor:pointer;margin:4px 0 10px}
+.btn:disabled{opacity:.5}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--gold-soft)}
+.btn.small{width:auto;padding:9px 14px;font-size:11px;margin:0}
+.btn.danger{background:none;border:1px solid var(--red);color:var(--red)}
+.status{font-size:11.5px;color:var(--dim);background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:10px 12px;line-height:1.55}
+.dirbtn{display:flex;gap:8px;margin-bottom:10px}
+.dirbtn button{flex:1;background:#0a1120;border:1px solid var(--line);color:var(--dim);border-radius:9px;padding:11px;font-weight:800;font-size:13px}
+.dirbtn button.onC{border-color:var(--green);color:var(--green)}
+.dirbtn button.onP{border-color:var(--red);color:var(--red)}
+.pos{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:13px;margin-bottom:11px}
+.pos-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.pos-tk{font-size:15px;font-weight:800}
+.pos-pl{font-size:15px;font-weight:800}
+.pos-sub{font-size:11px;color:var(--dim);line-height:1.5}
+.pos-targets{font-size:10px;color:var(--amber);margin:8px 0 0;padding:8px;background:#0a1120;border-radius:6px}
+.pos-verdict{margin-top:9px;font-size:12px;line-height:1.55;padding:9px 11px;border-radius:8px;background:#0a1120;border-left:3px solid var(--gold)}
+.pos-verdict.exit{border-left-color:var(--red)}
+.pos-verdict.scale{border-left-color:var(--amber)}
+.pos-verdict.hold{border-left-color:var(--green)}
+.pos-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.up{color:var(--green)}.dn{color:var(--red)}.md{color:var(--amber)}.gd{color:var(--gold-soft)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.mcell{background:#0a1120;border:1px solid var(--line);border-radius:9px;padding:9px 10px}
+.mcell .mk{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+.mcell .mv{font-size:16px;font-weight:800;margin-top:2px}
+.mcell .ms{font-size:10px;margin-top:1px;color:var(--dim)}
+.jrow{border-bottom:1px solid var(--line);padding:10px 2px;font-size:12px}
+.jrow .j1{display:flex;justify-content:space-between;font-weight:700}
+.jrow .j2{color:var(--dim);font-size:10.5px;margin-top:2px}
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:40}
+.tabbar button{flex:1;background:none;border:none;color:var(--dim);font-size:10px;padding:9px 0 max(9px, env(safe-area-inset-bottom));cursor:pointer}
+.tabbar button .ico{display:block;font-size:17px;margin-bottom:2px}
+.tabbar button.active{color:var(--gold-soft)}
+.sec{display:none}.sec.on{display:block}
+.small-note{font-size:10px;color:var(--dim);line-height:1.5;margin-top:6px}
+
+/* Modal */
+#modalBg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#modalBg.open{display:flex}
+#modal{background:var(--panel);border:1px solid var(--gold);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:80vh;overflow-y:auto;padding:22px 20px 34px}
+#modal h3{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:14px}
+#modal .body{font-size:14px;line-height:1.6;margin-bottom:16px}
+#modal input{margin-bottom:10px}
+#modal .btns{display:flex;gap:10px}
+#modal .btns button{flex:1}
+
+/* Chat for Position Review */
+#chatWrapPos{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#chatWrapPos.open{display:flex}
+#chatModalPos{background:var(--panel);border:1px solid var(--red);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;height:70vh;display:flex;flex-direction:column;overflow:hidden}
+#chatHeaderPos{padding:16px;border-bottom:1px solid var(--line);flex-shrink:0}
+#chatHeaderPos h3{font-size:12px;letter-spacing:.12em;color:var(--red);text-transform:uppercase;margin:0}
+#chatMessagesPos{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.chatMsgPos{max-width:85%;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.5;word-wrap:break-word}
+.chatMsgPos.user{align-self:flex-end;background:linear-gradient(135deg,#8a1414,#d94141);color:#fff;border-bottom-right-radius:3px;font-weight:500}
+.chatMsgPos.ai{align-self:flex-start;background:var(--panel2);border:1px solid var(--line);border-bottom-left-radius:3px;color:var(--text)}
+.chatMsgPos.ai b{color:var(--red)}
+#chatInputPos{padding:12px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0;background:var(--panel2)}
+#chatInputPos textarea{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:#fff;padding:8px 10px;font-size:13px;resize:none;height:40px;font-family:inherit;outline:none}
+#chatInputPos textarea:focus{border-color:var(--red)}
+#chatInputPos button{flex:none;width:40px;height:40px;background:var(--red);border:none;border-radius:8px;color:#fff;font-weight:800;cursor:pointer;font-size:14px}
+#chatInputPos button:disabled{opacity:.5;cursor:wait}
+
+/* Alarms */
+.alarms-section{background:var(--panel);border:1px solid var(--amber);border-left:3px solid var(--amber);border-radius:12px;padding:14px;margin-bottom:14px}
+.alarms-section h2{font-size:11px;letter-spacing:.14em;color:var(--amber);text-transform:uppercase;margin-bottom:10px}
+.alarm-btn{width:100%;background:var(--amber);color:#000;border:none;border-radius:8px;padding:10px;font-weight:700;font-size:12px;cursor:pointer;margin-bottom:10px}
+.alarm-btn:hover{opacity:.9}
+.alarm-item{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;font-size:11px}
+.alarm-item.triggered{background:#2B2210;border-color:var(--amber)}
+.alarm-label{flex:1}
+.alarm-label b{color:var(--amber)}
+.alarm-actions{display:flex;gap:6px}
+.alarm-actions button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:4px;padding:4px 8px;font-size:10px;cursor:pointer}
+.alarm-actions button:hover{border-color:var(--gold);color:var(--gold-soft)}
+.alarm-empty{font-size:10px;color:var(--dim);padding:8px;text-align:center}
+
+#alarmModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:flex-end;justify-content:center}
+#alarmModal.open{display:flex}
+#alarmModalBox{background:var(--panel);border:1px solid var(--amber);border-bottom:none;border-radius:16px 16px 0 0;width:100%;max-width:640px;padding:22px 20px 34px}
+#alarmModal h3{font-size:12px;letter-spacing:.12em;color:var(--amber);text-transform:uppercase;margin-bottom:14px}
+#alarmModal label{display:block;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-weight:600}
+#alarmModal input,#alarmModal select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:10px;margin-bottom:10px;font-size:14px}
+#alarmModal input:focus{border-color:var(--amber)}
+#alarmModal .btns{display:flex;gap:10px}
+#alarmModal .btns button{flex:1;background:var(--amber);color:#000;border:none;border-radius:8px;padding:12px;font-weight:700;cursor:pointer}
+#alarmModal .btns button.cancel{background:var(--panel2);border:1px solid var(--line);color:var(--amber)}
+</style>
+</head><body>
+
+<div class="kicker">Kornis Protocol · Trades · v2.0</div>
+<h1>Trades <span style="color:var(--gold-soft)">⚑</span></h1>
+<div class="sub">Quick entry + auto-journal + exit targets · open positions · closed journal · your stats. <a href="hub.html">← COMMAND</a></div>
+
+<!-- OPEN -->
+<div class="sec on" id="sec-open">
+  <div class="card">
+    <h2>Quick Entry — Auto-Journal</h2>
+    <div class="dirbtn"><button id="dC" class="onC" onclick="setDir('C')">CALL ▲</button><button id="dP" onclick="setDir('P')">PUT ▼</button></div>
+    <div class="row3">
+      <div><label>Ticker</label><input id="fTk" style="text-transform:uppercase" autocapitalize="characters" placeholder="SPCX"></div>
+      <div><label>Strike ($)</label><input id="fK" type="number" inputmode="decimal" step="0.50" placeholder="140"></div>
+      <div><label>Expiry</label><input id="fExp" type="date"></div>
+    </div>
+    <div class="row3">
+      <div><label>Entry $ (per)</label><input id="fEntry" type="number" inputmode="decimal" step="0.01" placeholder="3.15"></div>
+      <div><label># Contracts</label><input id="fQty" type="number" inputmode="numeric" placeholder="1"></div>
+      <div><label>Tier</label><select id="fTier"><option>Tier 1</option><option selected>Tier 2</option><option>Tier 3</option></select></div>
+    </div>
+    <div><label>Notes (optional)</label><input id="fNotes" placeholder="Setup thesis or signals"></div>
+    <button class="btn" onclick="addTradeAndPromptExit()">LOG ENTRY → SET EXIT</button>
+    <div class="status" id="addStatus">Enter trade details above, then tap to log + set your exit target and stop.</div>
+  </div>
+
+  <div class="card">
+    <h2>Open Positions <span id="openCount" style="color:var(--dim)"></span></h2>
+    <button class="btn ghost" id="refBtn" onclick="refreshAll()">↻ PULL CURRENT PRICES & VERDICTS</button>
+    <button class="btn ghost" style="border-color:var(--red);color:var(--red)" id="reviewBtn" onclick="openChatPos()" style="margin-top:6px">🤖 POSITION REVIEW</button>
+    <div id="openList"><div class="status">No open positions. Log your next fill above.</div></div>
+  </div>
+
+  <div class="alarms-section">
+    <h2>⏰ Price & Time Alarms</h2>
+    <button class="alarm-btn" onclick="openAlarmModal()">+ SET NEW ALARM</button>
+    <div id="alarmsList"><div class="alarm-empty">No active alarms</div></div>
+  </div>
+</div>
+
+<!-- Claude Position Review Chat Modal -->
+<div id="chatWrapPos" onclick="if(event.target===this)closeChatPos()">
+  <div id="chatModalPos" onclick="event.stopPropagation()">
+    <div id="chatHeaderPos">
+      <h3>Claude Position Review</h3>
+    </div>
+    <div id="chatMessagesPos"></div>
+    <div id="chatInputPos">
+      <textarea id="chatTextareaPos" placeholder="Ask about your positions… (e.g., 'Should I scale out?')" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatPos();}"></textarea>
+      <button id="chatBtnPos" onclick="sendChatPos()">➤</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alarm Modal -->
+<div id="alarmModal" onclick="if(event.target===this)closeAlarmModal()">
+  <div id="alarmModalBox" onclick="event.stopPropagation()">
+    <h3>Set Price or Time Alarm</h3>
+    <label>Alarm Type</label>
+    <select id="alarmType" onchange="updateAlarmForm()">
+      <option value="price">Price Alert (e.g., SPCX hits $140)</option>
+      <option value="time">Time Alert (e.g., 3:50 PM ET)</option>
+    </select>
+    
+    <div id="priceForm">
+      <label>Ticker</label>
+      <input id="alarmTicker" type="text" placeholder="SPCX" autocapitalize="characters">
+      <label>Alert When Price Reaches ($)</label>
+      <input id="alarmPrice" type="number" placeholder="140.00" step="0.01">
+      <label>Condition</label>
+      <select id="alarmCondition">
+        <option value="above">Above or Equal</option>
+        <option value="below">Below or Equal</option>
+      </select>
+    </div>
+
+    <div id="timeForm" style="display:none">
+      <label>Alert At (HH:MM ET)</label>
+      <input id="alarmTime" type="time">
+      <label>Alert Message</label>
+      <input id="alarmMsg" type="text" placeholder="e.g., Check SPCX unlock reaction">
+    </div>
+
+    <div class="btns">
+      <button class="cancel" onclick="closeAlarmModal()">CANCEL</button>
+      <button onclick="saveAlarm()">SET ALARM</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOSED -->
+<div class="sec" id="sec-closed">
+  <div class="card">
+    <h2>Closed Trades <span id="closedCount" style="color:var(--dim)"></span></h2>
+    <div id="closedList"><div class="status">Nothing closed yet.</div></div>
+  </div>
+  <div class="card">
+    <h2>Backup</h2>
+    <button class="btn ghost" onclick="doExport()">COPY BACKUP TO CLIPBOARD</button>
+    <div style="margin:8px 0"><label>Restore: paste a backup and tap import</label><textarea id="impBox" style="height:60px;font-size:11px" placeholder="paste backup JSON"></textarea></div>
+    <button class="btn ghost" onclick="doImport()">IMPORT</button>
+    <div class="status" id="bkStatus">Trades live on this device. Back up occasionally.</div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="sec" id="sec-stats">
+  <div class="card">
+    <h2>Your Numbers</h2>
+    <div id="statsOut"><div class="status">Close a few trades and your real statistics build here.</div></div>
+  </div>
+</div>
+
+<div class="tabbar">
+  <a href="hub.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">K</span>COMMAND</a>
+  <a href="decide.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">⊕</span>SCAN</a>
+  <a href="pretrade.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">✓</span>GATES</a>
+  <a href="chart.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--dim);text-decoration:none;font-size:10px;border-right:1px solid var(--line)"><span style="display:block;font-size:13px;margin-bottom:2px">📈</span>CHART</a>
+  <a href="trades.html" style="flex:1;text-align:center;padding:9px 0 max(9px, env(safe-area-inset-bottom));color:var(--gold-soft);text-decoration:none;font-size:10px;border-bottom:2px solid var(--gold)"><span style="display:block;font-size:13px;margin-bottom:2px">⚑</span>TRADES</a>
+</div>
+
+<!-- Exit Prompt Modal -->
+<div id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div id="modal" onclick="event.stopPropagation()">
+    <h3>Set Exit Targets for <span id="modalTicker"></span></h3>
+    <div class="body">
+      <p>Define your exit BEFORE the trade moves. This locks in discipline.</p>
+      <label>Profit Target (e.g., $135 or +60%)</label>
+      <input id="modalTarget" placeholder="$135 or +50%">
+      <label>Stop Level — Thesis Wrong (e.g., $148 or −40%)</label>
+      <input id="modalStop" placeholder="$148 or −40%">
+      <label>Time Stop — Exit By (e.g., Wed close or Fri EOD)</label>
+      <input id="modalTimeStop" placeholder="Wed close">
+    </div>
+    <div class="btns">
+      <button class="btn ghost" onclick="closeModal()">CANCEL</button>
+      <button class="btn" onclick="saveExitAndClose()">SAVE & CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const KEY='kTrades_v1';
+function n2(v,d){return v==null||isNaN(v)?'—':(+v).toFixed(d==null?2:d);}
+function sec(s,btn){document.querySelectorAll('.sec').forEach(e=>e.classList.remove('on'));
+document.getElementById('sec-'+s).classList.add('on');
+document.querySelectorAll('.tabbar button').forEach(b=>b.classList.remove('active'));
+if(btn)btn.classList.add('active');window.scrollTo(0,0);
+if(s==='stats')renderStats();if(s==='closed')renderClosed();}
+let DIR='C';
+function setDir(d){DIR=d;
+document.getElementById('dC').className=d==='C'?'onC':'';
+document.getElementById('dP').className=d==='P'?'onP':'';}
+setDir('C');
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||[];}catch(e){return[];}}
+function save(a){localStorage.setItem(KEY,JSON.stringify(a));}
+
+let PENDING_TRADE_ID=null;
+
+function addTradeAndPromptExit(){
+  const tk=document.getElementById('fTk').value.trim().toUpperCase();
+  const k=parseFloat(document.getElementById('fK').value);
+  const exp=document.getElementById('fExp').value;
+  const entry=parseFloat(document.getElementById('fEntry').value);
+  const qty=parseInt(document.getElementById('fQty').value);
+  const st=document.getElementById('addStatus');
+  if(!tk||!k||!exp||!entry||!qty){st.innerHTML='<b>Missing:</b> ticker, strike, expiry, entry price, and contracts.';return;}
+  
+  const a=load();
+  const tid=Date.now();
+  a.push({id:tid,tk,type:DIR,strike:k,expiry:exp,entry,qty,
+    tier:document.getElementById('fTier').value,notes:document.getElementById('fNotes').value.trim(),
+    opened:new Date().toISOString().slice(0,10),status:'open',cur:null,curT:null,
+    target:null,stop:null,timeStop:null,theta:null});
+  save(a);
+  PENDING_TRADE_ID=tid;
+  document.getElementById('modalTicker').textContent=tk+' $'+k+' '+(DIR==='C'?'CALL':'PUT');
+  document.getElementById('modalTarget').value='';
+  document.getElementById('modalStop').value='';
+  document.getElementById('modalTimeStop').value='';
+  document.getElementById('modalBg').classList.add('open');
+  st.innerHTML='Entry logged. Now set your exits → SAVE to lock them in.';
+}
+
+function saveExitAndClose(){
+  const target=document.getElementById('modalTarget').value.trim()||null;
+  const stop=document.getElementById('modalStop').value.trim()||null;
+  const timeStop=document.getElementById('modalTimeStop').value.trim()||null;
+  if(!target||!stop){alert('Target and Stop are required.');return;}
+  
+  const a=load();
+  const t=a.find(x=>x.id===PENDING_TRADE_ID);
+  if(t){t.target=target;t.stop=stop;t.timeStop=timeStop;}
+  save(a);
+  closeModal();
+  ['fTk','fK','fEntry','fQty','fNotes'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('fExp').value='';
+  renderOpen();
+}
+
+function closeModal(){document.getElementById('modalBg').classList.remove('open');PENDING_TRADE_ID=null;}
+
+function dteOf(t){return Math.ceil((new Date(t.expiry+'T16:00:00')-new Date())/86400000);}
+function plOf(t,price){return (price-t.entry)*t.qty*100;}
+
+function verdict(t,cur,theta){
+  const dte=dteOf(t);
+  const gainPct=cur!=null?(cur-t.entry)/t.entry*100:null;
+  const per=[];let cls='hold',head='HOLD';
+  
+  if(dte<=0)return{cls:'exit',head:'EXPIRED',body:'Contract at expiration. Close or exercise decisions due NOW.'};
+  
+  // Check stop and target first
+  if(t.stop){
+    const stopLvl=parseFloat(t.stop);
+    if(!isNaN(stopLvl)&&cur!=null&&cur<=stopLvl){
+      return{cls:'exit',head:'STOP HIT',body:'Your stop level ($'+stopLvl.toFixed(2)+') has been touched. Exit thesis-wrong per protocol.'};
+    }
+  }
+  if(t.target){
+    const targLvl=parseFloat(t.target);
+    if(!isNaN(targLvl)&&cur!=null&&cur>=targLvl){
+      cls='scale';head='TARGET HIT';per.push('Your target ($'+targLvl.toFixed(2)+') reached. Scale out 50%, let rest ride on house money.');
+    }
+  }
+  
+  if(cls==='hold'&&gainPct!=null){
+    if(gainPct>=100){cls='scale';head='SCALE OUT — DOUBLE';per.push('Up '+gainPct.toFixed(0)+'%. Round-tripping a double is cardinal sin — take half off.');}
+    else if(gainPct>=50){cls='scale';head='SCALE / TRAIL';per.push('Up '+gainPct.toFixed(0)+'%. Each day is bought with decay — scale into strength.');}
+    else if(gainPct<=-40){cls='exit';head='THESIS-WRONG CHECK';per.push('Down '+Math.abs(gainPct).toFixed(0)+'%. If your thesis-level broke, exit. Otherwise state why in one sentence.');}
+    else per.push((gainPct>=0?'Up ':'Down ')+Math.abs(gainPct).toFixed(0)+'%.');}
+  
+  if(dte<=7){cls=cls==='hold'?'exit':cls;head=head==='HOLD'?'DECAY CLIFF':head;per.push('Only '+dte+' DTE — theta steepest here. ATM/OTM longs should be gone before now.');}
+  else if(dte<=21&&cls==='hold'){cls='scale';per.push(dte+' DTE — inside the final-21-day decay zone. Plan the exit.');}
+  
+  if(theta!=null&&theta<0)per.push('Daily decay ≈ $'+Math.abs(theta*t.qty*100).toFixed(0)+'/day.');
+  
+  if(t.timeStop&&cls==='hold')per.push('Time stop: '+t.timeStop+'—don\'t miss your deadline.');
+  
+  return{cls,head,body:per.join(' ')};
+}
+
+function renderOpen(){
+  const a=load().filter(t=>t.status==='open');
+  document.getElementById('openCount').textContent=a.length?('· '+a.length):'';
+  const el=document.getElementById('openList');
+  if(!a.length){el.innerHTML='<div class="status">No open positions. Log your next fill above.</div>';return;}
+  el.innerHTML=a.map(t=>{
+    const dte=dteOf(t);
+    const cur=t.cur;const pl=cur!=null?plOf(t,cur):null;
+    const v=verdict(t,cur,t.theta);
+    let targets='';
+    if(t.target||t.stop){
+      targets='<div class="pos-targets">📍 Target: '+t.target+' · 🛑 Stop: '+t.stop;
+      if(t.timeStop)targets+=' · ⏱ Time: '+t.timeStop;
+      targets+='</div>';
+    }
+    return '<div class="pos"><div class="pos-top">'
+    +'<span class="pos-tk">'+t.tk+' $'+t.strike+' '+(t.type==='C'?'CALL':'PUT')+'</span>'
+    +'<span class="pos-pl '+(pl==null?'md':pl>=0?'up':'dn')+'">'+(pl==null?'pull ↻':(pl>=0?'+$':'-$')+Math.abs(pl).toLocaleString(undefined,{maximumFractionDigits:0}))+'</span></div>'
+    +'<div class="pos-sub">'+t.qty+' @ $'+n2(t.entry)+' → '+(cur!=null?'now $'+n2(cur)+(t.curT?' ('+t.curT+')':''):'current unknown')+' · '+dte+' DTE · '+t.tier+(t.notes?' · '+t.notes:'')+' '+(t.target?'':'')+' </div>'
+    +targets
+    +'<div class="pos-verdict '+v.cls+'"><b>'+v.head+'.</b> '+v.body+'</div>'
+    +'<div class="pos-actions">'
+    +'<button class="btn small ghost" onclick="closePrompt('+t.id+')">CLOSE…</button>'
+    +'<button class="btn small ghost" onclick="editExits('+t.id+')">EDIT EXITS</button>'
+    +'<button class="btn small ghost" onclick="editCur('+t.id+')">SET PRICE</button>'
+    +'<button class="btn small danger" onclick="delTrade('+t.id+')">DELETE</button>'
+    +'</div></div>';}).join('');}
+
+function editExits(id){
+  const a=load();const t=a.find(x=>x.id===id);if(!t)return;
+  document.getElementById('modalTicker').textContent=t.tk+' $'+t.strike;
+  document.getElementById('modalTarget').value=t.target||'';
+  document.getElementById('modalStop').value=t.stop||'';
+  document.getElementById('modalTimeStop').value=t.timeStop||'';
+  PENDING_TRADE_ID=id;
+  document.getElementById('modalBg').classList.add('open');
+}
+
+function editCur(id){const p=prompt('Current option price (per share):');
+if(p==null)return;const v=parseFloat(p);if(!isFinite(v))return;
+const a=load();const t=a.find(x=>x.id===id);if(!t)return;
+t.cur=v;t.curT='manual '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});save(a);renderOpen();}
+
+function closePrompt(id){const p=prompt('Exit price (per share):');
+if(p==null)return;const v=parseFloat(p);if(!isFinite(v))return;
+const a=load();const t=a.find(x=>x.id===id);if(!t)return;
+t.status='closed';t.exit=v;t.closed=new Date().toISOString().slice(0,10);
+t.pl=plOf(t,v);save(a);renderOpen();renderClosed();}
+
+function delTrade(id){if(!confirm('Delete this entry permanently?'))return;
+save(load().filter(x=>x.id!==id));renderOpen();renderClosed();}
+
+async function refreshAll(){
+  const btn=document.getElementById('refBtn');btn.disabled=true;btn.textContent='PULLING…';
+  const a=load();const open=a.filter(t=>t.status==='open');
+  const tks=[...new Set(open.map(t=>t.tk))];
+  for(const tk of tks){
+    try{const r=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));const j=await r.json();
+      const raw=j?.data?.options||[];
+      for(const t of open.filter(x=>x.tk===tk)){
+        const expStr=t.expiry.slice(2,4)+t.expiry.slice(5,7)+t.expiry.slice(8,10);
+        const kStr=String(Math.round(t.strike*1000)).padStart(8,'0');
+        const row=raw.find(o=>(o.option||'').endsWith(expStr+t.type+kStr));
+        if(row&&(+row.bid>0||+row.ask>0)){t.cur=((+row.bid||0)+(+row.ask||0))/2;
+          t.curT='live '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+          t.theta=+row.theta||null;}}
+    }catch(e){}
+  }
+  save(a);renderOpen();
+  btn.disabled=false;btn.textContent='↻ PULL CURRENT PRICES & VERDICTS';
+}
+
+function renderClosed(){
+  const a=load().filter(t=>t.status==='closed').sort((x,y)=>y.id-x.id);
+  document.getElementById('closedCount').textContent=a.length?('· '+a.length):'';
+  const el=document.getElementById('closedList');
+  if(!a.length){el.innerHTML='<div class="status">Nothing closed yet.</div>';return;}
+  el.innerHTML=a.map(t=>'<div class="jrow"><div class="j1"><span>'+t.tk+' $'+t.strike+' '+t.type
+    +'</span><span class="'+(t.pl>=0?'up':'dn')+'">'+(t.pl>=0?'+$':'-$')+Math.abs(t.pl).toLocaleString(undefined,{maximumFractionDigits:0})+'</span></div>'
+    +'<div class="j2">'+t.opened+' → '+t.closed+' · '+t.qty+' @ $'+n2(t.entry)+' → $'+n2(t.exit)+' · '+t.tier+(t.notes?' · '+t.notes:'')
+    +' &nbsp;<a href="javascript:delTrade('+t.id+')" style="color:var(--red)">✕</a></div></div>').join('');}
+
+function renderStats(){
+  const a=load().filter(t=>t.status==='closed');
+  const el=document.getElementById('statsOut');
+  if(a.length<1){el.innerHTML='<div class="status">Close a few trades and your real statistics build here: win rate, expectancy, calls vs puts, tier performance.</div>';return;}
+  const wins=a.filter(t=>t.pl>0),losses=a.filter(t=>t.pl<=0);
+  const tot=a.reduce((s,t)=>s+t.pl,0);
+  const aw=wins.length?wins.reduce((s,t)=>s+t.pl,0)/wins.length:0;
+  const al=losses.length?losses.reduce((s,t)=>s+t.pl,0)/losses.length:0;
+  const exp=tot/a.length;
+  const best=Math.max(...a.map(t=>t.pl)),worst=Math.min(...a.map(t=>t.pl));
+  function grp(f,label){const g=a.filter(f);if(!g.length)return '';
+    const w=g.filter(t=>t.pl>0).length;
+    return '<div class="mcell"><div class="mk">'+label+'</div><div class="mv '+(g.reduce((s,t)=>s+t.pl,0)>=0?'up':'dn')+'">$'+g.reduce((s,t)=>s+t.pl,0).toLocaleString(undefined,{maximumFractionDigits:0})+'</div><div class="ms">'+g.length+' trades · '+Math.round(w/g.length*100)+'% win</div></div>';}
+  el.innerHTML='<div class="mgrid">'
+    +'<div class="mcell"><div class="mk">Total P/L</div><div class="mv '+(tot>=0?'up':'dn')+'">'+(tot>=0?'+$':'-$')+Math.abs(tot).toLocaleString(undefined,{maximumFractionDigits:0})+'</div><div class="ms">'+a.length+' closed trades</div></div>'
+    +'<div class="mcell"><div class="mk">Win Rate</div><div class="mv gd">'+Math.round(wins.length/a.length*100)+'%</div><div class="ms">'+wins.length+'W / '+losses.length+'L</div></div>'
+    +'<div class="mcell"><div class="mk">Avg Win / Avg Loss</div><div class="mv">$'+aw.toFixed(0)+' / $'+Math.abs(al).toFixed(0)+'</div><div class="ms">'+(al!==0?'ratio '+Math.abs(aw/al).toFixed(1)+':1':'')+'</div></div>'
+    +'<div class="mcell"><div class="mk">Expectancy</div><div class="mv '+(exp>=0?'up':'dn')+'">$'+exp.toFixed(0)+'</div><div class="ms">per trade, your real edge</div></div>'
+    +'<div class="mcell"><div class="mk">Best / Worst</div><div class="mv">$'+best.toFixed(0)+' / $'+worst.toFixed(0)+'</div><div class="ms">single trade extremes</div></div>'
+    +grp(t=>t.type==='C','Calls')+grp(t=>t.type==='P','Puts')
+    +grp(t=>t.tier==='Tier 1','Tier 1')+grp(t=>t.tier==='Tier 2','Tier 2')+grp(t=>t.tier==='Tier 3','Tier 3')
+    +'</div><div class="small-note">Expectancy is the number that matters: average dollars per trade. Positive and stable across 30+ trades = a real edge.</div>';}
+
+function doExport(){const s=JSON.stringify(load());
+  navigator.clipboard?.writeText(s).then(()=>{document.getElementById('bkStatus').innerHTML='Backup copied — paste it somewhere safe.';})
+  .catch(()=>{document.getElementById('impBox').value=s;document.getElementById('bkStatus').innerHTML='Clipboard blocked — backup placed above; copy it manually.';});}
+
+function doImport(){try{const a=JSON.parse(document.getElementById('impBox').value);
+  if(!Array.isArray(a))throw 0;save(a);renderOpen();renderClosed();
+  document.getElementById('bkStatus').innerHTML='Imported '+a.length+' trades.';
+}catch(e){document.getElementById('bkStatus').innerHTML='That doesn\'t look like a valid backup.';}}
+
+/* ================= CLAUDE POSITION REVIEW ================= */
+let CHAT_HISTORY_POS=[];
+function openChatPos(){
+  const open=load().filter(t=>t.status==='open');
+  if(!open.length){alert('No open positions to review.');return;}
+  CHAT_HISTORY_POS=[];
+  document.getElementById('chatMessagesPos').innerHTML='';
+  document.getElementById('chatTextareaPos').value='';
+  document.getElementById('chatWrapPos').classList.add('open');
+  const posStr=open.map(t=>`${t.tk} $${t.strike} ${t.type==='C'?'CALL':'PUT'} @ $${n2(t.entry)} (${t.qty}x, P/L: ${t.cur!=null?'$'+(plOf(t,t.cur)).toLocaleString():' unknown'}, Target: ${t.target}, Stop: ${t.stop})`).join('; ');
+  const greeting='Open positions: '+posStr+'. What\'s your read? "Should I scale?" "Is this Path 2?" etc.';
+  addChatMsgPos('ai',greeting);
+}
+function closeChatPos(){
+  document.getElementById('chatWrapPos').classList.remove('open');
+  CHAT_HISTORY_POS=[];
+}
+function addChatMsgPos(role,text){
+  const msg=document.createElement('div');
+  msg.className='chatMsgPos '+role;
+  msg.innerHTML=role==='ai'?text.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>'):text;
+  document.getElementById('chatMessagesPos').appendChild(msg);
+  document.getElementById('chatMessagesPos').scrollTop=document.getElementById('chatMessagesPos').scrollHeight;
+}
+async function sendChatPos(){
+  const txt_input=document.getElementById('chatTextareaPos').value.trim();
+  if(!txt_input)return;
+  addChatMsgPos('user',txt_input);
+  document.getElementById('chatTextareaPos').value='';
+  document.getElementById('chatBtnPos').disabled=true;
+  const typing=document.createElement('div');typing.className='chatTyping';typing.textContent='Claude is thinking…';
+  document.getElementById('chatMessagesPos').appendChild(typing);
+  CHAT_HISTORY_POS.push({role:'user',content:txt_input});
+  try{
+    const open=load().filter(t=>t.status==='open');
+    const posCtx=open.map(t=>({
+      tk:t.tk,type:t.type,strike:t.strike,entry:n2(t.entry),qty:t.qty,dte:dteOf(t),
+      current:t.cur?n2(t.cur):null,pl:t.cur?plOf(t,t.cur):null,theta:t.theta?n2(t.theta):null,
+      target:t.target,stop:t.stop,timeStop:t.timeStop,notes:t.notes
+    }));
+    const systemPrompt=`You are Claude, reviewing open option positions for a day trader (Rick). He holds 1-3 day positions, scalps into strength, exits on target/stop hits.
+
+OPEN POSITIONS:
+${JSON.stringify(posCtx,null,2)}
+
+Analyze the positions: What's the plan? Scale out? Hold? Risk management calls? Be terse and blunt — is he sized right? Is he aligned with the macro (Path 1 vs Path 2)?`;
+    const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:600,system:systemPrompt,messages:CHAT_HISTORY_POS})});
+    const j=await r.json();
+    if(j.error)throw new Error(j.error.message||'API error');
+    const reply=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim()||'(no reply)';
+    typing.remove();addChatMsgPos('ai',reply);
+    CHAT_HISTORY_POS.push({role:'assistant',content:reply});
+  }catch(e){
+    typing.remove();addChatMsgPos('ai','<b>Failed:</b> '+(e.message||'connection')+'. Check relay.');
+  }finally{
+    document.getElementById('chatBtnPos').disabled=false;
+  }
+}
+
+/* ================= ALARMS ================= */
+const ALARMS_KEY='kAlarms_v1';
+function loadAlarms(){try{return JSON.parse(localStorage.getItem(ALARMS_KEY))||[];}catch(e){return[];}}
+function saveAlarms(a){localStorage.setItem(ALARMS_KEY,JSON.stringify(a));}
+
+function openAlarmModal(){
+  document.getElementById('alarmModal').classList.add('open');
+  document.getElementById('alarmTicker').value='SPCX';
+  document.getElementById('alarmPrice').value='';
+  document.getElementById('alarmTime').value='';
+  document.getElementById('alarmMsg').value='';
+  updateAlarmForm();
+}
+function closeAlarmModal(){
+  document.getElementById('alarmModal').classList.remove('open');
+}
+function updateAlarmForm(){
+  const type=document.getElementById('alarmType').value;
+  document.getElementById('priceForm').style.display=type==='price'?'block':'none';
+  document.getElementById('timeForm').style.display=type==='time'?'block':'none';
+}
+function saveAlarm(){
+  const type=document.getElementById('alarmType').value;
+  const a=loadAlarms();
+  if(type==='price'){
+    const tk=document.getElementById('alarmTicker').value.trim().toUpperCase();
+    const price=parseFloat(document.getElementById('alarmPrice').value);
+    const cond=document.getElementById('alarmCondition').value;
+    if(!tk||!price){alert('Ticker and price required');return;}
+    a.push({id:Date.now(),type:'price',ticker:tk,price,condition:cond,triggered:false});
+  }else{
+    const time=document.getElementById('alarmTime').value;
+    const msg=document.getElementById('alarmMsg').value.trim()||'Alarm triggered';
+    if(!time){alert('Time required');return;}
+    a.push({id:Date.now(),type:'time',time,message:msg,triggered:false});
+  }
+  saveAlarms(a);
+  closeAlarmModal();
+  renderAlarms();
+}
+function deleteAlarm(id){
+  const a=loadAlarms().filter(x=>x.id!==id);
+  saveAlarms(a);
+  renderAlarms();
+}
+function renderAlarms(){
+  const a=loadAlarms();
+  const el=document.getElementById('alarmsList');
+  if(!a.length){el.innerHTML='<div class="alarm-empty">No active alarms</div>';return;}
+  el.innerHTML=a.map(x=>{
+    let label='';
+    if(x.type==='price'){
+      label='<b>'+x.ticker+'</b> '+x.condition+' $'+x.price.toFixed(2);
+    }else{
+      label='<b>'+x.time+'</b> ET — '+x.message;
+    }
+    return '<div class="alarm-item '+(x.triggered?'triggered':'')+'">'
+      +'<span class="alarm-label">'+label+(x.triggered?' ✓ TRIGGERED':'')+'</span>'
+      +'<div class="alarm-actions"><button onclick="deleteAlarm('+x.id+')">✕</button></div>'
+      +'</div>';
+  }).join('');
+}
+
+/* Check alarms every second */
+async function checkAlarms(){
+  const a=loadAlarms();
+  for(const alarm of a){
+    if(alarm.triggered)continue;
+    if(alarm.type==='price'){
+      try{
+        const r=await fetch(RELAY+'/?quotes=1');
+        const j=await r.json();
+        const quotes=j?.quotes||{};
+        const q=quotes[alarm.ticker];
+        if(!q)continue;
+        const price=q.price;
+        const hit=(alarm.condition==='above'&&price>=alarm.price)||(alarm.condition==='below'&&price<=alarm.price);
+        if(hit){
+          alarm.triggered=true;
+          saveAlarms(a);
+          triggerAlarm(alarm.ticker+' hit $'+price.toFixed(2)+' — '+alarm.condition+' $'+alarm.price.toFixed(2));
+          renderAlarms();
+        }
+      }catch(e){}
+    }else if(alarm.type==='time'){
+      const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',timeZone:'America/New_York'});
+      if(now.includes(alarm.time.slice(0,5))){
+        alarm.triggered=true;
+        saveAlarms(a);
+        triggerAlarm(alarm.message);
+        renderAlarms();
+      }
+    }
+  }
+}
+function triggerAlarm(msg){
+  // Visual alert
+  const notif=document.createElement('div');
+  notif.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#ffb454;color:#000;padding:20px;border-radius:12px;z-index:1000;font-weight:700;max-width:300px;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.8)';
+  notif.textContent='⏰ '+msg;
+  document.body.appendChild(notif);
+  setTimeout(()=>notif.remove(),5000);
+  
+  // Audio alert
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator(),gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=800;gain.gain.setValueAtTime(0.3,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.5);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.5);
+  }catch(e){}
+  
+  // Browser notification
+  if('Notification' in window&&Notification.permission==='granted'){
+    new Notification('Kornis Alert',{body:msg,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23c9a030"/><text x="50" y="60" font-size="60" text-anchor="middle" fill="%23000" font-weight="bold">K</text></svg>'});
+  }
+}
+
+// Request notification permission
+if('Notification' in window&&Notification.permission==='default'){
+  Notification.requestPermission();
+}
+
+// Start checking alarms
+setInterval(checkAlarms,1000);
+
+renderOpen();
+</script>
+</body></html>
