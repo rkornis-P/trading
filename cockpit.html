@@ -46,6 +46,15 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
 #imBox .body .gg{color:var(--green);font-weight:700}
 #imBox .body .rr{color:var(--red);font-weight:700}
 #imBox .close{width:100%;margin-top:12px;background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:8px;padding:10px;font-weight:700;cursor:pointer}
+#vlogWrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px}
+#vlogWrap h4{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.vli{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:11.5px}
+.vli:last-child{border-bottom:none}
+.vli .tm{color:var(--dim);font-size:9.5px;flex:none;width:52px}
+.vli .mg{flex:1}
+.vli.bad .mg{color:var(--red)}.vli.good .mg{color:var(--green)}.vli.warn .mg{color:var(--amber)}
+.vli button{flex:none;background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:6px;padding:4px 9px;font-size:12px;cursor:pointer}
+#vClear{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);border-radius:7px;padding:6px;font-size:10px;cursor:pointer;margin-top:6px}
 .knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
@@ -103,6 +112,12 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
   <div class="lp" id="h_stop" onclick="info('stop')"><div class="d"></div><div class="n">STOP</div></div>
   <div class="lp" id="h_tgt" onclick="info('tgt')"><div class="d"></div><div class="n">TARGET</div></div>
   <div class="lp" id="h_clock" onclick="info('clock')"><div class="d"></div><div class="n">CLOCK</div></div>
+</div>
+
+<div id="vlogWrap">
+  <h4>Voice Log — every alert, tap 🔊 to hear again</h4>
+  <div id="vlog"></div>
+  <button id="vClear" onclick="clearVLog()">clear voice log</button>
 </div>
 
 <div id="imWrap" onclick="if(event.target===this)closeInfo()">
@@ -356,8 +371,17 @@ function health(){
   }
   LAST_SCORE=sc;
 }
+let LAST_TYPE=0;const DEFER={};
+['tk','entry','stop','target'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{LAST_TYPE=Date.now();});});
+function isTyping(){
+  const a=document.activeElement;
+  if(a&&['tk','entry','stop','target'].includes(a.id))return true;
+  return (Date.now()-LAST_TYPE)<5000;
+}
 function fire(kind,msg,key){
-  if(ALERTED[key])return;ALERTED[key]=true;setTimeout(()=>{delete ALERTED[key];},15*60*1000);
+  if(ALERTED[key])return;
+  if(isTyping()){clearTimeout(DEFER[key]);DEFER[key]=setTimeout(()=>fire(kind,msg,key),5500);return;}
+  ALERTED[key]=true;setTimeout(()=>{delete ALERTED[key];},15*60*1000);
   const b=document.getElementById('alertBanner');
   b.textContent=(kind==='bad'?'🚨 ':kind==='good'?'✅ ':'⚠️ ')+msg;
   b.className=kind==='warn'?'warn':kind==='good'?'good':'';
@@ -367,11 +391,45 @@ function fire(kind,msg,key){
     for(let i=0;i<bp;i++){const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);
       o.frequency.value=kind==='bad'?620:880;const t0=c.currentTime+i*0.35;
       g.gain.setValueAtTime(0.35,t0);g.gain.exponentialRampToValueAtTime(0.01,t0+0.28);o.start(t0);o.stop(t0+0.3);}}catch(e){}
-  if(document.getElementById('voiceOn').checked&&'speechSynthesis' in window){
-    try{const u=new SpeechSynthesisUtterance(msg);u.rate=1.02;u.pitch=kind==='bad'?0.9:1;speechSynthesis.speak(u);}catch(e){}}
+  speak2(kind,msg);
+  logVoice(kind,msg);
   if('Notification' in window&&Notification.permission==='granted')new Notification('Kornis Cockpit',{body:msg});
 }
+function speak2(kind,msg){
+  if(!document.getElementById('voiceOn').checked||!('speechSynthesis' in window))return;
+  try{
+    const mk=t=>{const u=new SpeechSynthesisUtterance(t);u.rate=0.88;u.pitch=kind==='bad'?0.9:1;return u;};
+    speechSynthesis.speak(mk(msg));
+    speechSynthesis.speak(mk('I repeat. '+msg));
+  }catch(e){}
+}
+function getVLog(){try{return JSON.parse(localStorage.getItem('kVoiceLog'))||[];}catch(e){return[];}}
+function logVoice(kind,msg){
+  const L=getVLog();L.unshift({t:Date.now(),kind,msg});while(L.length>40)L.pop();
+  localStorage.setItem('kVoiceLog',JSON.stringify(L));drawVLog();
+}
+function drawVLog(){
+  const L=getVLog();const el=document.getElementById('vlog');if(!el)return;
+  if(!L.length){el.innerHTML='<div style="color:var(--dim);font-size:10.5px;padding:4px 0">No alerts yet this session.</div>';return;}
+  el.innerHTML=L.map((e,i)=>{
+    const d=new Date(e.t);const tm=d.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
+    return '<div class="vli '+e.kind+'"><span class="tm">'+tm+'</span><span class="mg"></span><button onclick="replayV('+i+')">🔊</button></div>';
+  }).join('');
+  const msgs=el.querySelectorAll('.vli .mg');
+  L.forEach((e,i)=>{if(msgs[i])msgs[i].textContent=e.msg;});
+}
+function replayV(i){
+  const L=getVLog();if(!L[i])return;
+  try{const u=new SpeechSynthesisUtterance(L[i].msg);u.rate=0.88;speechSynthesis.speak(u);}catch(e){}
+}
+function clearVLog(){localStorage.removeItem('kVoiceLog');drawVLog();}
+drawVLog();
 if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+/* accept ?tk= from watchlist taps: prefill and auto-pull */
+(function(){try{
+  const p=new URLSearchParams(location.search).get('tk');
+  if(p){document.getElementById('tk').value=p.toUpperCase();setTimeout(loadAll,300);}
+}catch(e){}})();
 
 /* ---------- info ---------- */
 const INFO={

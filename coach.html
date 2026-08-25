@@ -251,7 +251,11 @@ function speak(verdict,txt){
   if(!('speechSynthesis' in window))return;
   let nx='';const nm=txt.match(/NEXT:\s*(.+)/i);if(nm)nx=nm[1];
   const msg='Coach says '+verdict+'. '+nx;
-  try{const u=new SpeechSynthesisUtterance(msg);u.rate=1.02;u.pitch=(verdict==='EXIT'?0.9:1);speechSynthesis.speak(u);}catch(e){}
+  try{
+    const mk=t=>{const u=new SpeechSynthesisUtterance(t);u.rate=0.88;u.pitch=(verdict==='EXIT'?0.9:1);return u;};
+    speechSynthesis.speak(mk(msg));
+    speechSynthesis.speak(mk('I repeat. '+msg));
+  }catch(e){}
 }
 
 /* ---------- log ---------- */

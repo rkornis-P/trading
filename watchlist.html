@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Morning Autopilot · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:12px 9px 90px;max-width:640px;margin:0 auto}
+h1{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+.sub{text-align:center;font-size:9.5px;color:var(--dim);margin-bottom:10px;letter-spacing:.06em}
+.sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px;display:flex;justify-content:space-between;align-items:center}
+.row{display:flex;gap:6px;margin-top:4px}
+button.big{flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:12px;font-weight:800;font-size:12.5px;cursor:pointer;letter-spacing:.04em}
+button.big.sec2{background:var(--panel);color:var(--gold-soft);border:1px solid var(--gold)}
+button.big:disabled{opacity:.4}
+#prog{font-size:10px;color:var(--dim);text-align:center;padding:5px 0;min-height:18px}
+
+/* London strip */
+#ldn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:4px}
+#ldn .hd{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+#ldn .tone{font-weight:800;font-size:13px}
+#ldn .tone.up{color:var(--green)}#ldn .tone.dn{color:var(--red)}#ldn .tone.fl{color:var(--amber)}
+.frow{display:flex;gap:6px}
+.fcell{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+.fcell .l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.fcell .v{font-size:12px;font-weight:800}
+.fcell .v.up{color:var(--green)}.fcell .v.dn{color:var(--red)}
+#ldnRead{font-size:11.5px;line-height:1.5;margin-top:8px;color:var(--text)}
+#ldnRead b{color:var(--gold-soft)}
+
+/* board editor */
+#boardEdit{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.bchip{background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:800}
+.bchip span{color:var(--dim);margin-left:6px;cursor:pointer}
+#addTk{width:90px;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:#fff;padding:5px 7px;font-size:11px}
+#addBtn{background:var(--panel);border:1px solid var(--gold);color:var(--gold-soft);border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer}
+
+/* featured trade */
+#feat{display:none;background:linear-gradient(160deg,#16213b,#121B2E);border:1.5px solid var(--gold);border-radius:12px;padding:13px;margin:10px 0}
+#feat.show{display:block}
+#feat .fh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+#feat .ft{font-size:16px;font-weight:800;color:var(--gold-soft)}
+#feat .fs{font-size:12px;font-weight:800}
+#feat .fs.C{color:var(--green)}#feat .fs.P{color:var(--red)}
+#feat .pl{font-size:12px;line-height:1.65;white-space:pre-wrap}
+#feat .pl b{color:var(--gold-soft)}
+#feat .go{display:flex;gap:6px;margin-top:10px}
+#feat .go a{flex:1;text-align:center;background:var(--gold);color:#000;border-radius:7px;padding:9px 0;font-weight:800;font-size:12px;text-decoration:none}
+#feat .go a.alt{background:var(--panel2);color:var(--gold-soft);border:1px solid var(--gold)}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-bottom:7px}
+.card .top{display:flex;align-items:center;gap:8px}
+.card a.tk{flex:none;width:62px;background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:7px;padding:7px 0;text-align:center;font-weight:800;font-size:13px;text-decoration:none}
+.card a.tk:active{background:var(--gold);color:#000}
+.card .mid{flex:1;min-width:0}
+.card .px{font-size:12.5px;font-weight:700}
+.card .px .chg.up{color:var(--green)}.card .px .chg.dn{color:var(--red)}
+.card .side{font-size:10px;font-weight:800;letter-spacing:.06em}
+.card .side.C{color:var(--green)}.card .side.P{color:var(--red)}.card .side.N{color:var(--dim)}
+.badge{flex:none;width:56px;text-align:center;border-radius:8px;padding:5px 0;font-weight:800}
+.badge .n{font-size:16px;line-height:1}
+.badge .v{font-size:7.5px;letter-spacing:.06em}
+.badge.pass{background:rgba(47,182,115,.12);border:1px solid var(--green);color:var(--green)}
+.badge.watch{background:rgba(224,169,63,.10);border:1px solid var(--amber);color:var(--amber)}
+.badge.fail{background:rgba(224,91,68,.10);border:1px solid var(--red);color:var(--red)}
+.badge.none{background:var(--panel2);border:1px solid var(--line);color:var(--dim);cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{font-size:9px;background:var(--panel2);border:1px solid var(--line);border-radius:5px;padding:2px 6px;color:var(--dim)}
+.chip.g{color:var(--green);border-color:rgba(47,182,115,.4)}
+.chip.r{color:var(--red);border-color:rgba(224,91,68,.4)}
+.chip.a{color:var(--amber);border-color:rgba(224,169,63,.4)}
+.rule{background:#1a1205;border:1px solid var(--amber);border-radius:8px;padding:8px 11px;margin:12px 0;font-size:11.5px;text-align:center}
+.rule b{color:var(--amber)}
+
+/* steps strip */
+#steps{display:flex;gap:5px;margin-bottom:10px}
+.stp{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 6px;text-align:center}
+.stp .n{font-size:8.5px;color:var(--gold-soft);font-weight:800;letter-spacing:.08em}
+.stp .d{font-size:9px;color:var(--dim);margin-top:2px;line-height:1.3}
+/* why modal */
+#wWrap{display:none;position:fixed;inset:0;background:rgba(4,8,18,.88);z-index:1200;overflow-y:auto;padding:18px 12px 40px}
+#wWrap.open{display:block}
+#wBox{max-width:560px;margin:0 auto;background:var(--panel);border:1.5px solid var(--gold);border-radius:14px;padding:16px}
+#wBox h3{color:var(--gold-soft);font-size:14px;margin-bottom:3px}
+#wBox .ws{font-size:11px;color:var(--dim);margin-bottom:12px}
+.wrow{border-bottom:1px solid var(--line);padding:9px 0}
+.wrow:last-child{border-bottom:none}
+.wrow .wh{display:flex;justify-content:space-between;font-size:12px;font-weight:800}
+.wrow .wh .pts{font-weight:800}
+.wrow .wh .pts.g{color:var(--green)}.wrow .wh .pts.r{color:var(--red)}.wrow .wh .pts.a{color:var(--amber)}
+.wrow .wb{font-size:11.5px;line-height:1.55;color:var(--text);margin-top:4px}
+.wrow .wb b{color:var(--gold-soft)}
+#wClose{width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px;font-weight:800;font-size:12.5px;cursor:pointer;margin-top:12px}
+.whyBtn{background:none;border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:3px 8px;font-size:9px;font-weight:800;cursor:pointer;margin-left:6px}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<h1>Morning Autopilot</h1>
+<div class="sub">TAP ANY SCORE TO SEE EXACTLY WHY — EVERY NUMBER IS A LESSON</div>
+
+
+<div id="steps">
+  <div class="stp"><div class="n">1 · BRIEF</div><div class="d">One button. London + board + THE TRADE.</div></div>
+  <div class="stp"><div class="n">2 · WHY</div><div class="d">Tap any score. Learn every signal.</div></div>
+  <div class="stp"><div class="n">3 · EXECUTE</div><div class="d">Gates → Picker → bracket → flat 2:45.</div></div>
+</div>
+<div id="ldn">
+  <div class="hd"><span>Overnight / London — ES &amp; NQ futures</span><span id="ldnT">—</span></div>
+  <div class="frow">
+    <div class="fcell"><div class="l">Tone</div><div class="tone fl" id="tone">—</div></div>
+    <div class="fcell"><div class="l">ES chg</div><div class="v" id="esC">—</div></div>
+    <div class="fcell"><div class="l">NQ chg</div><div class="v" id="nqC">—</div></div>
+    <div class="fcell"><div class="l">NQ o/n range</div><div class="v" id="nqR">—</div></div>
+  </div>
+  <div id="ldnRead">Tap RUN — the brief starts with what the futures did while you slept.</div>
+</div>
+
+<div class="sec"><span>Your Board (max 6)</span></div>
+<div id="boardEdit"></div>
+<div class="row" style="margin-bottom:2px">
+  <input id="addTk" placeholder="ADD" autocapitalize="characters">
+  <button id="addBtn" onclick="addBoard()">+</button>
+  <button class="big" onclick="runBrief()" id="briefBtn" style="flex:3">RUN MORNING BRIEF</button>
+</div>
+<div class="row">
+  <button class="big sec2" id="streetBtn" onclick="rankStreet()">RANK THE STREET (35)</button>
+  <button class="big sec2" style="flex:.5" onclick="freshAll()">FRESH</button>
+</div>
+<div id="prog"></div>
+
+<div id="feat">
+  <div class="fh"><span class="ft" id="fTk">—</span><span class="fs" id="fSide">—</span></div>
+  <div class="pl" id="fPlan"></div>
+  <div class="go">
+    <a id="fCock" href="#">OPEN COCKPIT</a>
+    <a id="fPick" href="picker.html" class="alt">PICKER</a>
+    <a id="fWhy" href="#" class="alt" onclick="featWhy();return false">WHY?</a>
+  </div>
+</div>
+
+<div class="sec"><span>Board — scored</span></div>
+<div id="pinned"></div>
+
+<div class="sec"><span>The Street — ranked</span></div>
+<div id="universe"></div>
+
+<div class="rule"><b>ONE TICKER PER DAY.</b> The autopilot finds the horse. The gates still decide if you ride. PASS ≥ 70 · WATCH 50–69.</div>
+
+
+<div id="wWrap" onclick="if(event.target===this)closeWhy()">
+  <div id="wBox">
+    <h3 id="wTitle">—</h3><div class="ws" id="wSub"></div>
+    <div id="wRows"></div>
+    <button id="wClose" onclick="closeWhy()">CLOSE</button>
+  </div>
+</div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="cockpit.html">COCKPIT</a>
+  <a href="picker.html">PICKER</a>
+  <a href="watchlist.html" class="on">SCAN</a>
+  <a href="coach.html">COACH</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const DEF_BOARD=['SPCX','MU','PLTR','XOM','TSLA'];
+const UNIVERSE_ALL=['NVDA','AMD','META','AAPL','MSFT','AMZN','GOOGL','AVGO','SMCI','COIN','MSTR','MARA','HOOD','NFLX','CRM','ORCL','BA','JPM','GS','TQQQ','SOXL','SPY','QQQ','IWM','TLT','UVXY','GLD','XLE','CVX','OXY','SOFI','RIVN','F','TSLA','MU','PLTR','XOM','SPCX'];
+const TTL=5*60*1000;
+let SCORES={},BENCH=null;
+
+/* ---------- board ---------- */
+function getBoard(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b;}catch(e){}return DEF_BOARD.slice();}
+function setBoard(b){localStorage.setItem('kBoard',JSON.stringify(b));}
+function unis(){const b=getBoard();return UNIVERSE_ALL.filter(t=>!b.includes(t)).slice(0,35);}
+function drawBoardEdit(){
+  const b=getBoard();
+  document.getElementById('boardEdit').innerHTML=b.map(t=>'<span class="bchip">'+t+'<span onclick="rmBoard(&quot;'+t+'&quot;)">✕</span></span>').join('');
+}
+function addBoard(){
+  const el=document.getElementById('addTk');const t=el.value.trim().toUpperCase();el.value='';
+  if(!t)return;const b=getBoard();
+  if(b.includes(t))return;
+  if(b.length>=6){alert('Board is full (6). Remove one first.');return;}
+  b.push(t);setBoard(b);drawBoardEdit();drawPinned();
+}
+function rmBoard(t){setBoard(getBoard().filter(x=>x!==t));drawBoardEdit();drawPinned();}
+
+/* ---------- fetch ---------- */
+async function pull(tk,rng,iv){
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i='+(iv||'5m')+'&r='+rng);
+  const txt=await r.text();
+  let j;try{j=JSON.parse(txt);}catch(e){
+    if(txt.indexOf('1015')>=0||r.status===429)throw new Error('rate-limited, wait 60s');
+    throw new Error('relay busy ('+r.status+')');}
+  if(j.chart&&j.chart.error)throw new Error((j.chart.error.description||'feed error').slice(0,40));
+  const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
+  const q=res.indicators.quote[0];const ts=res.timestamp||[];
+  const B=[];
+  for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;
+    B.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+  return {B,meta:res.meta||{}};
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- math ---------- */
+function ema(a,p){const k=2/(p+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e);}return o;}
+function splitSessions(B){ /* gap > 2h = new session */
+  const S=[];let cur=[B[0]];
+  for(let i=1;i<B.length;i++){if(B[i].t-B[i-1].t>7200)S.push(cur),cur=[];cur.push(B[i]);}
+  S.push(cur);return S;
+}
+function resample(B,n){ /* group last bars into n-bar candles from the end */
+  const out=[];
+  for(let end=B.length;end>0;end-=n){
+    const s=Math.max(0,end-n);const g=B.slice(s,end);
+    out.unshift({o:g[0].o,h:Math.max(...g.map(b=>b.h)),l:Math.min(...g.map(b=>b.l)),c:g[g.length-1].c,v:g.reduce((a,b)=>a+b.v,0)});
+    if(out.length>=60)break;}
+  return out;
+}
+function adx14(B){
+  if(B.length<30)return null;
+  let trS=0,pS=0,mS=0,dxs=[];let ptr=null,pp=null,pm=null;
+  for(let i=1;i<B.length;i++){
+    const up=B[i].h-B[i-1].h,dn=B[i-1].l-B[i].l;
+    const pdm=(up>dn&&up>0)?up:0,mdm=(dn>up&&dn>0)?dn:0;
+    const tr=Math.max(B[i].h-B[i].l,Math.abs(B[i].h-B[i-1].c),Math.abs(B[i].l-B[i-1].c));
+    if(i<=14){trS+=tr;pS+=pdm;mS+=mdm;if(i===14){ptr=trS;pp=pS;pm=mS;}}
+    else{ptr=ptr-ptr/14+tr;pp=pp-pp/14+pdm;pm=pm-pm/14+mdm;
+      const pdi=100*pp/ptr,mdi=100*pm/ptr;const dx=100*Math.abs(pdi-mdi)/((pdi+mdi)||1);dxs.push(dx);}
+  }
+  if(dxs.length<14)return null;
+  let adx=dxs.slice(0,14).reduce((a,b)=>a+b,0)/14;
+  for(let i=14;i<dxs.length;i++)adx=(adx*13+dxs[i])/14;
+  const prev=dxs.length>19?dxs.slice(-6,-1).reduce((a,b)=>a+b,0)/5:adx;
+  return {adx,rising:adx>=prev};
+}
+function analyzeFull(B5d){
+  const sess=splitSessions(B5d);
+  const today=sess[sess.length-1];
+  const prior=sess.length>1?sess[sess.length-2]:null;
+  const B=today;if(B.length<12)throw new Error('thin session: '+B.length+' bars');
+  const C=B.map(b=>b.c);const n=C.length-1;const px=C[n];
+  const e9=ema(C,9)[n];
+  const s20p=Math.min(20,C.length);let s20=0;for(let i=C.length-s20p;i<C.length;i++)s20+=C[i];s20/=s20p;
+  let pv=0,vv=0;B.forEach(b=>{pv+=((b.h+b.l+b.c)/3)*b.v;vv+=b.v;});const vw=vv?pv/vv:px;
+  let g=0,l=0;const rp=Math.min(14,C.length-1);
+  for(let i=C.length-rp;i<C.length;i++){const d=C[i]-C[i-1];if(d>0)g+=d;else l-=d;}
+  const rsi=l===0?100:100-100/(1+g/l);
+  const allC=B5d.map(b=>b.c);
+  const e12=ema(allC,12),e26=ema(allC,26);const M=allC.map((_,i)=>e12[i]-e26[i]);const S9=ema(M,9);
+  const N=allC.length-1;const h2=M[N]-S9[N],h1=M[N-1]-S9[N-1];
+  /* RVOL time-of-day: today cum vol vs avg prior-days cum vol at same bar index */
+  const k=B.length;let priorCums=[];
+  for(let s=0;s<sess.length-1;s++){const ss=sess[s];if(ss.length>=k)priorCums.push(ss.slice(0,k).reduce((a,b)=>a+b.v,0));}
+  const todayCum=B.reduce((a,b)=>a+b.v,0);
+  const rvol=priorCums.length?todayCum/(priorCums.reduce((a,b)=>a+b,0)/priorCums.length):null;
+  /* ATR% + Keltner squeeze on 5m (20) */
+  let trs=[];for(let i=1;i<B.length;i++)trs.push(Math.max(B[i].h-B[i].l,Math.abs(B[i].h-B[i-1].c),Math.abs(B[i].l-B[i-1].c)));
+  const atr=trs.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(14,trs.length));
+  const atrP=atr/px*100;
+  const sdp=Math.min(20,C.length);let mean=0;for(let i=C.length-sdp;i<C.length;i++)mean+=C[i];mean/=sdp;
+  let sd=0;for(let i=C.length-sdp;i<C.length;i++)sd+=(C[i]-mean)*(C[i]-mean);sd=Math.sqrt(sd/sdp);
+  const sqzOn=(2*sd)<(1.5*atr);
+  /* multi-timeframe */
+  const B15=resample(B5d,3),B60=resample(B5d,12);
+  const c15=B15.map(b=>b.c),c60=B60.map(b=>b.c);
+  const e9_15=ema(c15,9)[c15.length-1],e9_60=ema(c60,9)[c60.length-1];
+  const up15=c15[c15.length-1]>e9_15,up60=c60[c60.length-1]>e9_60;
+  const AD=adx14(B15);
+  /* prior day + gap */
+  let pdh=null,pdl=null,pdc=null,gapP=null;
+  if(prior){pdh=Math.max(...prior.map(b=>b.h));pdl=Math.min(...prior.map(b=>b.l));pdc=prior[prior.length-1].c;
+    gapP=(B[0].o-pdc)/pdc*100;}
+  const chg=pdc?(px-pdc)/pdc*100:null;
+  const dayHi=Math.max(...B.map(b=>b.h)),dayLo=Math.min(...B.map(b=>b.l));
+  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atrP,sqzOn,up15,up60,adx:AD,pdh,pdl,pdc,gapP,dayHi,dayLo};
+}
+function scoreIt(A,rs){
+  function side(dir){
+    let s=0;const why=[];
+    if((dir>0&&A.px>A.vw)||(dir<0&&A.px<A.vw)){s+=10;why.push(['VWAP ✓','g']);}else why.push(['VWAP ✗','r']);
+    if((dir>0&&A.px>A.e9)||(dir<0&&A.px<A.e9)){s+=8;why.push(['9EMA ✓','g']);}
+    if((dir>0&&A.e9>A.s20)||(dir<0&&A.e9<A.s20))s+=6;
+    if((dir>0)===A.up15){s+=8;why.push(['15m ✓','g']);}else why.push(['15m ✗','r']);
+    if((dir>0)===A.up60){s+=8;why.push(['1h ✓','g']);}else why.push(['1h ✗','r']);
+    if(dir>0){if(A.rsi>=45&&A.rsi<=72)s+=8;else if(A.rsi>72)why.push(['RSI hot','r']);}
+    else{if(A.rsi>=28&&A.rsi<=55)s+=8;else if(A.rsi<28)why.push(['RSI washed','r']);}
+    if((dir>0&&A.h2>0)||(dir<0&&A.h2<0)){s+=4;if((dir>0&&A.h2>A.h1)||(dir<0&&A.h2<A.h1)){s+=4;why.push(['MACD accel','g']);}}
+    if(A.adx){if(A.adx.adx>=20){s+=5;if(A.adx.rising)s+=4;why.push(['ADX '+A.adx.adx.toFixed(0)+(A.adx.rising?'↑':''),A.adx.adx>=25?'g':'a']);}else why.push(['chop ADX '+A.adx.adx.toFixed(0),'r']);}
+    if(A.rvol!=null){if(A.rvol>=1.5){s+=10;why.push(['RVOL ×'+A.rvol.toFixed(1),'g']);}else if(A.rvol>=1.0){s+=5;why.push(['RVOL ×'+A.rvol.toFixed(1),'']);}else why.push(['RVOL ×'+A.rvol.toFixed(1)+' thin','r']);}
+    if(A.sqzOn)why.push(['SQZ coiled','a']);
+    if(A.atrP>=0.15)s+=7;else if(A.atrP>=0.08)s+=4;else why.push(['dead tape','r']);
+    if(A.pdh!=null){
+      if(dir>0&&A.px>A.pdh){s+=10;why.push(['> PDH','g']);}
+      else if(dir<0&&A.px<A.pdl){s+=10;why.push(['< PDL','g']);}
+      else if(dir>0&&A.gapP!=null&&A.gapP>0.3)s+=4;
+      else if(dir<0&&A.gapP!=null&&A.gapP<-0.3)s+=4;}
+    if(rs!=null){if((dir>0&&rs>0.15)||(dir<0&&rs<-0.15)){s+=8;why.push(['RS vs SPY '+(rs>0?'+':'')+rs.toFixed(1)+'%','g']);}
+      else if((dir>0&&rs<-0.3)||(dir<0&&rs>0.3))why.push(['lags SPY','r']);}
+    return {s:Math.min(100,s),why};
+  }
+  const bull=side(1),bear=side(-1);
+  const p=bull.s>=bear.s?{side:'CALLS',cls:'C',...bull}:{side:'PUTS',cls:'P',...bear};
+  return {score:p.s,side:p.side,cls:p.cls,why:p.why.slice(0,5),dir:bull.s>=bear.s?1:-1};
+}
+
+
+function buildDetail(A,rs,dir){
+  const L=dir>0;const n2=x=>x!=null?('$'+x.toFixed(2)):'?';
+  const D=[];
+  function row(label,ok,pts,max,txt){D.push({label,ok,pts,max,txt});}
+  row('VWAP — the crowd\'s line', (L&&A.px>A.vw)||(!L&&A.px<A.vw), ((L&&A.px>A.vw)||(!L&&A.px<A.vw))?10:0, 10,
+    'Price '+n2(A.px)+' vs VWAP '+n2(A.vw)+'. VWAP is the average price every share traded at today. '+
+    ((L&&A.px>A.vw)||(!L&&A.px<A.vw)
+      ?'Price is on your side of it: the average participant today is '+(L?'in profit and defending longs':'underwater and selling rallies')+' — the session\'s crowd is with this trade.'
+      :'Price is on the WRONG side: you would be fighting everyone who traded today. Setups against VWAP fail more and pay less.'));
+  row('9 EMA — the ride line', (L&&A.px>A.e9)||(!L&&A.px<A.e9), ((L&&A.px>A.e9)||(!L&&A.px<A.e9))?8:0, 8,
+    '9 EMA '+n2(A.e9)+'. The fastest average — strong intraday moves ride it like a rail. Being on the right side means momentum is CURRENT, not remembered. A close across it is the scalp exit, so starting on the correct side means your exit line is beneath you, not above you.');
+  row('9 vs 20 — short-trend agreement', (L&&A.e9>A.s20)||(!L&&A.e9<A.s20), ((L&&A.e9>A.s20)||(!L&&A.e9<A.s20))?6:0, 6,
+    '9 EMA '+n2(A.e9)+' vs 20 SMA '+n2(A.s20)+'. When the fast average leads the slow one in your direction, the last 45 minutes agree with the last 100 — trend, not noise.');
+  row('15-minute chart agrees', (L===A.up15), (L===A.up15)?8:0, 8,
+    'The same test run on 15-minute candles. Pros never trade a 5m signal that the 15m denies — that is how you buy the blip inside a downtrend. '+(L===A.up15?'Both timeframes vote the same way.':'The 15m DISAGREES — this is a countertrend scalp at best, and the score pays the price.'));
+  row('1-hour chart agrees', (L===A.up60), (L===A.up60)?8:0, 8,
+    'Same test on 1-hour candles — the swing trader\'s view. When 5m, 15m and 1h all point one way, you have the whole room leaning together; moves travel much farther. '+(L===A.up60?'Aligned.':'The bigger players are leaning the other way — expect walls of supply/demand against you.'));
+  const rsiOk=L?(A.rsi>=45&&A.rsi<=72):(A.rsi>=28&&A.rsi<=55);
+  row('RSI — fuel gauge', rsiOk, rsiOk?8:0, 8,
+    'RSI '+A.rsi.toFixed(0)+'. This measures how stretched the last 14 candles are. The sweet zone for '+(L?'longs is 45–72':'shorts is 28–55')+': enough momentum to be real, enough room left to pay you. '+
+    (rsiOk?'In the zone.':(L&&A.rsi>72?'Above 72 = already stretched — you would be buying what others are about to sell. Never open a long over 70.':( !L&&A.rsi<28?'Under 28 = washed out — snapback risk. Shorting here is chasing.':'Outside the zone — momentum has not confirmed yet.'))));
+  const macdOk=(L&&A.h2>0)||(!L&&A.h2<0);const macdAcc=(L&&A.h2>A.h1)||(!L&&A.h2<A.h1);
+  row('MACD histogram — acceleration', macdOk, (macdOk?4:0)+(macdOk&&macdAcc?4:0), 8,
+    'The histogram measures whether momentum is speeding up or slowing down — it turns BEFORE price. '+(macdOk?('Pointing your way'+(macdAcc?' and GROWING — the move is accelerating, the best time to be aboard.':' but shrinking — momentum is aging; fine to hold, late to start.')):'Pointing against you — the engine is pulling the other direction.'));
+  if(A.adx){const aok=A.adx.adx>=20;
+    row('ADX — trend strength (chop killer)', aok, aok?(5+(A.adx.rising?4:0)):0, 9,
+      'ADX '+A.adx.adx.toFixed(0)+(A.adx.rising?' and rising':'')+'. ADX does not care about direction — it measures whether a trend EXISTS. Above 20 = the tape is trending and breakouts follow through. Below 20 = chop: signals fire and immediately reverse, the #1 killer of scalp accounts. '+(aok?'Trending tape — signals mean something today.':'CHOP. This is the single best reason to skip a name entirely.'));}
+  if(A.rvol!=null){const rok=A.rvol>=1.0;
+    row('RVOL — real participation', rok, A.rvol>=1.5?10:(A.rvol>=1.0?5:0), 10,
+      'Relative volume ×'+A.rvol.toFixed(1)+' — today\'s volume vs the SAME time of day averaged over prior sessions, which is the honest comparison (mornings are always busier than lunch). Above 1.5 = institutions are here and moves stick. Below 1.0 = nobody came; whatever the chart draws, there is no fuel behind it. Volume holds the veto in your playbook — this is that veto, measured properly.');}
+  if(A.sqzOn)row('Squeeze — coiled spring', true, 0, 0,
+    'Bollinger Bands have contracted inside the Keltner Channel: volatility is compressed to a coil. This scores no points because it has no direction — but it means energy is LOADING. When a squeeze releases with volume, the first move tends to run hard. Worth watching for the break.');
+  row('Movement — does it pay?', A.atrP>=0.08, A.atrP>=0.15?7:(A.atrP>=0.08?4:0), 7,
+    'Average candle range '+A.atrP.toFixed(2)+'% of price. Options decay every minute you are in them — the stock must MOVE enough per bar to outrun theta. Above 0.15% per 5-minute bar comfortably pays; a dead tape bleeds you even when you are right on direction.');
+  if(A.pdh!=null){const pdOk=(L&&A.px>A.pdh)||(!L&&A.px<A.pdl);
+    row('Yesterday\'s battle lines', pdOk, pdOk?10:((L&&A.gapP>0.3)||(!L&&A.gapP<-0.3)?4:0), 10,
+      'PDH '+n2(A.pdh)+' · PDL '+n2(A.pdl)+' · prior close '+n2(A.pdc)+'. Yesterday\'s high and low are the most-watched lines on every intraday chart — stops and breakout orders cluster there. '+
+      (pdOk?('Price has already broken '+(L?'ABOVE yesterday\'s high — everyone short from yesterday is trapped and fuels the move by covering.':'BELOW yesterday\'s low — longs from yesterday are trapped; their selling fuels the move.')):'Still inside yesterday\'s range — the trade is a bet on the break, not proof of one. The trigger line in THE TRADE card is exactly this level.'));}
+  if(rs!=null){const rsOk=(L&&rs>0.15)||(!L&&rs<-0.15);
+    row('Relative strength vs SPY', rsOk, rsOk?8:0, 8,
+      'This name is '+(rs>=0?'+':'')+rs.toFixed(1)+'% vs SPY today. Money rotates INTO the strongest names and OUT of the weakest — trading the strongest horse means the market\'s flow is your tailwind. '+(rsOk?'Clear leader'+(L?'':' to the downside')+' — this is the horse.':'Moving with the herd or lagging it — no rotation edge; the trade must win on its own chart alone.'));}
+  return D;
+}
+
+/* ---------- cache + scoring ---------- */
+function getC(tk){try{const c=JSON.parse(localStorage.getItem('kScan3_'+tk));if(c&&Date.now()-c.ts<TTL)return c;}catch(e){}return null;}
+function setC(tk,d){try{localStorage.setItem('kScan3_'+tk,JSON.stringify({ts:Date.now(),...d}));}catch(e){}}
+async function scoreTk(tk,force){
+  if(!force){const c=getC(tk);if(c){SCORES[tk]=c;return c;}}
+  const {B}=await pull(tk,'5d','5m');
+  const A=analyzeFull(B);
+  const rs=(BENCH&&A.chg!=null&&BENCH.chg!=null)?A.chg-BENCH.chg:null;
+  const sc=scoreIt(A,rs);
+  const det=buildDetail(A,rs,sc.dir);
+  const d={px:A.px,chg:A.chg,score:sc.score,side:sc.side,cls:sc.cls,why:sc.why,det,
+    pdh:A.pdh,pdl:A.pdl,pdc:A.pdc,vw:A.vw,dayHi:A.dayHi,dayLo:A.dayLo,atrP:A.atrP,rvol:A.rvol,gapP:A.gapP};
+  setC(tk,d);SCORES[tk]=d;return d;
+}
+async function tryScore(tk,force){
+  try{return await scoreTk(tk,force);}
+  catch(e){await sleep(2500);
+    try{return await scoreTk(tk,force);}catch(e2){SCORES[tk]={err:e2.message};return null;}}
+}
+
+/* ---------- london ---------- */
+async function london(){
+  const out={};
+  for(const [tk,key] of [['ES=F','es'],['NQ=F','nq']]){
+    try{
+      const {B,meta}=await pull(tk,'2d','15m');
+      const prevC=meta.chartPreviousClose||null;
+      const last=B[B.length-1].c;
+      /* overnight = bars since 17:00 CT yesterday ≈ last 16h of bars */
+      const cutoff=B[B.length-1].t-16*3600;
+      const ON=B.filter(b=>b.t>=cutoff);
+      const hi=Math.max(...ON.map(b=>b.h)),lo=Math.min(...ON.map(b=>b.l));
+      out[key]={last,prevC,chg:prevC?(last-prevC)/prevC*100:null,hi,lo,rangeP:(hi-lo)/last*100,pos:(last-lo)/((hi-lo)||1)};
+      await sleep(800);
+    }catch(e){out[key]={err:e.message};}
+  }
+  return out;
+}
+function drawLondon(L){
+  const nq=L.nq||{},es=L.es||{};
+  const fmt=x=>x==null?'—':((x>=0?'+':'')+x.toFixed(2)+'%');
+  const esEl=document.getElementById('esC');esEl.textContent=fmt(es.chg);esEl.className='v '+(es.chg>=0?'up':'dn');
+  const nqEl=document.getElementById('nqC');nqEl.textContent=fmt(nq.chg);nqEl.className='v '+(nq.chg>=0?'up':'dn');
+  document.getElementById('nqR').textContent=nq.rangeP!=null?nq.rangeP.toFixed(2)+'%':'—';
+  const avg=((es.chg||0)+(nq.chg||0))/2;
+  const tone=document.getElementById('tone');
+  let t='FLAT',cls='fl';
+  if(avg>0.25){t='RISK ON';cls='up';}else if(avg<-0.25){t='RISK OFF';cls='dn';}
+  tone.textContent=t;tone.className='tone '+cls;
+  document.getElementById('ldnT').textContent=new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})+' CT';
+  let read='';
+  if(nq.chg!=null){
+    const posTxt=nq.pos>0.7?'upper third of the overnight range (buyers held the night)':nq.pos<0.3?'lower third of the overnight range (sellers held the night)':'middle of the overnight range (no side won)';
+    read='<b>'+t+'.</b> NQ '+fmt(nq.chg)+', ES '+fmt(es.chg)+' overnight; NQ sits in the '+posTxt+'. ';
+    if(cls==='up')read+='Tailwind for CALL setups at the open — but a green overnight often <b>fades the first 15 minutes</b>; let the opening range confirm.';
+    else if(cls==='dn')read+='Headwind — favor PUT-side setups or wait for a reclaim. Gap-downs that hold the first 15 minutes tend to <b>continue</b>.';
+    else read+='No edge from overnight — the opening range decides everything today.';
+  }else read='Futures feed unavailable: '+(nq.err||es.err||'');
+  document.getElementById('ldnRead').innerHTML=read;
+}
+
+/* ---------- the featured trade ---------- */
+let FEAT_TK=null;
+function featWhy(){if(FEAT_TK)whyTk(FEAT_TK);}
+
+function buildFeature(){
+  const b=getBoard();
+  let best=null,bestTk=null;
+  b.forEach(tk=>{const d=SCORES[tk];if(d&&d.score!=null&&(!best||d.score>best.score)){best=d;bestTk=tk;}});
+  if(!best)return;
+  FEAT_TK=bestTk;
+  const f=document.getElementById('feat');f.classList.add('show');
+  document.getElementById('fTk').textContent=bestTk+' · '+best.score+'/100';
+  const sEl=document.getElementById('fSide');sEl.textContent=best.side;sEl.className='fs '+best.cls;
+  const L=best.cls==='C';
+  const n2=x=>x!=null?x.toFixed(2):'—';
+  const trigger=L?('5m opening-range HIGH break on volume'+(best.pdh?(' — or reclaim of PDH $'+n2(best.pdh)):''))
+                 :('5m opening-range LOW break on volume'+(best.pdl?(' — or loss of PDL $'+n2(best.pdl)):''));
+  const stopRef=L?(best.vw?('below OR low / VWAP $'+n2(best.vw)):'below OR low'):(best.vw?('above OR high / VWAP $'+n2(best.vw)):'above OR high');
+  const t1=L?(best.pdh&&best.px<=best.pdh?('PDH $'+n2(best.pdh)):('day high $'+n2(best.dayHi)))
+            :(best.pdl&&best.px>=best.pdl?('PDL $'+n2(best.pdl)):('day low $'+n2(best.dayLo)));
+  document.getElementById('fPlan').innerHTML=
+    '<b>Last:</b> $'+n2(best.px)+(best.gapP!=null?('  ·  gap '+(best.gapP>=0?'+':'')+best.gapP.toFixed(2)+'%'):'')+
+    (best.rvol!=null?('  ·  RVOL ×'+best.rvol.toFixed(1)):'')+'\n'+
+    '<b>Wait for:</b> 8:30–8:35 range to print. No clicks before 8:35.\n'+
+    '<b>Trigger:</b> '+trigger+'\n'+
+    '<b>Stop:</b> '+stopRef+' — structure, not dollars\n'+
+    '<b>T1:</b> '+t1+' — sell HALF, stop to breakeven\n'+
+    '<b>Vehicle:</b> '+(L?'CALL':'PUT')+' 5–10 DTE, 0.65–0.75Δ, spread ≤$0.30 &amp; ≤5% — tap PICKER\n'+
+    '<b>Bracket on the ticket. Flat by 2:45 CT.</b>';
+  document.getElementById('fCock').href='cockpit.html?tk='+bestTk;
+}
+
+
+function whyTk(tk){
+  const d=SCORES[tk];if(!d||!d.det)return;
+  document.getElementById('wTitle').textContent=tk+' — '+d.side+' · '+d.score+'/100';
+  document.getElementById('wSub').textContent='Every signal, what it measured, and why it earned (or lost) its points. Green = working for the trade. Red = the honest problem with it.';
+  document.getElementById('wRows').innerHTML=d.det.map(r=>{
+    const cls=r.max===0?'a':(r.pts>=r.max?'g':(r.pts>0?'a':'r'));
+    return '<div class="wrow"><div class="wh"><span>'+r.label+'</span><span class="pts '+cls+'">'+(r.max===0?'INFO':r.pts+'/'+r.max)+'</span></div><div class="wb">'+r.txt+'</div></div>';
+  }).join('');
+  document.getElementById('wWrap').classList.add('open');
+}
+function closeWhy(){document.getElementById('wWrap').classList.remove('open');}
+
+/* ---------- render ---------- */
+function badge(tk){
+  const d=SCORES[tk];
+  if(!d||d.score==null)return '<div class="badge none" onclick="scoreOne(&quot;'+tk+'&quot;)"><div class="n">?</div><div class="v">TEST</div></div>';
+  const cls=d.score>=70?'pass':d.score>=50?'watch':'fail';
+  const v=d.score>=70?'PASS':d.score>=50?'WATCH':'FAIL';
+  return '<div class="badge '+cls+'" onclick="whyTk(&quot;'+tk+'&quot;)" style="cursor:pointer"><div class="n">'+d.score+'</div><div class="v">'+v+'</div></div>';
+}
+function card(tk){
+  const d=SCORES[tk]||{};
+  const chg=d.chg!=null?('<span class="chg '+(d.chg>=0?'up':'dn')+'"> '+(d.chg>=0?'+':'')+d.chg.toFixed(2)+'%</span>'):'';
+  const px=d.px!=null?('$'+d.px.toFixed(2)):(d.err?'<span style="color:var(--red)">'+d.err+'</span>':'&nbsp;');
+  const side=d.side?('<span class="side '+d.cls+'">'+d.side+'</span>'):'<span class="side N">untested</span>';
+  const chips=(d.why||[]).map(w=>'<span class="chip '+(w[1]||'')+'">'+w[0]+'</span>').join('');
+  return '<div class="card"><div class="top">'+
+    '<a class="tk" href="cockpit.html?tk='+tk+'">'+tk+'</a>'+
+    '<div class="mid"><div class="px">'+px+chg+'</div>'+side+'</div>'+
+    badge(tk)+'</div>'+
+    (chips?'<div class="chips">'+chips+'</div>':'')+'</div>';
+}
+function drawPinned(){document.getElementById('pinned').innerHTML=getBoard().map(card).join('');}
+function drawUniverse(){
+  const u=unis();
+  const ranked=u.slice().sort((a,b)=>(((SCORES[b]||{}).score)||-1)-(((SCORES[a]||{}).score)||-1));
+  document.getElementById('universe').innerHTML=ranked.map(card).join('');
+}
+
+/* ---------- runs ---------- */
+let RUNNING=false;
+async function runBrief(){
+  if(RUNNING)return;RUNNING=true;
+  const p=document.getElementById('prog');const btn=document.getElementById('briefBtn');btn.disabled=true;
+  try{
+    p.textContent='Reading the overnight tape (ES, NQ)…';
+    drawLondon(await london());
+    p.textContent='Benchmarking SPY…';
+    BENCH=await tryScore('SPY',false);await sleep(900);
+    const b=getBoard();
+    for(let i=0;i<b.length;i++){
+      p.textContent='Board: '+b[i]+' ('+(i+1)+'/'+b.length+')…';
+      await tryScore(b[i],false);drawPinned();await sleep(900);
+    }
+    buildFeature();
+    p.textContent='Brief done. THE TRADE is above — street ranking is optional (button).';
+  }catch(e){p.textContent='Brief failed: '+e.message;}
+  btn.disabled=false;RUNNING=false;
+}
+async function rankStreet(){
+  if(RUNNING)return;RUNNING=true;
+  const p=document.getElementById('prog');const btn=document.getElementById('streetBtn');btn.disabled=true;
+  const u=unis();
+  for(let i=0;i<u.length;i++){
+    p.textContent='Street: '+u[i]+' ('+(i+1)+'/'+u.length+')…';
+    await tryScore(u[i],false);
+    if(i%3===2)drawUniverse();
+    await sleep(950);
+  }
+  drawUniverse();
+  p.textContent='Street ranked. Grey ? = tap to test individually.';
+  btn.disabled=false;RUNNING=false;
+}
+async function scoreOne(tk){
+  const p=document.getElementById('prog');p.textContent='Testing '+tk+' …';
+  await tryScore(tk,true);p.textContent='';
+  drawPinned();drawUniverse();buildFeature();
+}
+function freshAll(){
+  getBoard().concat(unis()).concat(['SPY']).forEach(t=>localStorage.removeItem('kScan3_'+t));
+  SCORES={};BENCH=null;drawPinned();drawUniverse();
+  document.getElementById('feat').classList.remove('show');
+  document.getElementById('prog').textContent='Cache cleared — RUN MORNING BRIEF for fresh numbers.';
+}
+
+/* boot */
+drawBoardEdit();
+getBoard().concat(unis()).forEach(tk=>{const c=getC(tk);if(c)SCORES[tk]=c;});
+drawPinned();drawUniverse();
+if(Object.keys(SCORES).length)buildFeature();
+document.getElementById('addTk').addEventListener('keydown',e=>{if(e.key==='Enter')addBoard();});
+</script>
+</body></html>
