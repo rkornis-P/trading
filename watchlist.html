@@ -149,7 +149,7 @@ button.big:disabled{opacity:.4}
 <div class="sec"><span>The Street — ranked</span></div>
 <div id="universe"></div>
 
-<div class="rule"><b>ONE TICKER PER DAY.</b> The autopilot finds the horse. The gates still decide if you ride. PASS ≥ 70 · WATCH 50–69.</div>
+<div class="rule"><b>ONE TICKER PER DAY.</b> The autopilot finds the horse. The gates still decide if you ride. PASS line adapts to YOUR results via the LEDGER (default 70) · WATCH 50–69.</div>
 
 
 <div id="wWrap" onclick="if(event.target===this)closeWhy()">
@@ -166,6 +166,7 @@ button.big:disabled{opacity:.4}
   <a href="picker.html">PICKER</a>
   <a href="watchlist.html" class="on">SCAN</a>
   <a href="coach.html">COACH</a>
+  <a href="ledger.html">LEDGER</a>
 </div>
 
 <script>
@@ -324,7 +325,7 @@ function buildDetail(A,rs,dir){
   row('9 EMA — the ride line', (L&&A.px>A.e9)||(!L&&A.px<A.e9), ((L&&A.px>A.e9)||(!L&&A.px<A.e9))?8:0, 8,
     '9 EMA '+n2(A.e9)+'. The fastest average — strong intraday moves ride it like a rail. Being on the right side means momentum is CURRENT, not remembered. A close across it is the scalp exit, so starting on the correct side means your exit line is beneath you, not above you.');
   row('9 vs 20 — short-trend agreement', (L&&A.e9>A.s20)||(!L&&A.e9<A.s20), ((L&&A.e9>A.s20)||(!L&&A.e9<A.s20))?6:0, 6,
-    '9 EMA '+n2(A.e9)+' vs 20 SMA '+n2(A.s20)+'. When the fast average leads the slow one in your direction, the last 45 minutes agree with the last 100 — trend, not noise.');
+    '9 EMA '+n2(A.e9)+' vs 20 SMA '+n2(A.s20)+'. The 9 is the PRESENT (recent closes weighted heavily); the 20 is the recent past (equal votes). When the present leads the past in your direction, you have RIDE state — the only fully tradeable one. Lines flat and braided = chop, where every crossover is a lie. The 20 is also the first wall: first touch usually rejects, third touch usually breaks. Full lesson: PLAYBOOK 4a.');
   row('15-minute chart agrees', (L===A.up15), (L===A.up15)?8:0, 8,
     'The same test run on 15-minute candles. Pros never trade a 5m signal that the 15m denies — that is how you buy the blip inside a downtrend. '+(L===A.up15?'Both timeframes vote the same way.':'The 15m DISAGREES — this is a countertrend scalp at best, and the score pays the price.'));
   row('1-hour chart agrees', (L===A.up60), (L===A.up60)?8:0, 8,
@@ -463,11 +464,13 @@ function whyTk(tk){
 function closeWhy(){document.getElementById('wWrap').classList.remove('open');}
 
 /* ---------- render ---------- */
+function passLine(){try{const p=JSON.parse(localStorage.getItem('kPassLine'));if(p&&p.v)return p.v;}catch(e){}return 70;}
 function badge(tk){
   const d=SCORES[tk];
   if(!d||d.score==null)return '<div class="badge none" onclick="scoreOne(&quot;'+tk+'&quot;)"><div class="n">?</div><div class="v">TEST</div></div>';
-  const cls=d.score>=70?'pass':d.score>=50?'watch':'fail';
-  const v=d.score>=70?'PASS':d.score>=50?'WATCH':'FAIL';
+  const PL=passLine();
+  const cls=d.score>=PL?'pass':d.score>=50?'watch':'fail';
+  const v=d.score>=PL?'PASS':d.score>=50?'WATCH':'FAIL';
   return '<div class="badge '+cls+'" onclick="whyTk(&quot;'+tk+'&quot;)" style="cursor:pointer"><div class="n">'+d.score+'</div><div class="v">'+v+'</div></div>';
 }
 function card(tk){

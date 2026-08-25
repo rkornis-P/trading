@@ -46,6 +46,27 @@ button.ghost.live{background:var(--gold);color:#000}
 .hitem.open .hb{display:block}
 .hitem .ht{color:var(--dim);font-weight:400}
 #clearH{width:100%;background:none;border:1px dashed var(--line);color:var(--dim);border-radius:8px;padding:8px;font-size:11px;cursor:pointer;margin-top:2px}
+
+#chainBtnRow{display:flex;gap:6px;margin-top:6px}
+#chainBtn{flex:1;background:var(--panel);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:9px;font-weight:800;font-size:11.5px;cursor:pointer}
+#chain{display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:7px}
+#chain.show{display:block}
+#chain .st{font-size:10px;color:var(--dim);text-align:center;padding:4px 0}
+#exps{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.exch{background:var(--panel2);border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:5px 9px;font-size:10.5px;font-weight:800;cursor:pointer}
+.exch.on{border-color:var(--gold);color:var(--gold-soft)}
+.crow{display:flex;align-items:center;gap:6px;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.crow:last-child{border-bottom:none}
+.crow:active{background:var(--panel2)}
+.crow .k{flex:none;width:64px;font-weight:800;font-size:13px}
+.crow .k.itm{color:var(--gold-soft)}
+.crow .m{flex:1;font-size:11px;color:var(--text)}
+.crow .m .dim{color:var(--dim);font-size:9.5px}
+.crow .dl{flex:none;width:52px;text-align:right;font-size:11px;font-weight:800}
+.crow .dl.deep{color:var(--green)}
+.crow.atm{background:rgba(191,144,0,.07)}
+.fieldflash{animation:ff .9s ease 2}
+@keyframes ff{0%{border-color:var(--gold);box-shadow:0 0 0 2px rgba(191,144,0,.4)}100%{border-color:var(--line);box-shadow:none}}
 .knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
@@ -67,6 +88,15 @@ button.ghost.live{background:var(--gold);color:#000}
 <div class="grid">
   <input id="stop" type="number" step="0.01" placeholder="Stop" class="w2">
   <input id="target" type="number" step="0.01" placeholder="Target" class="w2">
+</div>
+
+<div id="chainBtnRow">
+  <button id="chainBtn" onclick="loadChain()">⛓ LOAD CHAIN — tap a contract to fill the form</button>
+</div>
+<div id="chain">
+  <div class="st" id="chSt">—</div>
+  <div id="exps"></div>
+  <div id="strikes"></div>
 </div>
 
 <div class="row">
@@ -98,7 +128,7 @@ button.ghost.live{background:var(--gold);color:#000}
   <a href="cockpit.html">COCKPIT</a>
   <a href="picker.html">PICKER</a>
   <a class="on" href="coach.html">COACH</a>
-  <a href="trades.html">TRADES</a>
+  <a href="ledger.html">LEDGER</a>
 </div>
 
 <script>
@@ -162,6 +192,96 @@ function analyze(bars){
   return {px,e9,s20,vwap,rsi:r,macdH:h1,macdGrow:(h1>h0&&h0>hm),macdShrink:(h1<h0),volRatio:vAvg?vLast/vAvg:1,dayHi:hi,dayLo:lo,
     last3:bars.slice(-3).map(b=>({c:+b.c.toFixed(2),v:b.v}))};
 }
+
+/* ---------- options chain ---------- */
+function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
+function bsPrice(S,K,T,r,sg,isC){const st=Math.sqrt(T);const d1=(Math.log(S/K)+(r+.5*sg*sg)*T)/(sg*st);const d2=d1-sg*st;
+  return isC?S*nCDF(d1)-K*Math.exp(-r*T)*nCDF(d2):K*Math.exp(-r*T)*nCDF(-d2)-S*nCDF(-d1);}
+function solveIV(S,K,T,mid,isC){if(!mid||mid<=0.03)return null;let lo=0.05,hi=3.0;
+  for(let i=0;i<40;i++){const m2=(lo+hi)/2;if(bsPrice(S,K,T,0.05,m2,isC)>mid)hi=m2;else lo=m2;}return(lo+hi)/2;}
+function bsDelta(S,K,T,sg,isC){if(T<=0||!sg)return null;const st=Math.sqrt(T);
+  const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*T)/(sg*st);return isC?nCDF(d1):nCDF(d1)-1;}
+async function getChain(tk){
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+tk));
+    if(c&&Date.now()-c.ts<45*60000)return{cj:c.cj,cached:Math.round((Date.now()-c.ts)/60000)};}catch(e){}
+  const r=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));
+  const txt=await r.text();
+  let cj;try{cj=JSON.parse(txt);}catch(e){throw new Error(txt.indexOf('1015')>-1?'rate-limited (1015) — wait 90s and tap again':'bad chain response');}
+  localStorage.setItem('kChain_'+tk,JSON.stringify({ts:Date.now(),cj}));
+  return{cj,cached:0};
+}
+let CH={spot:null,byExp:{},exps:[],sel:null};
+async function loadChain(){
+  const tk=document.getElementById('tk').value.trim().toUpperCase();
+  const panel=document.getElementById('chain'),st=document.getElementById('chSt');
+  if(!tk){alert('Ticker first');return;}
+  panel.classList.add('show');st.textContent='Pulling '+tk+' chain…';
+  document.getElementById('exps').innerHTML='';document.getElementById('strikes').innerHTML='';
+  let R;try{R=await getChain(tk);}catch(e){st.textContent='⚠ '+e.message;return;}
+  const cj=R.cj;
+  const spot=(cj&&cj.data&&(cj.data.current_price!=null?cj.data.current_price:cj.data.close))||(cj&&cj.current_price);
+  const raw=(cj&&cj.data&&cj.data.options)||(cj&&cj.options)||[];
+  if(!spot||!raw.length){st.textContent='Chain empty — try again in a minute.';return;}
+  const side=document.getElementById('side').value;const isC=side==='CALL';
+  const now=new Date();
+  CH={spot,byExp:{},exps:[],sel:null};
+  for(const o of raw){
+    const m=(o.option||o.symbol||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+    if(m[2]!==(isC?'C':'P'))continue;
+    const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+    const dte=Math.ceil((exp-now)/86400000);
+    if(dte<1||dte>45)continue;
+    const K=+m[3]/1000;
+    const bid=+o.bid||0,ask=+o.ask||+o.mid||0;const mid=(bid+ask)/2;if(mid<=0)continue;
+    const oi=+o.open_interest||+o.oi||0;
+    const key=exp.toISOString().slice(0,10);
+    if(!CH.byExp[key])CH.byExp[key]={dte,rows:[]};
+    CH.byExp[key].rows.push({K,mid,spread:ask-bid,oi,dte});
+  }
+  CH.exps=Object.keys(CH.byExp).sort();
+  if(!CH.exps.length){st.textContent='No '+side+'s inside 1–45 DTE.';return;}
+  st.textContent=tk+' $'+(+spot).toFixed(2)+' · '+side+'S · '+(R.cached?('chain '+R.cached+'m old (cached)'):'chain fresh')+' · tap a row to fill the form';
+  /* prefer 5-10 DTE default per scalp rules */
+  CH.sel=CH.exps.find(k=>CH.byExp[k].dte>=5&&CH.byExp[k].dte<=10)||CH.exps[0];
+  drawExps();drawStrikes();
+}
+function drawExps(){
+  document.getElementById('exps').innerHTML=CH.exps.map(k=>{
+    const d=CH.byExp[k].dte;
+    return '<span class="exch'+(k===CH.sel?' on':'')+'" onclick="selExp(&quot;'+k+'&quot;)">'+k.slice(5)+' · '+d+'d</span>';
+  }).join('');
+}
+function selExp(k){CH.sel=k;drawExps();drawStrikes();}
+function drawStrikes(){
+  const e=CH.byExp[CH.sel];if(!e)return;
+  const isC=document.getElementById('side').value==='CALL';
+  const rows=e.rows.slice().sort((a,b)=>a.K-b.K);
+  /* window: 10 strikes centered just ITM of spot */
+  let ai=0,best=1e9;
+  rows.forEach((r,i)=>{const d=Math.abs(r.K-CH.spot);if(d<best){best=d;ai=i;}});
+  const lo=Math.max(0,ai-6),hi=Math.min(rows.length,ai+7);
+  const T=e.dte/365;
+  document.getElementById('strikes').innerHTML=rows.slice(lo,hi).map(r=>{
+    const itm=isC?r.K<CH.spot:r.K>CH.spot;
+    const iv=solveIV(CH.spot,r.K,T,r.mid,isC);
+    const dl=iv?bsDelta(CH.spot,r.K,T,iv,isC):null;
+    const aD=dl!=null?Math.abs(dl):null;
+    const atm=Math.abs(r.K-CH.spot)===best;
+    const liqBad=r.spread>0.30&&r.spread>r.mid*0.05;
+    return '<div class="crow'+(atm?' atm':'')+'" onclick="fillContract('+r.K+','+r.mid.toFixed(2)+',&quot;'+CH.sel+'&quot;)">'+
+      '<span class="k'+(itm?' itm':'')+'">$'+r.K+'</span>'+
+      '<span class="m">mid $'+r.mid.toFixed(2)+' <span class="dim">spr '+r.spread.toFixed(2)+(liqBad?' ⚠':'')+' · OI '+r.oi+'</span></span>'+
+      '<span class="dl'+(aD!=null&&aD>=0.65&&aD<=0.8?' deep':'')+'">'+(aD!=null?('Δ'+aD.toFixed(2)):'')+'</span>'+
+      '</div>';
+  }).join('');
+}
+function fillContract(K,mid,exp){
+  const set=(id,v)=>{const el=document.getElementById(id);el.value=v;el.classList.remove('fieldflash');void el.offsetWidth;el.classList.add('fieldflash');};
+  set('strike',K);set('exp',exp);set('oentry',mid);
+  saveP();
+  document.getElementById('chSt').textContent='Filled: $'+K+' '+document.getElementById('side').value+' '+exp+' @ ~$'+mid+' — set your STOP and TARGET (stock terms), then coach.';
+}
+
 /* ---------- the coach ---------- */
 async function coach(manual){
   if(busy)return;busy=true;
