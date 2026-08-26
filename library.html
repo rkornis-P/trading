@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Library · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:12px 9px 90px;max-width:640px;margin:0 auto}
+h1{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+.sub{text-align:center;font-size:9.5px;color:var(--dim);margin-bottom:10px;letter-spacing:.06em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px}
+textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:10px;font-size:13px;min-height:64px;resize:vertical;font-family:inherit}
+select,input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px;font-size:12px}
+.row{display:flex;gap:6px;margin-top:7px}
+button.big{flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px;font-weight:800;font-size:12px;cursor:pointer}
+button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-weight:700;font-size:11px;cursor:pointer}
+#askSt{font-size:10px;color:var(--dim);text-align:center;padding:4px 0;min-height:16px}
+.sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px;display:flex;justify-content:space-between;align-items:center}
+#tools{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+#tools button,#tools select,#tools input{font-size:10.5px}
+#q{flex:1}
+.entry{background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:7px;overflow:hidden}
+.entry .eh{display:flex;align-items:center;gap:8px;padding:9px 11px;cursor:pointer}
+.entry .eh input[type=checkbox]{width:16px;height:16px;accent-color:#BF9000}
+.entry .eh .tt{flex:1;font-size:12px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry .eh .tag{font-size:8.5px;background:var(--panel2);border:1px solid var(--gold);color:var(--gold-soft);border-radius:5px;padding:2px 6px;letter-spacing:.05em}
+.entry .eh .dt{font-size:9px;color:var(--dim)}
+.entry .eb{display:none;padding:0 12px 11px;border-top:1px solid var(--line)}
+.entry.open .eb{display:block}
+.entry .eb .q{color:var(--gold-soft);font-weight:700;font-size:12px;margin:9px 0 6px}
+.entry .eb .a{font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.entry .eb .ops{display:flex;gap:6px;margin-top:9px}
+.entry .eb .ops button{font-size:10px;padding:6px 10px}
+#empty{color:var(--dim);font-size:11px;padding:8px 2px}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+
+/* ---------- PRINT: clean paper document ---------- */
+#printHead{display:none}
+@media print{
+  body{background:#fff;color:#111;font-family:Georgia,'Times New Roman',serif;padding:0;max-width:none}
+  h1,.sub,.panel,.sec,#tools,#askSt,.knav,.entry .eh input,.entry .eb .ops{display:none!important}
+  #printHead{display:block;text-align:center;border-bottom:2.5px solid #BF9000;padding-bottom:10px;margin-bottom:16px}
+  #printHead .k{font-size:20px;font-weight:900;letter-spacing:.1em}
+  #printHead .s{font-size:10px;letter-spacing:.2em;color:#555;text-transform:uppercase}
+  .entry{border:none;background:none;margin-bottom:0;page-break-inside:avoid}
+  .entry.noprint{display:none!important}
+  .entry .eb{display:block!important;border:none;padding:0 0 14px}
+  .entry .eb .q{color:#111;font-size:13px;font-weight:700;margin:0 0 4px}
+  .entry .eb .q:before{content:"Q — "}
+  .entry .eb .a{color:#222;font-size:11.5px;line-height:1.55}
+  .entry .eb:after{content:"";display:block;border-bottom:1px solid #ccc;margin-top:12px}
+  .entry .ph{display:block!important;font-size:9px;color:#777;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
+}
+.entry .ph{display:none}
+</style></head><body>
+
+<div id="printHead"><div class="k">KORNIS PROTOCOL — THE LIBRARY</div><div class="s">Setup Reviews &amp; Lessons · Printed <span id="pDate"></span></div></div>
+
+<h1>The Library — Ask, Archive, Print</h1>
+<div class="sub">EVERY QUESTION AND ANSWER SAVED · SEARCHABLE · PRINTS AS A CLEAN DOCUMENT</div>
+
+<div class="panel">
+  <textarea id="qq" placeholder="Ask a setup-review question… e.g. 'Review my SPCX entry: bought 130 calls at 8.79 avg with stock at 136, stop 135.85 — what did I do right and wrong?'"></textarea>
+  <div class="row">
+    <select id="topic">
+      <option>Setup Review</option><option>Greeks</option><option>Rules</option>
+      <option>Signals</option><option>Psychology</option><option>Platform</option><option>Other</option>
+    </select>
+    <button class="big" onclick="ask()">ASK &amp; ARCHIVE</button>
+  </div>
+  <div id="askSt"></div>
+</div>
+
+<div class="sec"><span>The Archive</span><span id="cnt"></span></div>
+<div id="tools">
+  <input type="text" id="q" placeholder="search…" oninput="draw()">
+  <select id="filt" onchange="draw()"><option value="">All topics</option>
+    <option>Setup Review</option><option>Greeks</option><option>Rules</option>
+    <option>Signals</option><option>Psychology</option><option>Platform</option><option>Other</option></select>
+  <button class="ghost" onclick="selAll(true)">SELECT ALL</button>
+  <button class="ghost" onclick="selAll(false)">NONE</button>
+  <button class="ghost" onclick="printSel()">🖨 PRINT / SAVE PDF</button>
+  <button class="ghost" onclick="expJ()">⬇ BACKUP</button>
+  <button class="ghost" onclick="importCoach()">＋ COACH BRIEFINGS</button>
+</div>
+<div id="list"></div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="watchlist.html">SCAN</a>
+  <a href="cockpit.html">COCKPIT</a>
+  <a href="picker.html">PICKER</a>
+  <a href="coach.html">COACH</a>
+  <a href="trades.html">TRADES</a>
+  <a href="ledger.html">LEDGER</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+function getL(){try{return JSON.parse(localStorage.getItem('kLibrary'))||[];}catch(e){return[];}}
+function setL(L){localStorage.setItem('kLibrary',JSON.stringify(L));}
+
+async function ask(){
+  const q=document.getElementById('qq').value.trim();
+  const st=document.getElementById('askSt');
+  if(!q){st.textContent='Type the question first.';return;}
+  st.textContent='Asking…';
+  const sys='You are the Kornis Protocol trading tutor for an attorney who scalps options (long calls/puts only, deep ITM 0.65-0.75 delta preference, flat by 2:45 CT, exit by 21 DTE, bracket orders mandatory, volume holds veto). '+
+    'Answer his question thoroughly but concisely for an archived reference document: plain language, real numbers when given, name what was done right AND wrong, end with one actionable rule or takeaway. No preamble.';
+  try{
+    const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,system:sys,
+        messages:[{role:'user',content:q}]})});
+    const j=await r.json();
+    if(j.error)throw new Error(j.error.message||'relay error');
+    const a=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+    if(!a)throw new Error('empty answer');
+    const L=getL();
+    L.unshift({t:Date.now(),topic:document.getElementById('topic').value,q,a});
+    setL(L);
+    document.getElementById('qq').value='';
+    st.textContent='Archived.';
+    draw();
+    const first=document.querySelector('.entry');if(first)first.classList.add('open');
+  }catch(e){st.textContent='⚠ '+e.message;}
+}
+
+function importCoach(){
+  let CL=[];try{CL=JSON.parse(localStorage.getItem('kCoachLog'))||[];}catch(e){}
+  if(!CL.length){alert('No coach briefings stored on this device yet.');return;}
+  const L=getL();
+  let added=0;
+  CL.forEach(c=>{
+    if(L.some(e=>e.src==='coach'&&e.t===c.t))return;
+    L.push({t:c.t,topic:'Setup Review',src:'coach',
+      q:'Coach 15-min briefing — '+c.tk+' at $'+c.px,a:'VERDICT: '+c.verdict+'\n'+c.txt});
+    added++;});
+  L.sort((a,b)=>b.t-a.t);
+  setL(L);draw();
+  alert(added+' coach briefings imported to the archive.');
+}
+
+function fdt(t){return new Date(t).toLocaleString('en-US',{timeZone:'America/Chicago',month:'numeric',day:'numeric',year:'2-digit',hour:'numeric',minute:'2-digit'});}
+function draw(){
+  const L=getL();
+  const q=(document.getElementById('q').value||'').toLowerCase();
+  const f=document.getElementById('filt').value;
+  const list=document.getElementById('list');
+  document.getElementById('cnt').textContent=L.length+' saved';
+  const vis=L.map((e,i)=>({e,i})).filter(({e})=>
+    (!f||e.topic===f)&&(!q||(e.q+' '+e.a).toLowerCase().includes(q)));
+  if(!vis.length){list.innerHTML='<div id="empty">'+(L.length?'No matches.':'Nothing archived yet. Ask above — question and answer both save automatically, forever, on this device.')+'</div>';return;}
+  list.innerHTML=vis.map(({e,i})=>
+    '<div class="entry" data-i="'+i+'">'+
+      '<div class="eh" onclick="if(event.target.tagName!==&quot;INPUT&quot;)this.parentElement.classList.toggle(&quot;open&quot;)">'+
+        '<input type="checkbox" class="sel" checked>'+
+        '<span class="tt"></span>'+
+        '<span class="tag">'+e.topic+'</span>'+
+        '<span class="dt">'+fdt(e.t)+'</span>'+
+      '</div>'+
+      '<div class="eb"><div class="ph">'+e.topic+' · '+fdt(e.t)+'</div><div class="q"></div><div class="a"></div>'+
+        '<div class="ops"><button class="ghost" onclick="printOne('+i+')">🖨 this one</button>'+
+        '<button class="ghost" onclick="delOne('+i+')">✕ delete</button></div></div>'+
+    '</div>').join('');
+  vis.forEach(({e},k)=>{
+    const el=list.children[k];
+    el.querySelector('.tt').textContent=e.q;
+    el.querySelector('.q').textContent=e.q;
+    el.querySelector('.a').textContent=e.a;
+  });
+}
+function selAll(v){document.querySelectorAll('.entry .sel').forEach(c=>c.checked=v);}
+function printSel(){
+  document.getElementById('pDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+  document.querySelectorAll('.entry').forEach(el=>{
+    el.classList.toggle('noprint',!el.querySelector('.sel').checked);});
+  window.print();
+}
+function printOne(i){
+  document.getElementById('pDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+  document.querySelectorAll('.entry').forEach(el=>{
+    el.classList.toggle('noprint',+el.dataset.i!==i);});
+  window.print();
+}
+function delOne(i){
+  const L=getL();
+  if(confirm('Delete this entry?')){L.splice(i,1);setL(L);draw();}
+}
+function expJ(){
+  const blob=new Blob([JSON.stringify(getL(),null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kornis-library.json';a.click();
+}
+draw();
+</script>
+</body></html>
