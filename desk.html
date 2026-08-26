@@ -128,7 +128,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 </style></head><body>
 
-<div id="hdr"><span class="t">THE DESK</span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.1</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The Read — what world did we wake up in</span></div>
@@ -340,6 +340,7 @@ function composeTrade(){
   return {L,trig,trigWhy,stop,t1,t1Why};
 }
 function drawTrade(){
+ try{
   const b=DESK.best;if(!b)return;
   document.getElementById('tTk').textContent=b.tk;
   const sEl=document.getElementById('tSide');sEl.textContent=b.sc.side;sEl.className=b.sc.cls;
@@ -359,6 +360,7 @@ function drawTrade(){
     '<div class="trow"><div class="k"><span class="lbl">'+r[0]+'</span><span class="val mono '+r[2]+'">$'+r[1]+'</span></div><div class="plain">'+r[3]+'</div></div>').join('');
   document.getElementById('toCock').href='cockpit.html?tk='+b.tk;
   sizeIt();
+ }catch(err){alert('Desk error drawing trade: '+err.message);}
 }
 async function findContract(){
   const b=DESK.best;if(!b)return;
@@ -435,11 +437,16 @@ function drawBench(){
     '</div>';}).join('');
 }
 async function promote(i){
-  const e=(DESK.all||[])[i];if(!e)return;
-  DESK.best=e;DESK.A=e.A;DESK.sc=e.sc;DESK.contract=null;
+ try{
+  const e=(DESK.all||[])[i];if(!e){alert('Bench data missing — tap REFRESH first.');return;}
+  DESK.best=e;DESK.A=e.A;DESK.sc=e.sc;DESK.contract=null;DESK.T=null;
+  document.getElementById('tContract').style.display='block';
+  document.getElementById('tContract').innerHTML='<div class="cstats">Recomposing for '+e.tk+'…</div>';
   drawTrade();drawBench();
+  document.getElementById('trade').scrollIntoView({behavior:'smooth',block:'start'});
   await findContract();
   drawPos();
+ }catch(err){alert('Desk error on promote: '+err.message);}
 }
 /* ================= III. position ================= */
 function drawPos(){
