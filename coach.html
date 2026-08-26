@@ -189,14 +189,24 @@ setInterval(clockTick,5000);
 
 /* ---------- data fetch ---------- */
 async function getHist(tk){
-  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d');
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=5d');
   const j=await r.json();
   const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no history');
   const q=res.indicators.quote[0];const ts=res.timestamp||[];
-  const bars=[];
+  const all=[];
   for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;
-    bars.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
-  return bars;
+    all.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+  if(!all.length)throw new Error('empty history');
+  /* split sessions on >2h gaps */
+  const S=[];let cur=[all[0]];
+  for(let i=1;i<all.length;i++){if(all[i].t-all[i-1].t>7200)S.push(cur),cur=[];cur.push(all[i]);}
+  S.push(cur);
+  const bars=S[S.length-1];
+  const prior=S.length>1?S[S.length-2]:null;
+  const ctx={pdh:null,pdl:null,pdc:null,orH:null,orL:null};
+  if(prior){ctx.pdh=Math.max(...prior.map(b=>b.h));ctx.pdl=Math.min(...prior.map(b=>b.l));ctx.pdc=prior[prior.length-1].c;}
+  if(bars.length){ctx.orH=bars[0].h;ctx.orL=bars[0].l;}   /* 5-minute opening range */
+  return {bars,ctx};
 }
 function ema(vals,p){const k=2/(p+1);let e=vals[0];const out=[e];
   for(let i=1;i<vals.length;i++){e=vals[i]*k+e*(1-k);out.push(e);}return out;}
@@ -383,7 +393,8 @@ async function coach(manual){
   saveP();
   st.textContent='Pulling 5m data + building briefing…';
   try{
-    const bars=await getHist(tk);
+    const H=await getHist(tk);
+    const bars=H.bars,CTX=H.ctx;
     const A=analyze(bars);
     updatePL(A.px);
     const side=document.getElementById('side').value;
@@ -402,6 +413,8 @@ async function coach(manual){
       option_entry:oentry,stock_now:+A.px.toFixed(2),
       plan_stop:stop,plan_target:target,
       day_high:+A.dayHi.toFixed(2),day_low:+A.dayLo.toFixed(2),
+      prior_day_high:CTX.pdh?+CTX.pdh.toFixed(2):null,prior_day_low:CTX.pdl?+CTX.pdl.toFixed(2):null,prior_close:CTX.pdc?+CTX.pdc.toFixed(2):null,
+      opening_range_high:CTX.orH?+CTX.orH.toFixed(2):null,opening_range_low:CTX.orL?+CTX.orL.toFixed(2):null,
       vwap:+A.vwap.toFixed(2),ema9_5m:+A.e9.toFixed(2),sma20_5m:A.s20?+A.s20.toFixed(2):null,
       rsi14_5m:A.rsi?+A.rsi.toFixed(1):null,
       macd_hist:+A.macdH.toFixed(3),macd_growing:A.macdGrow,macd_shrinking:A.macdShrink,
@@ -419,14 +432,16 @@ async function coach(manual){
       'Volume has absolute veto. Lunch 11:00-12:30 CT = no new risk. Last entry 2:00 PM CT. FLAT BY 2:45 CT unless runner is protected by a profit-locking stop. '+
       'Exit any swing by 21 DTE. Respect the stop as written; never widen it. '+
       'FORMAT — reply EXACTLY in this shape, nothing else:\n'+
+      'SITUATION: 2-3 sentences of plain narrative — what is HAPPENING right now: where price sits in the day (vs opening range, VWAP, prior-day levels), what volume says about who is in control, and how the last few bars changed the picture. Write it like a floor trader talking, with the actual numbers.\n'+
       'VERDICT: one of HOLD | TIGHTEN | TRIM | EXIT\n'+
-      'WHY: exactly 3 short bullet lines starting with "- ", each citing a number from the data\n'+
+      'WHY: exactly 3 short bullet lines starting with "- ", each citing a number from the data AND its effect on the position\n'+
+      'LEVELS: one line — the next price ABOVE that matters and the next price BELOW, each with what happens to the position there\n'+
       'LESSON: 2-3 sentences teaching the ONE concept most in play right now, in plain language, so the trader learns the craft\n'+
       'NEXT: one line — the specific price or clock event to watch before the next 15-minute check\n'+
       'Be blunt. If data conflicts, volume and the stop win. If past 2:30 CT with no protected runner, verdict is EXIT.';
 
     const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,system:sys,
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:850,system:sys,
         messages:[{role:'user',content:'15-minute check-in. Position and live data:\n'+JSON.stringify(dat,null,1)}]})});
     const j=await resp.json();
     if(j.error)throw new Error(j.error.message||'relay error');
