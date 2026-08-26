@@ -50,6 +50,7 @@ button.go{background:var(--gold);color:#000;border:none;border-radius:8px;paddin
 </style></head><body>
 
 <h1>Contract Picker</h1>
+<div style="text-align:center;font-size:8.5px;color:#8A93A6;letter-spacing:.1em;margin:-4px 0 8px">PICKER v2.1 — tappable alternates</div>
 <div class="sub">NO MORE CHAIN HUNTING — THE PLAYBOOK PICKS, YOU CONFIRM</div>
 
 <div class="bar"><input id="tk" placeholder="SPCX" value="SPCX" autocapitalize="characters"></div>
@@ -159,6 +160,7 @@ async function pick(){
 }
 let PK=null;
 function renderPick(ix){
+ try{
   const P=PK;if(!P)return;
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
   const b=P.cands[ix];const tk=P.tk,isC=P.isC;
@@ -184,6 +186,7 @@ function renderPick(ix){
       +'<span class="dt">mid $'+a.mid.toFixed(2)+' · spr $'+a.spread.toFixed(2)+' · OI '+a.oi.toLocaleString()+' · Θ '+a.thPct.toFixed(1)+'%</span>'
       +'<span class="dl">Δ'+a.delta.toFixed(2)+'</span><span class="mk">'+(k===0?'★ orig':'view')+'</span></div>';}
   document.getElementById('out').innerHTML=h;
+ }catch(err){alert('Picker error: '+err.message);}
 }
 function sendToCoach(ix){
   const P=PK;if(!P)return;const b=P.cands[ix];
