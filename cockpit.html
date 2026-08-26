@@ -233,6 +233,7 @@ function procChain(tk,cj,st,fromCache){
     for(const k of ks){if(oiBy[k].c>cm&&k>=spot){cm=oiBy[k].c;cw=k;}
       if(oiBy[k].p>pm&&k<=spot){pm=oiBy[k].p;pw=k;}}
     LVL={cw,pw,mp};
+    st.textContent+=' · WALLS → CW $'+(cw??'—')+' · PW $'+(pw??'—')+' · MP $'+(mp??'—');
     /* auto Greeks: nearest ~0.70Δ contract in direction — with IV fallbacks */
     const isL=document.getElementById('dir').value==='long';
     let side=uni.filter(o=>o.type===(isL?'C':'P')&&o.dte>=3);
@@ -304,7 +305,15 @@ function draw(){
     const t=y(Math.max(BARS.O[i],BARS.C[i])),b2=y(Math.min(BARS.O[i],BARS.C[i]));
     ctx.fillRect(x(i)-bw/2,t,bw,Math.max(1,b2-t));}
   /* whale + position levels */
-  const hline=(v,col,lbl,dash)=>{if(!v)return;ctx.save();if(dash)ctx.setLineDash([5,4]);
+  let _topN=0,_botN=0;
+  const hline=(v,col,lbl,dash)=>{if(!v)return;ctx.save();
+    if(v>hi){ /* above window: pin marker at top */
+      ctx.fillStyle=col;ctx.font='800 9px sans-serif';
+      ctx.fillText('▲ '+lbl+' '+n2(v),W-padR-58,12+(_topN++)*11);ctx.restore();return;}
+    if(v<lo){ /* below window: pin marker at bottom */
+      ctx.fillStyle=col;ctx.font='800 9px sans-serif';
+      ctx.fillText('▼ '+lbl+' '+n2(v),W-padR-58,PH-4-(_botN++)*11);ctx.restore();return;}
+    if(dash)ctx.setLineDash([5,4]);
     ctx.beginPath();ctx.moveTo(0,y(v));ctx.lineTo(W-padR,y(v));ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.stroke();ctx.restore();
     ctx.fillStyle=col;ctx.font='700 9px sans-serif';ctx.fillText(lbl+' '+n2(v),W-padR+2,y(v)+3);};
   if(LVL){hline(LVL.cw,'#E05B44','CW',true);hline(LVL.pw,'#2FB673','PW',true);hline(LVL.mp,'#E0A93F','MP',true);}
