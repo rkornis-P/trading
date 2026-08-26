@@ -64,6 +64,9 @@ button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid va
 <div class="sub">EVERY QUESTION AND ANSWER SAVED · SEARCHABLE · PRINTS AS A CLEAN DOCUMENT</div>
 
 <div class="panel">
+<select id="qbank" onchange="fillQ()" style="width:100%;background:var(--panel2);border:1px solid var(--gold);border-radius:8px;color:var(--gold-soft);padding:10px;font-size:12px;font-weight:700;margin-bottom:7px">
+  <option value="">📋 THE 20 QUESTIONS — pick one, it fills below, add your numbers…</option>
+</select>
   <textarea id="qq" placeholder="Ask a setup-review question… e.g. 'Review my SPCX entry: bought 130 calls at 8.79 avg with stock at 136, stop 135.85 — what did I do right and wrong?'"></textarea>
   <div class="row">
     <select id="topic">
@@ -100,6 +103,40 @@ button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid va
 </div>
 
 <script>
+
+const QBANK=[
+['Entry quality','Review my entry: I bought [TICKER] [STRIKE] [CALLS/PUTS] at $[PRICE] when the stock was $[STOCK]. Was this an entry or a chase — and what should the entry have looked like?'],
+['Confluence check','At my entry on [TICKER], which of the 7 signals (VWAP, 9EMA, trend, RSI, MACD, volume, momentum) were actually aligned? Did I have 5 of 7, or did I count hope as a signal?'],
+['Stop placement','My stop on [TICKER] is $[STOP] with the stock at $[STOCK]. Is that structure or just a round number? Where does the trade actually become wrong?'],
+['Target logic','My target is $[TARGET]. What level is that based on — a real wall (PDH, whale level, round number) or wishful math? What is the honest risk-to-reward?'],
+['Vehicle check','I chose the [EXPIRY] $[STRIKE] at [DELTA] delta for a [scalp/day/swing]. Is this the right vehicle per the DTE and delta rules, or am I holding the wrong contract for my timeframe?'],
+['Liquidity gate','My contract shows spread $[SPREAD], OI [OI], volume [VOL]. Does it pass the gate (spread ≤$0.30 and ≤5% of mid, OI ≥500), and what does failing actually cost me per round trip?'],
+['Theta math','I paid $[PRICE] with [DTE] days left. How much does each flat day cost me, and how much movement per day do I need just to break even on decay?'],
+['Position size','I risked $[RISK] on [N] contracts with a stop [DIST] away. Was that sized from risk or from conviction? What size did the math actually allow?'],
+['Chasing check','[TICKER] had already moved [X]% today when I entered. Was I buying the move or buying the top? How do I tell the difference next time BEFORE the fill?'],
+['Volume verdict','Describe what volume was doing at my entry and what it should have been doing. Did volume confirm the break, or did I enter on a hollow move?'],
+['Countertrend honesty','Was my [TICKER] trade with the trend of the 15-minute and 1-hour charts, or against them? If countertrend, did I treat it with countertrend rules (smaller, faster, tighter)?'],
+['The exit review','I exited [TICKER] at $[EXIT] for [P/L]. Grade the exit separately from the result: did I follow the plan, panic, or freeze? What was the tape saying at that exact moment?'],
+['Round-trip autopsy','I was up $[PEAK] on [TICKER] and gave it back to [FINAL]. Walk me through every rule that would have banked it, and which one broke first.'],
+['Averaging down','I added to [TICKER] at $[PRICE2] after it went against me. Make the honest case for why this is almost always wrong — and the narrow case where scaling is legitimate.'],
+['Overnight risk','I am thinking of holding [TICKER] [CALLS/PUTS] overnight. Price the real risks: gap through my stop, IV change, and what my own rules say. Verdict?'],
+['Earnings/IV trap','[TICKER] has [EVENT] coming on [DATE]. How does IV crush work on my position, and what would a professional do with this position before the event?'],
+['Timing windows','My entry was at [TIME] CT. Was that inside a proper window (8:35–11:00, 12:30–2:00) or inside lunch chop / wind-down? How much of my result was just timing?'],
+['Market context','Was [TICKER] moving on its own catalyst, or just drifting with SPY/QQQ that day? How should relative strength have changed my confidence?'],
+['Tilt check','I have had [N] wins/losses in a row and I want this trade because [REASON]. Am I trading a setup or trading my emotions? Interrogate me.'],
+['The skip','I did NOT take [TICKER] today and it went [RESULT]. Was skipping correct by process? Teach me why a good skip and a good trade are graded the same.']
+];
+(function(){const s=document.getElementById('qbank');
+QBANK.forEach((q,i)=>{const o=document.createElement('option');o.value=i;o.textContent=(i+1)+' · '+q[0];s.appendChild(o);});})();
+function fillQ(){
+  const s=document.getElementById('qbank');if(s.value==='')return;
+  const q=QBANK[+s.value];
+  document.getElementById('qq').value=q[1];
+  document.getElementById('topic').value='Setup Review';
+  document.getElementById('askSt').textContent='Replace the [BRACKETS] with your real numbers — specifics in, specifics out.';
+  s.value='';
+}
+
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 function getL(){try{return JSON.parse(localStorage.getItem('kLibrary'))||[];}catch(e){return[];}}
 function setL(L){localStorage.setItem('kLibrary',JSON.stringify(L));}
