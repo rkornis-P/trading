@@ -370,16 +370,17 @@ function health(){
   const ck=mins<14*60+15?1:mins<14*60+45?2:0;lamp('clock',ck);
   /* proactive alerts — only when a position is entered */
   if(E&&S){
-    if(LAST_SCORE!=null&&sc<=4&&LAST_SCORE>=5)fire('warn','Setup decaying, '+sc+' of 7. Tighten the stop.','decay');
-    if(sc<=3)fire('bad','Setup broken, '+sc+' of 7. Exit per plan.','broken');
-    if(!emaOK)fire('warn','Nine E M A lost. That is the scalp exit line.','ema');
-    if(!vwOK&&LAST_SCORE!=null)fire('warn','V-WAP flipped against you.','vwap');
+    const SIDEW=L?'calls':'puts';const GOODDIR=L?'up':'down';const BADDIR=L?'down':'up';
+    if(LAST_SCORE!=null&&sc<=4&&LAST_SCORE>=5)fire('warn','Setup decaying: only '+sc+' of 7 signals still support your '+SIDEW+'. In plain terms: the reasons you entered are disappearing one by one. Do this: tighten the stop; take half off if one more signal drops.','decay');
+    if(sc<=3)fire('bad','Setup broken: just '+sc+' of 7 signals left for your '+SIDEW+'. In plain terms: the trade\'s reasons are gone — holding now is hoping, not trading. Do this: exit per plan.','broken');
+    if(!emaOK)fire('warn','Price closed across the 9 E M A against your '+SIDEW+'. In plain terms: the fast average is the ride line — the short-term '+GOODDIR+'-move you were riding just stalled. Your playbook calls this the scalp exit. Do this: exit or cut to half; re-enter only if price reclaims the line and holds two candles.','ema');
+    if(!vwOK&&LAST_SCORE!=null)fire('warn','Price crossed V-WAP against your '+SIDEW+'. In plain terms: V-WAP is the average price everyone paid today — price moving '+BADDIR+' through it means the day\'s crowd has turned against your position. Do this: treat it as a character change; exit on the next failed retest, no adds.','vwap');
     const hitS=L?px<=S:px>=S;
-    if(hitS)fire('bad','Stop hit at '+n2(px)+'. Execute now.','stophit');
-    else if(stopPct!=null&&stopPct<=0.25)fire('warn','Price within 25 percent of your stop.','stopnear');
-    if(Tg){const hitT=L?px>=Tg:px<=Tg;if(hitT)fire('good','Target hit. Sell half. Stop to breakeven.','tgthit');}
-    if(ck===2)fire('warn','2 15 central. Wind down. No new entries.','c215');
-    if(ck===0)fire('bad','2 45 central. Flat now. No overnights.','c245');
+    if(hitS)fire('bad','Stop hit at '+n2(px)+' on your '+SIDEW+'. In plain terms: price reached the level where you decided in advance the trade is wrong. Do this: execute the exit NOW — no renegotiating with a live loss.','stophit');
+    else if(stopPct!=null&&stopPct<=0.25)fire('warn','Price is within 25 percent of your stop on the '+SIDEW+'. In plain terms: your trade is close to being proven wrong. Do this: no adds, watch the next candle close — if it keeps moving '+BADDIR+', beat the stop to the exit.','stopnear');
+    if(Tg){const hitT=L?px>=Tg:px<=Tg;if(hitT)fire('good','Target hit on your '+SIDEW+' at '+n2(px)+'. In plain terms: the trade paid what you asked. Do this: sell HALF, move the stop on the rest to your entry price — from here the trade cannot lose.','tgthit');}
+    if(ck===2)fire('warn','2 15 central. In plain terms: the last-entry window closed at 2 and the flat deadline is 30 minutes out. Do this: manage existing '+SIDEW+' only — zero new positions.','c215');
+    if(ck===0)fire('bad','2 45 central: FLAT deadline. In plain terms: your own law — no overnight exposure, ever. Do this: close the '+SIDEW+' now at market if needed. The rule outranks the P/L.','c245');
   }
   LAST_SCORE=sc;
 }
