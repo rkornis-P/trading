@@ -281,9 +281,10 @@ function draw(){
   const padR=52,cw=(W-padR)/show;
   let hi=-1e9,lo=1e9;
   for(let i=s0;i<n;i++){hi=Math.max(hi,BARS.H[i],BARS.bb.u[i]||-1e9);lo=Math.min(lo,BARS.L[i],BARS.bb.l[i]||1e9);}
-  if(LVL){for(const k of ['cw','pw','mp'])if(LVL[k]&&LVL[k]>lo*0.9&&LVL[k]<hi*1.1){hi=Math.max(hi,LVL[k]);lo=Math.min(lo,LVL[k]);}}
+  /* the axis belongs to the candles — walls NEVER stretch it (they get edge markers instead) */
+  const pxRef=(hi+lo)/2,near=pxRef*0.012;   /* levels may stretch it only if within 1.2% of the range */
   const E=parseFloat(document.getElementById('entry').value),S=parseFloat(document.getElementById('stop').value),Tg=parseFloat(document.getElementById('target').value);
-  for(const v of [E,S,Tg])if(v&&v>lo*0.85&&v<hi*1.15){hi=Math.max(hi,v);lo=Math.min(lo,v);}
+  for(const v of [E,S,Tg])if(v&&v>lo-near&&v<hi+near){hi=Math.max(hi,v);lo=Math.min(lo,v);}
   const pad=(hi-lo)*0.04;hi+=pad;lo-=pad;
   const y=v=>PH-8-((v-lo)/(hi-lo))*(PH-16);
   const x=i=>(i-s0)*cw+cw/2;
@@ -389,7 +390,13 @@ function isTyping(){
   if(a&&['tk','entry','stop','target'].includes(a.id))return true;
   return (Date.now()-LAST_TYPE)<5000;
 }
+function posTag(){
+  const tk=(BARS&&BARS.tk)||document.getElementById('tk').value.trim().toUpperCase()||'';
+  const L=document.getElementById('dir').value==='long';
+  return tk+' '+(L?'calls':'puts')+': ';
+}
 function fire(kind,msg,key){
+  msg=posTag()+msg;
   if(ALERTED[key])return;
   if(isTyping()){clearTimeout(DEFER[key]);DEFER[key]=setTimeout(()=>fire(kind,msg,key),5500);return;}
   ALERTED[key]=true;setTimeout(()=>{delete ALERTED[key];},15*60*1000);

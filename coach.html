@@ -30,6 +30,8 @@ button.ghost.live{background:var(--gold);color:#000}
 #verdict.TRIM{color:var(--amber);border-color:var(--amber)}
 #verdict.EXIT{color:var(--red);border-color:var(--red)}
 #verdict.TIGHTEN{color:var(--gold-soft);border-color:var(--gold)}
+#verdict.WAIT{color:var(--dim);border-color:var(--line)}
+#verdict.ENTER{color:var(--green);border-color:var(--green);background:rgba(47,182,115,.1)}
 #vtime{font-size:9.5px;color:var(--dim);margin-left:8px}
 #cbody{font-size:13px;line-height:1.6;white-space:pre-wrap}
 #cbody b{color:var(--gold-soft)}
@@ -41,7 +43,7 @@ button.ghost.live{background:var(--gold);color:#000}
 #histWrap{margin-top:12px}
 .hitem{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 11px;margin-bottom:6px;cursor:pointer}
 .hitem .hh{display:flex;justify-content:space-between;font-size:11px;font-weight:800}
-.hitem .hh .hv.HOLD{color:var(--green)}.hitem .hh .hv.TRIM{color:var(--amber)}.hitem .hh .hv.EXIT{color:var(--red)}.hitem .hh .hv.TIGHTEN{color:var(--gold-soft)}
+.hitem .hh .hv.HOLD{color:var(--green)}.hitem .hh .hv.WAIT{color:var(--dim)}.hitem .hh .hv.ENTER{color:var(--green)}.hitem .hh .hv.TRIM{color:var(--amber)}.hitem .hh .hv.EXIT{color:var(--red)}.hitem .hh .hv.TIGHTEN{color:var(--gold-soft)}
 .hitem .hb{display:none;font-size:12px;line-height:1.55;color:var(--text);margin-top:7px;white-space:pre-wrap;border-top:1px solid var(--line);padding-top:7px}
 .hitem.open .hb{display:block}
 .hitem .ht{color:var(--dim);font-weight:400}
@@ -51,6 +53,7 @@ button.ghost.live{background:var(--gold);color:#000}
 #chainBtn{flex:1;background:var(--panel);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:9px;font-weight:800;font-size:11.5px;cursor:pointer}
 #chain{display:none;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:7px}
 #chain.show{display:block}
+#infoWrap.open{display:block!important}
 #chain .st{font-size:10px;color:var(--dim);text-align:center;padding:4px 0}
 #exps{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
 .exch{background:var(--panel2);border:1px solid var(--line);color:var(--dim);border-radius:6px;padding:5px 9px;font-size:10.5px;font-weight:800;cursor:pointer}
@@ -88,7 +91,7 @@ button.ghost.live{background:var(--gold);color:#000}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 </style></head><body>
 
-<h1>Coach — Every 15 Minutes, A Lesson</h1>
+<h1>Coach — Every 15 Minutes, A Lesson <span id="infoBtn" onclick="document.getElementById('infoWrap').classList.add('open')" style="cursor:pointer;border:1px solid var(--gold);border-radius:50%;padding:0 6px;font-size:11px;color:var(--gold-soft)">ⓘ</span></h1>
 
 <div class="sec">The Position</div>
 <div class="grid">
@@ -148,6 +151,18 @@ button.ghost.live{background:var(--gold);color:#000}
   <div id="hist"></div>
   <button id="clearH" onclick="clearLog()">clear log</button>
 </div>
+
+<div id="infoWrap" onclick="if(event.target===this)this.classList.remove('open')" style="display:none;position:fixed;inset:0;background:rgba(4,8,18,.9);z-index:1300;overflow-y:auto;padding:20px 14px">
+<div style="max-width:540px;margin:0 auto;background:var(--panel);border:1.5px solid var(--gold);border-radius:14px;padding:16px">
+<h3 style="color:var(--gold-soft);font-size:14px;margin-bottom:10px">How the Coach works</h3>
+<div style="font-size:12px;line-height:1.65">
+<b style="color:var(--gold-soft)">Two modes, automatic.</b> Leave <i>Opt entry</i> empty = <b>SCOUTING</b>: you are flat, and every briefing hunts the entry — verdict reads WAIT (no trigger yet) or ENTER (trigger met), with the exact order to place. Fill <i>Opt entry</i> = <b>IN TRADE</b>: she manages the position — HOLD / TIGHTEN / TRIM / EXIT.<br><br>
+<b style="color:var(--gold-soft)">The sections.</b> SITUATION = what the tape is doing right now, in numbers. VERDICT = the one-word decision. WHY = three reasons tied to your P/L. LEVELS = next price above and below that matter. <b>ORDERS = the exact ticket to have resting in Fidelity, dollar-precise — the part you act on.</b> LESSON = the concept in play. NEXT = the tripwire before the next 15-minute pass.<br><br>
+<b style="color:var(--gold-soft)">Voice.</b> Reads the full briefing slowly, section by section, then repeats the verdict and orders. Won't interrupt while you type. Every alert lands in the log below for replay.<br><br>
+<b style="color:var(--gold-soft)">The law still rules.</b> She is decision support, not authority: your resting bracket, the Eleven Gates, lunch window, 2:45 flat, and 21 DTE outrank any verdict. If she says HOLD and your stop says out — you are out.<br><br>
+<b style="color:var(--gold-soft)">Feed her honestly.</b> Fills line (4@8.90, 1@8.35 → AVG), real stop and target in stock terms, chain loaded. Stale inputs = confident coaching of a ghost position.</div>
+<button onclick="document.getElementById('infoWrap').classList.remove('open')" style="width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px;font-weight:800;font-size:12px;cursor:pointer;margin-top:12px">GOT IT</button>
+</div></div>
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
@@ -419,6 +434,7 @@ async function coach(manual){
       rsi14_5m:A.rsi?+A.rsi.toFixed(1):null,
       macd_hist:+A.macdH.toFixed(3),macd_growing:A.macdGrow,macd_shrinking:A.macdShrink,
       last_bar_vol_vs_20avg:+A.volRatio.toFixed(2),last_3_bars:A.last3,
+      mode:(oentry&&oentry>0)?'IN_TRADE':'SCOUTING — not filled yet; give the exact entry plan',
       clock_CT:fmtT(ctNow()),market_open:openMkt,lunch_window:lunch,
       mins_to_200pm_last_entry:mins200,mins_to_245_flat:mins245,dte:D
     };
@@ -432,16 +448,18 @@ async function coach(manual){
       'Volume has absolute veto. Lunch 11:00-12:30 CT = no new risk. Last entry 2:00 PM CT. FLAT BY 2:45 CT unless runner is protected by a profit-locking stop. '+
       'Exit any swing by 21 DTE. Respect the stop as written; never widen it. '+
       'FORMAT — reply EXACTLY in this shape, nothing else:\n'+
+      'MODE RULE: if mode is SCOUTING, the trader is FLAT and waiting — the entire briefing is about whether and exactly how to ENTER; verdict meanings become WAIT (no trigger yet) or ENTER (trigger met). If IN_TRADE, coach the open position as usual. '+
       'SITUATION: 2-3 sentences of plain narrative — what is HAPPENING right now: where price sits in the day (vs opening range, VWAP, prior-day levels), what volume says about who is in control, and how the last few bars changed the picture. Write it like a floor trader talking, with the actual numbers.\n'+
       'VERDICT: one of HOLD | TIGHTEN | TRIM | EXIT\n'+
       'WHY: exactly 3 short bullet lines starting with "- ", each citing a number from the data AND its effect on the position\n'+
       'LEVELS: one line — the next price ABOVE that matters and the next price BELOW, each with what happens to the position there\n'+
+      'ORDERS: the exact executable instruction(s), dollar-precise, ready to type into Fidelity. IN_TRADE: the resting exit orders that should exist right now (e.g. "OCO: sell half limit $X.XX + stop-limit $Y.YY/$Y.ZZ on the option"). SCOUTING: the exact entry — trigger ("if stock breaks $A.AA with volume"), the contract (use the position strike/expiry given), "buy limit at MID", the stop level and target level to bracket immediately, and the half-at-T1 rule\n'+
       'LESSON: 2-3 sentences teaching the ONE concept most in play right now, in plain language, so the trader learns the craft\n'+
       'NEXT: one line — the specific price or clock event to watch before the next 15-minute check\n'+
       'Be blunt. If data conflicts, volume and the stop win. If past 2:30 CT with no protected runner, verdict is EXIT.';
 
     const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:850,system:sys,
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:sys,
         messages:[{role:'user',content:'15-minute check-in. Position and live data:\n'+JSON.stringify(dat,null,1)}]})});
     const j=await resp.json();
     if(j.error)throw new Error(j.error.message||'relay error');
@@ -461,7 +479,7 @@ function render(txt,A,dat){
   const oe=document.getElementById('oentry').value;
   document.getElementById('cpos').textContent='⟐ COACHING: '+dat.ticker+' $'+(strike||'?')+' '+side+(exp?' · exp '+exp.slice(5):'')+' · '+qty+'x'+(oe?' @ $'+oe:'')+(dat.dte!=null?' · '+dat.dte+' DTE':'');
   let verdict='HOLD';
-  const vm=txt.match(/VERDICT:\s*(HOLD|TIGHTEN|TRIM|EXIT)/i);
+  const vm=txt.match(/VERDICT:\s*(HOLD|TIGHTEN|TRIM|EXIT|WAIT|ENTER)/i);
   if(vm)verdict=vm[1].toUpperCase();
   const vEl=document.getElementById('verdict');vEl.textContent=verdict;vEl.className=verdict;
   document.getElementById('vtime').textContent=fmtT(ctNow())+' CT';
@@ -484,15 +502,30 @@ function render(txt,A,dat){
 /* ---------- voice ---------- */
 function speak(verdict,txt){
   if(!('speechSynthesis' in window))return;
-  let nx='';const nm=txt.match(/NEXT:\s*(.+)/i);if(nm)nx=nm[1];
+  const grab=(name)=>{const m=txt.match(new RegExp(name+':\\s*([^\\n]+(?:\\n(?!VERDICT|WHY|LEVELS|LESSON|NEXT|SITUATION)[^\\n]+)*)','i'));return m?m[1].replace(/\n/g,' ').trim():'';};
+  const sit=grab('SITUATION');
+  const nx=grab('NEXT');
+  const lv=grab('LEVELS');
+  const od=grab('ORDERS');
+  const ls=grab('LESSON');
+  const whyRaw=txt.match(/WHY:\s*([\s\S]*?)(?=\n(?:LEVELS|LESSON|NEXT):)/i);
+  let why='';
+  if(whyRaw){why=whyRaw[1].split('\n').map(s=>s.replace(/^\s*-\s*/,'').trim()).filter(Boolean).join('. ');}
   const tk=document.getElementById('tk').value.trim().toUpperCase();
   const strike=document.getElementById('strike').value,side=document.getElementById('side').value;
-  const msg='Coach says '+verdict+' on your '+tk+' '+(strike?strike+' ':'')+(side==='PUT'?'puts':'calls')+'. '+nx;
-  try{
-    const mk=t=>{const u=new SpeechSynthesisUtterance(t);u.rate=0.88;u.pitch=(verdict==='EXIT'?0.9:1);return u;};
-    speechSynthesis.speak(mk(msg));
-    speechSynthesis.speak(mk('I repeat. '+msg));
-  }catch(e){}
+  const pos=tk+' '+(strike?strike+' ':'')+(side==='PUT'?'puts':'calls');
+  const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;u.pitch=(verdict==='EXIT'?0.9:1);speechSynthesis.speak(u);}catch(e){}};
+  /* full briefing, slow and sectioned — each utterance creates a natural pause */
+  say('Coach briefing, on your '+pos+'.',0.68);
+  if(sit)say('The situation. '+sit,0.68);
+  say('Verdict. '+verdict+'.',0.62);
+  if(why)say('Because. '+why+'.',0.68);
+  if(lv)say('Levels. '+lv,0.68);
+  if(od)say('Your orders. '+od,0.66);
+  if(ls)say('The lesson. '+ls,0.68);
+  if(nx)say('Watch next. '+nx,0.68);
+  /* short echo so the verdict and orders land twice */
+  say('Again. Verdict '+verdict+' on the '+pos+'. '+(od?('Orders: '+od):nx),0.65);
 }
 
 /* ---------- log ---------- */
