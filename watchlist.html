@@ -131,6 +131,8 @@ button.big:disabled{opacity:.4}
   <button class="big sec2" id="streetBtn" onclick="rankStreet()">RANK THE STREET (35)</button>
   <button class="big sec2" style="flex:.5" onclick="freshAll()">FRESH</button>
 </div>
+<div class="row"><button class="big sec2" onclick="rankSuit()">🏇 BEST SCALP VEHICLES — screen the whole list</button></div>
+<div id="suitOut"></div>
 <div id="prog"></div>
 
 <div id="feat">
@@ -282,7 +284,15 @@ function analyzeFull(B5d){
     gapP=(B[0].o-pdc)/pdc*100;}
   const chg=pdc?(px-pdc)/pdc*100:null;
   const dayHi=Math.max(...B.map(b=>b.h)),dayLo=Math.min(...B.map(b=>b.l));
-  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atrP,sqzOn,up15,up60,adx:AD,pdh,pdl,pdc,gapP,dayHi,dayLo};
+  /* scalp-suitability inputs from the full 5d tape */
+  let dvol=0,dranges=[],nd=0;
+  for(const ss of sess){if(ss.length<10)continue;nd++;
+    dvol+=ss.reduce((a,b)=>a+b.v*b.c,0);
+    const h=Math.max(...ss.map(b=>b.h)),l=Math.min(...ss.map(b=>b.l));
+    dranges.push((h-l)/ss[ss.length-1].c*100);}
+  dvol=nd?dvol/nd:0;
+  const drange=dranges.length?dranges.reduce((a,b)=>a+b,0)/dranges.length:null;
+  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atrP,sqzOn,up15,up60,adx:AD,pdh,pdl,pdc,gapP,dayHi,dayLo,dvol,drange};
 }
 function scoreIt(A,rs){
   function side(dir){
@@ -358,9 +368,60 @@ function buildDetail(A,rs,dir){
   return D;
 }
 
+
+/* ---------- scalp-suitability screen ---------- */
+function suitScore(d){
+  if(!d||d.px==null)return null;
+  /* movement: avg daily range % — a scalper needs travel */
+  const mv=d.drange!=null?Math.min(1,(d.drange-0.8)/3.2):0.3;      /* 0.8%→0, 4%→1 */
+  /* liquidity: avg daily dollar volume — institutions present */
+  const lq=d.dvol?Math.min(1,Math.log10(d.dvol/5e7)/2.3):0;        /* $50M→0, $10B→1 */
+  /* participation today */
+  const pa=d.rvol!=null?Math.min(1,d.rvol/2):0.4;
+  /* price band: strikes dense, spreads sane */
+  const pb=(d.px>=25&&d.px<=600)?1:(d.px>=12?0.5:0.1);
+  const s=Math.round(100*(0.38*mv+0.34*lq+0.14*pa+0.14*pb));
+  return {s,mv:d.drange,lq:d.dvol,pa:d.rvol};
+}
+async function rankSuit(){
+  if(RUNNING)return;RUNNING=true;
+  const p=document.getElementById('prog');
+  const names=getBoard().concat(unis());
+  /* ensure data exists (cached ok) */
+  for(let i=0;i<names.length;i++){
+    if(!getC(names[i])&&!SCORES[names[i]]){
+      p.textContent='Screening '+names[i]+' ('+(i+1)+'/'+names.length+')…';
+      await tryScore(names[i],false);await sleep(950);
+    }else{const c=getC(names[i]);if(c)SCORES[names[i]]=c;}
+  }
+  const ranked=names.map(tk=>({tk,d:SCORES[tk]})).map(x=>({tk:x.tk,...(suitScore(x.d)||{s:-1})}))
+    .filter(x=>x.s>=0).sort((a,b)=>b.s-a.s);
+  const top=ranked.slice(0,10);
+  const fmtB=v=>v>=1e9?('$'+(v/1e9).toFixed(1)+'B'):v>=1e6?('$'+(v/1e6).toFixed(0)+'M'):'—';
+  document.getElementById('suitOut').innerHTML=
+    '<div class="sec"><span>Scalp suitability — structural fitness, not today\'s direction</span></div>'+
+    top.map((e,i)=>'<div class="card"><div class="top">'+
+      '<a class="tk" href="cockpit.html?tk='+e.tk+'">'+e.tk+'</a>'+
+      '<div class="mid"><div class="px">'+(e.mv!=null?('moves '+e.mv.toFixed(1)+'%/day'):'')+' · '+fmtB(e.lq||0)+'/day'+(e.pa!=null?(' · RVOL ×'+e.pa.toFixed(1)):'')+'</div>'+
+      '<span class="side N">#'+(i+1)+' vehicle</span></div>'+
+      '<div class="badge '+(e.s>=70?'pass':e.s>=50?'watch':'fail')+'"><div class="n">'+e.s+'</div><div class="v">FIT</div></div>'+
+      '</div></div>').join('')+
+    '<div class="row"><button class="big" onclick="adoptBoard()">SET BOARD = SPCX + TOP 4 VEHICLES</button></div>'+
+    '<div style="font-size:10px;color:var(--dim);padding:6px 2px;line-height:1.5">FIT measures the horse, not the race: daily travel (38%), dollar liquidity (34%), participation (14%), price band (14%). It does NOT check option spreads/OI directly — the PICKER\'s liquidity gate does that per contract at trade time. Screen weekly, not daily: good vehicles change slowly.</div>';
+  window._suitTop=top.map(e=>e.tk);
+  p.textContent='';RUNNING=false;
+}
+function adoptBoard(){
+  const top=(window._suitTop||[]).filter(t=>t!=='SPCX').slice(0,4);
+  if(!top.length)return;
+  const nb=['SPCX'].concat(top);
+  setBoard(nb);drawBoardEdit();drawPinned();
+  document.getElementById('prog').textContent='Board is now: '+nb.join(' · ')+' — The Desk follows it automatically.';
+}
+
 /* ---------- cache + scoring ---------- */
-function getC(tk){try{const c=JSON.parse(localStorage.getItem('kScan3_'+tk));if(c&&Date.now()-c.ts<TTL)return c;}catch(e){}return null;}
-function setC(tk,d){try{localStorage.setItem('kScan3_'+tk,JSON.stringify({ts:Date.now(),...d}));}catch(e){}}
+function getC(tk){try{const c=JSON.parse(localStorage.getItem('kScan4_'+tk));if(c&&Date.now()-c.ts<TTL)return c;}catch(e){}return null;}
+function setC(tk,d){try{localStorage.setItem('kScan4_'+tk,JSON.stringify({ts:Date.now(),...d}));}catch(e){}}
 async function scoreTk(tk,force){
   if(!force){const c=getC(tk);if(c){SCORES[tk]=c;return c;}}
   const {B}=await pull(tk,'5d','5m');
@@ -369,7 +430,7 @@ async function scoreTk(tk,force){
   const sc=scoreIt(A,rs);
   const det=buildDetail(A,rs,sc.dir);
   const d={px:A.px,chg:A.chg,score:sc.score,side:sc.side,cls:sc.cls,why:sc.why,det,
-    pdh:A.pdh,pdl:A.pdl,pdc:A.pdc,vw:A.vw,dayHi:A.dayHi,dayLo:A.dayLo,atrP:A.atrP,rvol:A.rvol,gapP:A.gapP};
+    pdh:A.pdh,pdl:A.pdl,pdc:A.pdc,vw:A.vw,dayHi:A.dayHi,dayLo:A.dayLo,atrP:A.atrP,rvol:A.rvol,gapP:A.gapP,dvol:A.dvol,drange:A.drange};
   setC(tk,d);SCORES[tk]=d;return d;
 }
 async function tryScore(tk,force){
@@ -533,7 +594,7 @@ async function scoreOne(tk){
   drawPinned();drawUniverse();buildFeature();
 }
 function freshAll(){
-  getBoard().concat(unis()).concat(['SPY']).forEach(t=>localStorage.removeItem('kScan3_'+t));
+  getBoard().concat(unis()).concat(['SPY']).forEach(t=>localStorage.removeItem('kScan4_'+t));
   SCORES={};BENCH=null;drawPinned();drawUniverse();
   document.getElementById('feat').classList.remove('show');
   document.getElementById('prog').textContent='Cache cleared — RUN MORNING BRIEF for fresh numbers.';
