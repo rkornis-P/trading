@@ -37,6 +37,48 @@ canvas{display:block;width:100%;height:auto}
 #lmBox .b{font-size:12px;line-height:1.65}
 #lmBox .b b{color:var(--gold-soft)}
 #lmClose{width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:12px;cursor:pointer;margin-top:12px}
+
+#trade{display:none;background:linear-gradient(160deg,#16213b,#121B2E);border:1.5px solid var(--gold);border-radius:12px;padding:12px;margin-bottom:9px}
+#trade.show{display:block}
+#trade .th{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+#trade .th .t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+#tPL{font-size:20px;font-weight:800}
+#tPL.g{color:var(--green)}#tPL.r{color:var(--red)}#tPL.n{color:var(--dim)}
+#tCells{display:flex;gap:5px;flex-wrap:wrap}
+.tc{flex:1;min-width:70px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 4px;text-align:center}
+.tc .l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.tc .v{font-size:12px;font-weight:800}
+.tc .v.g{color:var(--green)}.tc .v.r{color:var(--red)}.tc .v.a{color:var(--amber)}
+#tDev{font-size:11.5px;line-height:1.55;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+#tDev b{color:var(--gold-soft)}
+#gBtns{display:flex;gap:5px;margin:8px 0}
+#gBtns button{flex:1;background:var(--panel);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:9px 4px;font-weight:800;font-size:10px;cursor:pointer}
+#gBtns button.gold{background:var(--gold);color:#000}
+#gLogWrap{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px}
+#gLogWrap h4{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.gli{font-size:11px;padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.gli:last-child{border-bottom:none}
+.gli .tm{color:var(--dim);font-size:9px;width:70px;flex:none}
+.gli .bd{flex:1}
+#learnWrap{display:none;position:fixed;inset:0;background:rgba(4,8,18,.9);z-index:1300;overflow-y:auto;padding:20px 14px}
+#learnWrap.open{display:block}
+#learnBox{max-width:560px;margin:0 auto;background:var(--panel);border:1.5px solid var(--gold);border-radius:14px;padding:16px}
+#learnBox h3{color:var(--gold-soft);font-size:14px;margin-bottom:10px}
+#learnBox .lb{font-size:12px;line-height:1.65}
+#learnBox .lb b{color:var(--gold-soft)}
+#learnBox table{width:100%;border-collapse:collapse;font-size:11px;margin:8px 0}
+#learnBox td{border:1px solid var(--line);padding:6px}
+#learnBox td:first-child{color:var(--gold-soft);font-weight:800;white-space:nowrap}
+#lClose{width:100%;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px;font-weight:800;font-size:12px;cursor:pointer;margin-top:12px}
+#printHead,#printDigest{display:none}
+@media print{
+  body{background:#fff;color:#111;font-family:Georgia,serif;padding:0;max-width:none}
+  h1,.row,#st,.gwrap,#gBtns,#trade,#gLogWrap,#learnWrap,.knav{display:none!important}
+  #printHead{display:block;text-align:center;border-bottom:2.5px solid #BF9000;padding-bottom:10px;margin-bottom:14px}
+  #printHead .k{font-size:19px;font-weight:900;letter-spacing:.1em}
+  #printHead .s{font-size:10px;letter-spacing:.2em;color:#555;text-transform:uppercase}
+  #printDigest{display:block;font-size:12px;line-height:1.6;white-space:pre-wrap}
+}
 .knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
@@ -48,7 +90,19 @@ canvas{display:block;width:100%;height:auto}
   <input id="tk" placeholder="SPCX" autocapitalize="characters">
   <button class="big" onclick="run()">READ THE GAUGES</button>
 </div>
-<div id="st">Auto-refreshes every 60s while open. Position for THETA WAR is read from what you saved in COACH.</div>
+<div id="st">Auto-refreshes every 60s while open. Position is read from what you saved in COACH.</div>
+
+<div id="trade">
+  <div class="th"><span class="t">Your Trade — live conditions</span><span id="tPL" class="n">—</span></div>
+  <div id="tCells"></div>
+  <div id="tDev"></div>
+</div>
+<div id="gBtns">
+  <button onclick="speakG()">🔊 SPEAK IT</button>
+  <button onclick="saveReading()">💾 SAVE READING</button>
+  <button onclick="printG()">🖨 PRINT / PDF</button>
+  <button class="gold" onclick="document.getElementById('learnWrap').classList.add('open')">🎓 LEARN</button>
+</div>
 
 <div class="gwrap">
   <div class="gh"><span class="t">Trend Force</span><span class="num" id="n1">—</span></div>
@@ -78,6 +132,35 @@ canvas{display:block;width:100%;height:auto}
 <div id="lmWrap" onclick="if(event.target===this)lmClose()">
   <div id="lmBox"><h3 id="lmT">—</h3><div class="b" id="lmB"></div><button id="lmClose" onclick="lmClose()">GOT IT</button></div>
 </div>
+
+<div id="gLogWrap">
+  <h4>Saved readings — your conditions diary (prints as a document)</h4>
+  <div id="gLog"></div>
+</div>
+
+<div id="learnWrap" onclick="if(event.target===this)this.classList.remove('open')">
+<div id="learnBox">
+<h3>Reading the Panel — the nuances</h3>
+<div class="lb">
+<b>The gauges answer three different questions.</b> Trend Force: which way and how hard is the tape leaning? Fuel: is there real participation behind it? Theta War: is YOUR contract getting paid for sitting in it? A trade wants all three — direction, gas, and rent being earned.<br>
+<table>
+<tr><td>TF strong + Fuel high</td><td>The real thing. Trend with participation — trail the 9EMA, let it work.</td></tr>
+<tr><td>TF strong + Fuel &lt;35</td><td><b>The classic trap.</b> A drift that looks like a trend — no witnesses, retraces easily. No entries; tighten if in.</td></tr>
+<tr><td>TF fading toward 0 while in a trade</td><td>Your edge is evaporating in real time even if price holds. Take half or tighten — do not wait for red.</td></tr>
+<tr><td>TF pinned ±85+</td><td>Stretched. Late to enter, right to trail — snapback risk highest exactly when it looks best.</td></tr>
+<tr><td>Fuel rising + squeeze released</td><td>Energy arriving. If TF agrees with your side, this is the add-on-strength moment (never past 2:00 CT).</td></tr>
+<tr><td>Theta War red + TF flat</td><td>Paying rent on a stalled tape — the invisible loss. This is a time-stop firing. Exit beats hope.</td></tr>
+<tr><td>Theta War green + TF against you</td><td>The tape moves, but the wrong way for your side — earn rate means nothing if delta points backward. Trust TF's sign.</td></tr>
+<tr><td>All three against</td><td>Wrong trade or wrong day. Flat is a position.</td></tr>
+</table>
+<b>Distance in ATRs beats distance in dollars.</b> "$0.60 from the stop" means nothing by itself; "1.2 average candles from the stop" tells you it can hit in six minutes. The trade panel shows both — learn to think in candles.<br><br>
+<b>Deltas between readings matter more than levels.</b> A Trend Force of +40 falling from +65 is a worse sign than +30 rising from +10. The conditions line tracks this for you — direction of change is the earliest signal you get.<br><br>
+<b>The panel never overrides the law.</b> Bracket resting, 2:45 flat, 21 DTE, volume veto. The gauges are instruments; you are the pilot.</div>
+<button id="lClose" onclick="document.getElementById('learnWrap').classList.remove('open')">GOT IT</button>
+</div></div>
+
+<div id="printHead"><div class="k">KORNIS PROTOCOL — GAUGE READINGS</div><div class="s">Conditions Diary · Printed <span id="gpDate"></span></div></div>
+<div id="printDigest"></div>
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
@@ -157,6 +240,127 @@ async function pull(tk,rng,iv){
 function splitSessions(B){const S=[];let cur=[B[0]];
   for(let i=1;i<B.length;i++){if(B[i].t-B[i-1].t>7200)S.push(cur),cur=[];cur.push(B[i]);}
   S.push(cur);return S;}
+
+
+/* ---------- panel state, trade specifics, diary ---------- */
+let G=null;
+function chainMidFor(tk,pos){
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+tk));
+    if(!c||Date.now()-c.ts>45*60000)return null;
+    const raw=(c.cj&&c.cj.data&&c.cj.data.options)||[];
+    const isC=pos.side!=='PUT';
+    const expKey=(pos.exp||'').replaceAll('-','').slice(2);if(!expKey)return null;
+    const K=parseFloat(pos.strike);if(!K)return null;
+    for(const o of raw){
+      const m=(o.option||o.symbol||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+      if(m[1]!==expKey||m[2]!==(isC?'C':'P'))continue;
+      if(Math.abs(+m[3]/1000-K)>0.01)continue;
+      const bid=+o.bid||0,ask=+o.ask||0;const mid=(bid+ask)/2;
+      return mid>0?mid:null;}
+  }catch(e){}
+  return null;
+}
+function updateTrade(){
+  const t=document.getElementById('trade');
+  if(!G){t.classList.remove('show');return;}
+  let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
+  if(!pos||(pos.tk||'').toUpperCase()!==G.tk){t.classList.remove('show');return;}
+  t.classList.add('show');
+  const avg=parseFloat(pos.oentry)||null,q=parseInt(pos.qty)||1;
+  const stop=parseFloat(pos.stop)||null,tgt=parseFloat(pos.target)||null;
+  const mid=avg!=null?chainMidFor(G.tk,pos):null;
+  const PL=document.getElementById('tPL');
+  if(avg!=null&&mid!=null){const pl=(mid-avg)*100*q;
+    PL.textContent=(pl>=0?'+':'')+'$'+pl.toFixed(0)+' ('+(((mid-avg)/avg)*100).toFixed(1)+'%)';
+    PL.className=pl>=0?'g':'r';}
+  else if(avg==null){PL.textContent='SCOUTING';PL.className='n';}
+  else{PL.textContent='load chain in COACH';PL.className='n';}
+  const cells=[];
+  cells.push(['Position',pos.side+' $'+(pos.strike||'?')+' ×'+q,'']);
+  if(avg!=null)cells.push(['Avg cost','$'+avg.toFixed(2),'']);
+  if(mid!=null)cells.push(['Mid now','$'+mid.toFixed(2),mid>=(avg||0)?'g':'r']);
+  cells.push(['Stock','$'+G.px.toFixed(2),'']);
+  if(stop!=null){const d=G.px-stop;const inATR=G.atr?d/G.atr:null;
+    cells.push(['To stop','$'+d.toFixed(2)+(inATR!=null?' ('+inATR.toFixed(1)+' candles)':''),d<0?'r':(inATR!=null&&inATR<1.5?'a':'')]);}
+  if(tgt!=null){const d=tgt-G.px;const inATR=G.atr?d/G.atr:null;
+    cells.push(['To target','$'+d.toFixed(2)+(inATR!=null?' ('+inATR.toFixed(1)+' candles)':''),d<=0?'g':'']);}
+  document.getElementById('tCells').innerHTML=cells.map(c=>'<div class="tc"><div class="l">'+c[0]+'</div><div class="v '+(c[2]||'')+'">'+c[1]+'</div></div>').join('');
+  /* conditions developing: deltas vs last reading */
+  let last=null;try{last=JSON.parse(localStorage.getItem('kGaugeLast'));}catch(e){}
+  let dev='';
+  const isC=pos.side!=='PUT';
+  const tfFor=isC?G.tf:-G.tf; /* force in the position's favor */
+  if(last&&last.tk===G.tk&&Date.now()-last.ts<3*3600*1000){
+    const dTF=G.tf-last.tf,dF=G.fuel-last.fuel;
+    const dir=x=>x>3?'rising':(x<-3?'falling':'steady');
+    dev='<b>Developing since '+new Date(last.ts).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})+':</b> '
+      +'Trend Force '+dir(dTF)+' ('+(dTF>=0?'+':'')+dTF+'), Fuel '+dir(dF)+' ('+(dF>=0?'+':'')+dF+')'
+      +(G.tw!=null&&last.tw!=null?(', Theta War '+dir(G.tw-last.tw)):'')+'. ';
+    const favorable=(tfFor>0&&dTF*(isC?1:-1)>=0)||tfFor>25;
+    if(avg!=null){
+      if(tfFor<-25&&dF<0)dev+='<b>Conditions deteriorating for your '+(isC?'calls':'puts')+'</b> — force against the position with fading participation. Review the exit, don\'t wait for the stop.';
+      else if(tfFor>25&&G.fuel>=55)dev+='<b>Conditions favor the position</b> — force with you and fueled. Manage per plan: half at T1, trail the runner.';
+      else dev+='Mixed conditions — the position lives on its levels; let the stop and target arbitrate.';
+    }else{
+      if(tfFor>40&&G.fuel>=55)dev+='<b>Setup maturing for '+(isC?'calls':'puts')+'</b> — force and fuel aligned. Check the trigger in COACH scouting.';
+      else if(G.fuel<35)dev+='Empty tank — no entry regardless of direction.';
+      else dev+='Not there yet — patience is the position.';
+    }
+  }else{
+    dev='First reading of this session — deltas appear from the next refresh. The conditions line tracks the CHANGE between readings, which turns before the levels do.';
+  }
+  document.getElementById('tDev').innerHTML=dev;
+  localStorage.setItem('kGaugeLast',JSON.stringify({tk:G.tk,ts:Date.now(),tf:G.tf,fuel:G.fuel,tw:G.tw}));
+}
+/* ---------- voice ---------- */
+function speakG(){
+  if(!G||!('speechSynthesis' in window))return;
+  const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
+  let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
+  const inTk=pos&&(pos.tk||'').toUpperCase()===G.tk;
+  say('Gauge reading, '+G.tk+'.',0.7);
+  say('Trend force '+(G.tf>0?'plus ':'minus ')+Math.abs(G.tf)+'. '+document.getElementById('s1').textContent+'.',0.68);
+  say('Fuel '+G.fuel+'. '+document.getElementById('s2').textContent+'.',0.68);
+  if(G.tw!=null)say('Theta war '+(G.tw>0?'plus ':'minus ')+Math.abs(G.tw)+'. '+document.getElementById('s3').textContent+'.',0.68);
+  if(inTk){const dv=document.getElementById('tDev').textContent;if(dv)say(dv,0.68);
+    const pl=document.getElementById('tPL').textContent;if(pl&&pl!=='—')say('Position '+pl+'.',0.68);}
+}
+/* ---------- diary ---------- */
+function getGLog(){try{return JSON.parse(localStorage.getItem('kGaugeLog'))||[];}catch(e){return[];}}
+function saveReading(){
+  if(!G){alert('Read the gauges first.');return;}
+  const L=getGLog();
+  const dv=document.getElementById('tDev').textContent||'';
+  const pl=document.getElementById('tPL').textContent||'';
+  L.unshift({t:Date.now(),tk:G.tk,tf:G.tf,fuel:G.fuel,tw:G.tw,px:G.px,pl,dv});
+  while(L.length>80)L.pop();
+  localStorage.setItem('kGaugeLog',JSON.stringify(L));
+  drawGLog();
+  document.getElementById('st').textContent='Reading saved to the diary.';
+}
+function drawGLog(){
+  const L=getGLog();const el=document.getElementById('gLog');
+  if(!L.length){el.innerHTML='<div style="color:var(--dim);font-size:10.5px">No saved readings yet. SAVE READING stamps the moment — build the habit at entry, at each add, and at exit.</div>';return;}
+  el.innerHTML=L.map(e=>{
+    const tm=new Date(e.t).toLocaleString('en-US',{timeZone:'America/Chicago',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});
+    return '<div class="gli"><span class="tm">'+tm+'</span><span class="bd"><b>'+e.tk+'</b> $'+e.px.toFixed(2)+' · TF '+(e.tf>0?'+':'')+e.tf+' · Fuel '+e.fuel+(e.tw!=null?(' · TW '+(e.tw>0?'+':'')+e.tw):'')+(e.pl&&e.pl!=='—'?(' · '+e.pl):'')+'</span></div>';
+  }).join('');
+}
+function printG(){
+  const L=getGLog();
+  document.getElementById('gpDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+  let d='';
+  if(G){d+='CURRENT READING — '+G.tk+' $'+G.px.toFixed(2)+'\n'
+    +'Trend Force '+(G.tf>0?'+':'')+G.tf+' · Fuel '+G.fuel+(G.tw!=null?(' · Theta War '+(G.tw>0?'+':'')+G.tw):'')+'\n'
+    +(document.getElementById('tDev').textContent||'')+'\n\n';}
+  d+='DIARY ('+L.length+' readings)\n----------------------------------------\n';
+  L.forEach(e=>{
+    const tm=new Date(e.t).toLocaleString('en-US',{timeZone:'America/Chicago'});
+    d+=tm+'  '+e.tk+'  $'+e.px.toFixed(2)+'  TF '+(e.tf>0?'+':'')+e.tf+'  Fuel '+e.fuel+(e.tw!=null?('  TW '+(e.tw>0?'+':'')+e.tw):'')+(e.pl&&e.pl!=='—'?('  '+e.pl):'')+'\n'+(e.dv?('   '+e.dv+'\n'):'');
+  });
+  document.getElementById('printDigest').textContent=d;
+  window.print();
+}
 
 /* ---------- gauge drawing ---------- */
 function drawGauge(id,val,lo,hi,zones){
@@ -241,7 +445,7 @@ async function run(){
   const raw=0.30*zVW+0.20*clamp(slopeNow*2,-3,3)+0.20*clamp(zM,-3,3)+0.15*clamp(zR,-3,3)+0.075*d15+0.075*d60;
   const damper=clamp((adx-12)/20,0.25,1.0);
   const TF=Math.round(100*Math.tanh(raw)*damper);
-  drawGauge('g1',TF,-100,100,[[-100,-60,'rgba(224,91,68,.75)'],[-60,-25,'rgba(224,91,68,.35)'],[-25,25,'rgba(138,147,166,.3)'],[25,60,'rgba(47,182,115,.35)'],[60,100,'rgba(47,182,115,.75)']]);
+  (function(){})();drawGauge('g1',TF,-100,100,[[-100,-60,'rgba(224,91,68,.75)'],[-60,-25,'rgba(224,91,68,.35)'],[-25,25,'rgba(138,147,166,.3)'],[25,60,'rgba(47,182,115,.35)'],[60,100,'rgba(47,182,115,.75)']]);
   const n1=document.getElementById('n1');n1.textContent=(TF>0?'+':'')+TF;n1.style.color=TF>25?'var(--green)':(TF<-25?'var(--red)':'var(--dim)');
   document.getElementById('s1').textContent=Math.abs(TF)>=60?'Strong '+(TF>0?'bull':'bear')+' force'+(Math.abs(TF)>=85?' — stretched, late to chase':''):(Math.abs(TF)>=25?'Moderate '+(TF>0?'bull':'bear')+' lean':'No meaningful force — coin-flip zone');
   document.getElementById('p1').innerHTML=[
@@ -266,6 +470,7 @@ async function run(){
   const sqz=(2*sd)<(1.5*atr);
   let FUEL=Math.round(clamp(45*Math.tanh((rvol-0.9)*1.4)+45,0,90)*0.7+clamp((expan-0.7)*50,0,30)*0.9+(sqz?-8:0));
   FUEL=clamp(FUEL,0,100);
+  G={tk,px,atr,tf:TF,fuel:FUEL,tw:null};
   drawGauge('g2',FUEL,0,100,[[0,35,'rgba(224,91,68,.6)'],[35,55,'rgba(224,169,63,.5)'],[55,100,'rgba(47,182,115,.6)']]);
   const n2=document.getElementById('n2');n2.textContent=FUEL;n2.style.color=FUEL>=55?'var(--green)':(FUEL<35?'var(--red)':'var(--amber)');
   document.getElementById('s2').textContent=FUEL<35?'Empty tank — no trade, any direction':(FUEL<55?'Partial fuel — half size territory':'Fueled — moves can travel');
@@ -306,6 +511,7 @@ async function run(){
     const ratio=bleed>0?earn/bleed:9;
     const TW=Math.round(clamp(100*Math.tanh((ratio-1)/1.5),-100,100));
     drawGauge('g3',TW,-100,100,[[-100,-30,'rgba(224,91,68,.7)'],[-30,10,'rgba(224,169,63,.5)'],[10,100,'rgba(47,182,115,.65)']]);
+    G.tw=TW;
     n3.textContent=(TW>0?'+':'')+TW;n3.style.color=TW>10?'var(--green)':(TW<-30?'var(--red)':'var(--amber)');
     s3.textContent=TW>10?'Movement out-earns decay '+ratio.toFixed(1)+'× — the option pays rent':(TW>-30?'Marginal — decay and movement near even; the clock matters':'Decay is winning — you are paying by the hour to hold this');
     p3.innerHTML=[
@@ -318,6 +524,7 @@ async function run(){
       ['DTE '+dte.toFixed(0),dte<=21?'a':'','dte']
     ].map(chip).join('');
   }
+  updateTrade();
   st.textContent=tk+' read at '+new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'})+' CT · auto-refresh 60s';
   clearTimeout(TIMER);TIMER=setTimeout(run,60000);
 }
@@ -325,5 +532,6 @@ const saved=localStorage.getItem('kGaugeTk');
 let pre=null;try{pre=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
 document.getElementById('tk').value=saved||(pre&&pre.tk)||'SPCX';
 document.getElementById('tk').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+drawGLog();
 </script>
 </body></html>
