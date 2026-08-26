@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Desk · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
+.mono{font-variant-numeric:tabular-nums}
+
+/* header */
+#hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+#hdr .t{font-size:15px;font-weight:800;letter-spacing:.16em;color:var(--gold-soft)}
+#hdr .c{font-size:11px;color:var(--dim)}
+#phase{font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:6px;border-radius:8px;background:var(--card2);border:1px solid var(--line);color:var(--dim);margin-bottom:10px}
+#phase b{color:var(--gold-soft)}
+
+/* section frame */
+.sec{margin:16px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.sec .n{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.sec .x{font-size:10px;color:var(--gold-soft);cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+
+/* the read */
+#readLine{font-size:12.5px;line-height:1.6}
+#readLine b{color:var(--gold-soft)}
+#readCells{display:flex;gap:6px;margin-top:10px}
+.rc{flex:1;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 4px}
+.rc .l{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.rc .v{font-size:13px;font-weight:800}
+.rc .v.up{color:var(--green)}.rc .v.dn{color:var(--red)}.rc .v.fl{color:var(--amber)}
+
+/* the trade */
+#trade{border:1.5px solid var(--gold);background:linear-gradient(165deg,#152039,var(--card))}
+#tTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+#tTk{font-family:Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.02em}
+#tSide{font-size:13px;font-weight:800;letter-spacing:.1em;padding:4px 12px;border-radius:7px}
+#tSide.C{color:var(--green);border:1.5px solid var(--green);background:rgba(47,182,115,.08)}
+#tSide.P{color:var(--red);border:1.5px solid var(--red);background:rgba(224,91,68,.08)}
+#tSide.N{color:var(--dim);border:1.5px solid var(--line)}
+#tScore{font-size:11px;color:var(--dim);margin-bottom:12px}
+#tScore b{color:var(--gold-soft)}
+.trow{padding:10px 0;border-top:1px solid var(--line)}
+.trow .k{display:flex;justify-content:space-between;align-items:baseline}
+.trow .k .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.trow .k .val{font-family:Georgia,serif;font-size:17px;font-weight:700}
+.trow .k .val.g{color:var(--green)}.trow .k .val.r{color:var(--red)}.trow .k .val.gold{color:var(--gold-soft)}
+.trow .plain{font-size:11px;color:var(--dim);line-height:1.5;margin-top:3px}
+.trow .plain i{color:var(--ink);font-style:normal}
+#tContract .cline{font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--gold-soft)}
+#tContract .cstats{font-size:11px;color:var(--dim);margin-top:2px}
+#tContract .cverdict{font-size:11px;font-weight:800;margin-top:5px;padding:5px 9px;border-radius:7px;display:inline-block}
+#tContract .cverdict.ok{color:var(--green);border:1px solid var(--green);background:rgba(47,182,115,.07)}
+#tContract .cverdict.no{color:var(--red);border:1px solid var(--red);background:rgba(224,91,68,.07)}
+#tBtns{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+#tBtns button,#tBtns a{flex:1;min-width:86px;text-align:center;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:9px;padding:10px 4px;font-weight:800;font-size:10.5px;cursor:pointer;text-decoration:none;letter-spacing:.04em}
+#tBtns .gold{background:var(--gold);color:#000;border-color:var(--gold)}
+#riskRow{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+#riskRow .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+#riskIn{width:80px;background:var(--card2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:7px;font-size:13px;text-align:center}
+#riskOut{flex:1;font-size:11px;color:var(--dim)}
+#riskOut b{color:var(--gold-soft);font-size:13px}
+
+/* position */
+#posCard{display:none}
+#posCard.show{display:block}
+#pTop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+#pName{font-size:13px;font-weight:800;color:var(--gold-soft)}
+#pPL{font-family:Georgia,serif;font-size:22px;font-weight:700}
+#pPL.g{color:var(--green)}#pPL.r{color:var(--red)}#pPL.n{color:var(--dim);font-size:13px}
+#pCells{display:flex;gap:5px;flex-wrap:wrap}
+.pc{flex:1;min-width:84px;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 5px;text-align:center}
+.pc .l{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.pc .v{font-size:12.5px;font-weight:800}
+.pc .v.g{color:var(--green)}.pc .v.r{color:var(--red)}.pc .v.a{color:var(--amber)}
+#pAdvice{font-size:11.5px;line-height:1.55;margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+#pAdvice b{color:var(--gold-soft)}
+
+/* clock */
+#clockBar{position:relative;height:34px;background:var(--card2);border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:6px}
+.ph{position:absolute;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:8px;letter-spacing:.05em;color:var(--dim);text-transform:uppercase;border-right:1px solid var(--line)}
+#nowMark{position:absolute;top:0;bottom:0;width:2px;background:var(--gold-soft);box-shadow:0 0 6px rgba(217,180,74,.8)}
+#clockTxt{font-size:11px;color:var(--dim);text-align:center}
+#clockTxt b{color:var(--gold-soft)}
+
+#st{font-size:10px;color:var(--dim);text-align:center;padding:6px 0;min-height:18px}
+
+/* modal */
+#mWrap{display:none;position:fixed;inset:0;background:rgba(3,7,16,.92);z-index:1300;overflow-y:auto;padding:20px 14px}
+#mWrap.open{display:block}
+#mBox{max-width:560px;margin:0 auto;background:var(--card);border:1.5px solid var(--gold);border-radius:16px;padding:18px}
+#mBox h3{color:var(--gold-soft);font-size:14px;margin-bottom:10px;letter-spacing:.04em}
+#mBody{font-size:12px;line-height:1.65}
+#mBody b{color:var(--gold-soft)}
+#mBody .wr{border-bottom:1px solid var(--line);padding:8px 0}
+#mBody .wr:last-child{border:none}
+#mBody .wr .wh{display:flex;justify-content:space-between;font-weight:800;font-size:12px}
+#mBody .wr .wh .p.g{color:var(--green)}#mBody .wr .wh .p.r{color:var(--red)}#mBody .wr .wh .p.a{color:var(--amber)}
+#mBody .wr .wb{color:var(--dim);font-size:11px;margin-top:3px;line-height:1.5}
+#mClose{width:100%;background:var(--gold);color:#000;border:none;border-radius:9px;padding:12px;font-weight:800;font-size:12px;cursor:pointer;margin-top:14px}
+
+/* print */
+#printHead,#printDigest{display:none}
+@media print{
+  body{background:#fff;color:#111;font-family:Georgia,serif;padding:0;max-width:none}
+  #hdr,#phase,.sec,.card,#st,.knav,#mWrap{display:none!important}
+  #printHead{display:block;text-align:center;border-bottom:2.5px solid #BF9000;padding-bottom:10px;margin-bottom:14px}
+  #printHead .k{font-size:19px;font-weight:900;letter-spacing:.1em}
+  #printHead .s{font-size:10px;letter-spacing:.2em;color:#555;text-transform:uppercase}
+  #printDigest{display:block;font-size:12px;line-height:1.65;white-space:pre-wrap}
+}
+
+.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<div id="hdr"><span class="t">THE DESK</span><span class="c mono" id="clk">—</span></div>
+<div id="phase">—</div>
+
+<div class="sec"><span class="n">I · The Read — what world did we wake up in</span></div>
+<div class="card">
+  <div id="readLine">Reading the overnight tape…</div>
+  <div id="readCells"></div>
+</div>
+
+<div class="sec"><span class="n">II · The Trade — today's definitive setup</span><span class="x" onclick="runDesk(true)">↻ REFRESH</span></div>
+<div class="card" id="trade">
+  <div id="tTop"><span id="tTk" class="mono">—</span><span id="tSide" class="N">SCANNING</span></div>
+  <div id="tScore">running the board…</div>
+  <div id="tRows"></div>
+  <div id="tContract" class="trow" style="display:none"></div>
+  <div id="riskRow">
+    <span class="l">Risk $</span><input id="riskIn" type="number" step="50" value="400">
+    <span id="riskOut">size appears when the setup is priced</span>
+  </div>
+  <div id="tBtns">
+    <button class="gold" onclick="speakDesk()">🔊 SPEAK</button>
+    <button onclick="openWhy()">WHY?</button>
+    <button onclick="sendCoach()">→ COACH</button>
+    <a id="toCock" href="cockpit.html">COCKPIT</a>
+    <button onclick="printDesk()">🖨 PRINT</button>
+  </div>
+</div>
+
+<div class="sec"><span class="n">III · Your Position — live</span></div>
+<div class="card" id="posCard">
+  <div id="pTop"><span id="pName">—</span><span id="pPL" class="n">—</span></div>
+  <div id="pCells"></div>
+  <div id="pAdvice"></div>
+</div>
+<div class="card" id="noPos" style="text-align:center;color:var(--dim);font-size:11.5px">
+  Flat. <i style="color:var(--ink)">Flat is a position</i> — it means all your capital is available for the one right moment. When you fill, enter it in COACH and this panel comes alive.
+</div>
+
+<div class="sec"><span class="n">IV · The Clock — the day's law</span></div>
+<div id="clockBar"></div>
+<div id="clockTxt">—</div>
+
+<div id="st"></div>
+
+<div id="mWrap" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="mBox"><h3 id="mTitle">—</h3><div id="mBody"></div><button id="mClose" onclick="document.getElementById('mWrap').classList.remove('open')">GOT IT</button></div>
+</div>
+
+<div id="printHead"><div class="k">KORNIS PROTOCOL — THE DESK</div><div class="s">Daily Setup Sheet · <span id="pdDate"></span></div></div>
+<div id="printDigest"></div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="desk.html" class="on">DESK</a>
+  <a href="cockpit.html">COCKPIT</a>
+  <a href="picker.html">PICKER</a>
+  <a href="coach.html">COACH</a>
+  <a href="trades.html">TRADES</a>
+  <a href="ledger.html">LEDGER</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const n2=x=>x!=null?x.toFixed(2):'—';
+
+/* ================= math ================= */
+function ema(a,p){const k=2/(p+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e);}return o;}
+function splitS(B){const S=[];let c=[B[0]];for(let i=1;i<B.length;i++){if(B[i].t-B[i-1].t>7200)S.push(c),c=[];c.push(B[i]);}S.push(c);return S;}
+async function pull(tk,rng,iv){
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i='+(iv||'5m')+'&r='+rng);
+  const txt=await r.text();let j;
+  try{j=JSON.parse(txt);}catch(e){throw new Error(txt.indexOf('1015')>-1?'rate-limited':'feed busy');}
+  if(j.chart&&j.chart.error)throw new Error('feed error');
+  const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
+  const q=res.indicators.quote[0];const ts=res.timestamp||[];const B=[];
+  for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;
+    B.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+  if(!B.length)throw new Error('empty');
+  return {B,meta:res.meta||{}};
+}
+function analyze(B5){
+  const S=splitS(B5),B=S[S.length-1],prior=S.length>1?S[S.length-2]:null;
+  if(B.length<10)throw new Error('session too young');
+  const C=B.map(b=>b.c),n=C.length-1,px=C[n];
+  const e9=ema(C,9)[n];
+  const sp=Math.min(20,C.length);let s20=0;for(let i=C.length-sp;i<C.length;i++)s20+=C[i];s20/=sp;
+  let pv=0,vv=0;B.forEach(b=>{pv+=((b.h+b.l+b.c)/3)*b.v;vv+=b.v;});const vw=vv?pv/vv:px;
+  let g=0,l=0;const rp=Math.min(14,C.length-1);
+  for(let i=C.length-rp;i<C.length;i++){const d=C[i]-C[i-1];if(d>0)g+=d;else l-=d;}
+  const rsi=l===0?100:100-100/(1+g/l);
+  const AC=B5.map(b=>b.c),e12=ema(AC,12),e26=ema(AC,26);
+  const M=AC.map((_,i)=>e12[i]-e26[i]),S9=ema(M,9),N=AC.length-1;
+  const h2=M[N]-S9[N],h1=M[N-1]-S9[N-1];
+  const k=B.length;let pc=[];
+  for(let s=0;s<S.length-1;s++){if(S[s].length>=k)pc.push(S[s].slice(0,k).reduce((a,b)=>a+b.v,0));}
+  const rvol=pc.length?B.reduce((a,b)=>a+b.v,0)/(pc.reduce((a,b)=>a+b,0)/pc.length):null;
+  let trs=[];for(let i=1;i<B.length;i++)trs.push(Math.max(B[i].h-B[i].l,Math.abs(B[i].h-B[i-1].c),Math.abs(B[i].l-B[i-1].c)));
+  const atr=trs.slice(-14).reduce((a,b)=>a+b,0)/Math.max(1,Math.min(14,trs.length));
+  function res15(nn){const o=[];for(let e=B5.length;e>0&&o.length<40;e-=nn){const s=Math.max(0,e-nn);const gg=B5.slice(s,e);o.unshift(gg[gg.length-1].c);}return o;}
+  const c15=res15(3),c60=res15(12);
+  const up15=c15[c15.length-1]>ema(c15,9)[c15.length-1];
+  const up60=c60[c60.length-1]>ema(c60,9)[c60.length-1];
+  let pdh=null,pdl=null,pdc=null,gapP=null;
+  if(prior){pdh=Math.max(...prior.map(b=>b.h));pdl=Math.min(...prior.map(b=>b.l));pdc=prior[prior.length-1].c;gapP=(B[0].o-pdc)/pdc*100;}
+  const orH=B[0].h,orL=B[0].l;
+  const dayHi=Math.max(...B.map(b=>b.h)),dayLo=Math.min(...B.map(b=>b.l));
+  const chg=pdc?(px-pdc)/pdc*100:null;
+  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atr,atrP:atr/px*100,up15,up60,pdh,pdl,pdc,gapP,orH,orL,dayHi,dayLo};
+}
+function score(A,rs){
+  function side(dir){
+    const L=dir>0;let s=0;const det=[];
+    const add=(ok,pts,lbl,plain)=>{if(ok)s+=pts;det.push({ok,pts:ok?pts:0,max:pts,lbl,plain});};
+    add(L?A.px>A.vw:A.px<A.vw,12,'VWAP','Price is '+(A.px>A.vw?'above':'below')+' the day\'s volume-weighted average ('+n2(A.vw)+') — the session crowd is '+((L?A.px>A.vw:A.px<A.vw)?'with':'against')+' this side.');
+    add(L?A.px>A.e9:A.px<A.e9,10,'9 EMA','The fast average ('+n2(A.e9)+') is the ride line; being on the right side means momentum is current, not remembered.');
+    add(L?A.e9>A.s20:A.e9<A.s20,7,'9 vs 20','Fast average leading the slow one — the last 45 minutes agree with the last 100.');
+    add(L===A.up15,9,'15-minute','The 15m chart votes the same way — you are not trading a blip against the bigger flow.');
+    add(L===A.up60,9,'1-hour','The hourly chart — the swing traders — lean the same way.');
+    add(L?(A.rsi>=45&&A.rsi<=72):(A.rsi>=28&&A.rsi<=55),9,'RSI '+A.rsi.toFixed(0),'Momentum with room left. Over 72 (or under 28) means stretched — chasing, not entering.');
+    add(L?A.h2>0&&A.h2>A.h1:A.h2<0&&A.h2<A.h1,9,'MACD','The momentum engine is pointed this way AND accelerating — it turns before price does.');
+    add(A.rvol!=null&&A.rvol>=1.2,12,'RVOL ×'+(A.rvol?A.rvol.toFixed(1):'—'),'Volume vs the same time of day: above 1.2 means real participants are here and moves stick.');
+    add(A.atrP>=0.12,8,'Movement','Candles are travelling '+A.atrP.toFixed(2)+'% per bar — enough motion to outrun option decay.');
+    if(A.pdh!=null)add(L?A.px>A.pdh:A.px<A.pdl,10,'PD break','Beyond yesterday\'s '+(L?'high':'low')+' — trapped traders from yesterday fuel the move.');
+    if(rs!=null)add(L?rs>0.15:rs<-0.15,5,'RS vs SPY','This name is '+(rs>=0?'+':'')+rs.toFixed(1)+'% vs the market — trading the strongest horse.');
+    return {s:Math.min(100,s),det};
+  }
+  const b=side(1),r=side(-1);
+  return b.s>=r.s?{score:b.s,side:'CALLS',cls:'C',dir:1,det:b.det}:{score:r.s,side:'PUTS',cls:'P',dir:-1,det:r.det};
+}
+/* ================= state ================= */
+let DESK={read:null,best:null,A:null,sc:null,contract:null,pos:null};
+function board(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+function passLine(){try{const p=JSON.parse(localStorage.getItem('kPassLine'));if(p&&p.v)return p.v;}catch(e){}return 70;}
+function cget(k,ttl){try{const c=JSON.parse(localStorage.getItem(k));if(c&&Date.now()-c.ts<ttl)return c.d;}catch(e){}return null;}
+function cset(k,d){try{localStorage.setItem(k,JSON.stringify({ts:Date.now(),d}));}catch(e){}}
+
+/* ================= I. the read ================= */
+async function readWorld(){
+  let cached=cget('kDeskRead',4*60000);
+  if(cached){DESK.read=cached;drawRead();return;}
+  const out={};
+  for(const [tk,key] of [['ES=F','es'],['NQ=F','nq']]){
+    try{const {B,meta}=await pull(tk,'2d','15m');
+      const prevC=meta.chartPreviousClose||null;const last=B[B.length-1].c;
+      const cut=B[B.length-1].t-16*3600;const ON=B.filter(b=>b.t>=cut);
+      const hi=Math.max(...ON.map(b=>b.h)),lo=Math.min(...ON.map(b=>b.l));
+      out[key]={chg:prevC?(last-prevC)/prevC*100:null,pos:(last-lo)/((hi-lo)||1)};
+      await sleep(800);
+    }catch(e){out[key]={err:e.message};}
+  }
+  DESK.read=out;cset('kDeskRead',out);drawRead();
+}
+function drawRead(){
+  const r=DESK.read||{};const es=r.es||{},nq=r.nq||{};
+  const f=x=>x==null?'—':((x>=0?'+':'')+x.toFixed(2)+'%');
+  const avg=((es.chg||0)+(nq.chg||0))/2;
+  let tone='FLAT',cls='fl',plain='No overnight edge — the opening range decides everything.';
+  if(avg>0.25){tone='RISK ON';cls='up';plain='Futures green overnight: tailwind for call setups — but green overnights often fade the first 15 minutes, so let the range confirm.';}
+  else if(avg<-0.25){tone='RISK OFF';cls='dn';plain='Futures red overnight: headwind — favor put-side setups or demand a reclaim before any long.';}
+  document.getElementById('readLine').innerHTML='<b>'+tone+'.</b> '+plain+(nq.pos!=null?(' NQ sits in the '+(nq.pos>0.7?'upper third of the overnight range — buyers held the night.':nq.pos<0.3?'lower third — sellers held the night.':'middle of the overnight range — nobody won.')):'');
+  document.getElementById('readCells').innerHTML=
+    '<div class="rc"><div class="l">Tone</div><div class="v '+cls+'">'+tone+'</div></div>'+
+    '<div class="rc"><div class="l">S&amp;P fut</div><div class="v '+(es.chg>=0?'up':'dn')+'">'+f(es.chg)+'</div></div>'+
+    '<div class="rc"><div class="l">Nasdaq fut</div><div class="v '+(nq.chg>=0?'up':'dn')+'">'+f(nq.chg)+'</div></div>';
+}
+
+/* ================= II. the trade ================= */
+async function findTrade(force){
+  const st=document.getElementById('st');
+  let bench=cget('kDeskSPY',5*60000);
+  if(!bench||force){try{const {B}=await pull('SPY','5d','5m');bench=analyze(B).chg;cset('kDeskSPY',bench);}catch(e){bench=null;}await sleep(900);}
+  let best=null;
+  for(const tk of board()){
+    st.textContent='Scoring '+tk+'…';
+    let d=force?null:cget('kDeskS_'+tk,5*60000);
+    if(!d){
+      try{const {B}=await pull(tk,'5d','5m');const A=analyze(B);
+        const rs=(bench!=null&&A.chg!=null)?A.chg-bench:null;
+        const sc=score(A,rs);d={A,sc};cset('kDeskS_'+tk,d);}
+      catch(e){d=null;}
+      await sleep(900);
+    }
+    if(d&&(!best||d.sc.score>best.sc.score))best={tk,...d};
+  }
+  if(!best){st.textContent='Board unreadable (rate-limited?) — tap REFRESH in 60s.';return;}
+  DESK.best=best;DESK.A=best.A;DESK.sc=best.sc;
+  drawTrade();
+  st.textContent='';
+  await findContract();
+}
+function composeTrade(){
+  const A=DESK.A,sc=DESK.sc;const L=sc.dir>0;
+  const trig=L?Math.max(A.dayHi,A.orH):Math.min(A.dayLo,A.orL);
+  const trigWhy=L?('break of '+(A.dayHi>=A.orH?'the day high':'the opening-range high')):('break of '+(A.dayLo<=A.orL?'the day low':'the opening-range low'));
+  let stop=L?Math.min(A.vw,A.e9):Math.max(A.vw,A.e9);
+  if(L&&stop>=trig)stop=trig-1.6*A.atr;
+  if(!L&&stop<=trig)stop=trig+1.6*A.atr;
+  let t1;
+  if(L)t1=(A.pdh&&A.pdh>trig+0.5*A.atr)?A.pdh:trig+2.5*A.atr;
+  else t1=(A.pdl&&A.pdl<trig-0.5*A.atr)?A.pdl:trig-2.5*A.atr;
+  const t1Why=L?((A.pdh&&t1===A.pdh)?'yesterday\'s high — the most-watched line above':'2.5 average candles of travel'):((A.pdl&&t1===A.pdl)?'yesterday\'s low — the most-watched line below':'2.5 average candles of travel');
+  return {L,trig,trigWhy,stop,t1,t1Why};
+}
+function drawTrade(){
+  const b=DESK.best;if(!b)return;
+  document.getElementById('tTk').textContent=b.tk;
+  const sEl=document.getElementById('tSide');sEl.textContent=b.sc.side;sEl.className=b.sc.cls;
+  const PL=passLine();
+  const verdict=b.sc.score>=PL?'PASSES':'below the line';
+  document.getElementById('tScore').innerHTML='Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · stock $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'');
+  const T=composeTrade();DESK.T=T;
+  const rows=[
+    ['TRIGGER — do nothing until this',n2(T.trig),T.L?'g':'r',
+     'A 5-minute candle must CLOSE '+(T.L?'above':'below')+' this ('+T.trigWhy+') with volume clearly bigger than recent bars. <i>In plain terms: wait for the '+(T.L?'buyers':'sellers')+' to prove it, then join — never guess first.</i>'],
+    ['STOP — where the trade is wrong',n2(T.stop),'r',
+     'Structure, not dollars: '+(T.L?'below':'above')+' the VWAP / 9-EMA shelf. <i>In plain terms: if price returns here, the reason for the trade is gone — the exit order rests in Fidelity from the moment you fill, no exceptions.</i>'],
+    ['TARGET 1 — where you get paid',n2(T.t1),'g',
+     T.t1Why+'. <i>In plain terms: sell HALF here, then move the stop on the rest to your entry — from that moment the trade cannot lose.</i>']
+  ];
+  document.getElementById('tRows').innerHTML=rows.map(r=>
+    '<div class="trow"><div class="k"><span class="lbl">'+r[0]+'</span><span class="val mono '+r[2]+'">$'+r[1]+'</span></div><div class="plain">'+r[3]+'</div></div>').join('');
+  document.getElementById('toCock').href='cockpit.html?tk='+b.tk;
+  sizeIt();
+}
+async function findContract(){
+  const b=DESK.best;if(!b)return;
+  const el=document.getElementById('tContract');el.style.display='block';
+  el.innerHTML='<div class="cstats">Finding the contract (0.65–0.75Δ, 5–10 DTE, liquidity-gated)…</div>';
+  let cj=null;
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+b.tk));if(c&&Date.now()-c.ts<45*60000)cj=c.cj;}catch(e){}
+  if(!cj){
+    try{const r=await fetch(RELAY+'/?chain='+encodeURIComponent(b.tk));const txt=await r.text();
+      cj=JSON.parse(txt);localStorage.setItem('kChain_'+b.tk,JSON.stringify({ts:Date.now(),cj}));}
+    catch(e){el.innerHTML='<div class="cstats">Chain rate-limited — the setup stands; get the exact contract in PICKER when the trigger nears.</div>';return;}
+  }
+  const spot=(cj&&cj.data&&(cj.data.current_price!=null?cj.data.current_price:cj.data.close))||b.A.px;
+  const raw=(cj&&cj.data&&cj.data.options)||[];
+  const isC=DESK.sc.dir>0;const now=new Date();
+  function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
+  function bsP(S,K,Tt,sg,c){const st=Math.sqrt(Tt);const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*Tt)/(sg*st);const d2=d1-sg*st;
+    return c?S*nCDF(d1)-K*Math.exp(-0.05*Tt)*nCDF(d2):K*Math.exp(-0.05*Tt)*nCDF(-d2)-S*nCDF(-d1);}
+  function iv(S,K,Tt,mid,c){if(!mid||mid<=0.03)return null;let lo=0.05,hi=3;for(let i=0;i<40;i++){const m=(lo+hi)/2;if(bsP(S,K,Tt,m,c)>mid)hi=m;else lo=m;}return(lo+hi)/2;}
+  function dl(S,K,Tt,sg,c){const st=Math.sqrt(Tt);const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*Tt)/(sg*st);return c?nCDF(d1):nCDF(d1)-1;}
+  let bands=[[5,10],[4,14],[3,21]];let pick=null;
+  for(const [lo0,hi0] of bands){
+    let cands=[];
+    for(const o of raw){
+      const m=(o.option||o.symbol||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+      if(m[2]!==(isC?'C':'P'))continue;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+      const dte=Math.ceil((exp-now)/86400000);if(dte<lo0||dte>hi0)continue;
+      const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;const mid=(bid+ask)/2;if(mid<=0)continue;
+      const Tt=dte/365;const v=iv(spot,K,Tt,mid,isC);const d=v?Math.abs(dl(spot,K,Tt,v,isC)):null;
+      if(d==null)continue;
+      const oi=+o.open_interest||+o.oi||0;const spread=ask-bid;
+      cands.push({K,exp,dte,mid,spread,oi,d,fit:Math.abs(d-0.70)});
+    }
+    if(cands.length){cands.sort((a,b)=>a.fit-b.fit);pick=cands[0];break;}
+  }
+  if(!pick){el.innerHTML='<div class="cstats">No contract in the DTE window — check PICKER manually.</div>';return;}
+  DESK.contract=pick;
+  const liqOK=pick.spread<=0.30||pick.spread<=pick.mid*0.05;const oiOK=pick.oi>=500;
+  const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  el.innerHTML='<div class="k"><span class="lbl">THE CONTRACT — the playbook vehicle</span></div>'+
+    '<div class="cline">'+b.tk+' '+fmt(pick.exp)+' $'+pick.K+' '+(isC?'CALL':'PUT')+'</div>'+
+    '<div class="cstats mono">Δ '+pick.d.toFixed(2)+' · mid $'+pick.mid.toFixed(2)+' · spread $'+pick.spread.toFixed(2)+' · OI '+pick.oi.toLocaleString()+' · '+pick.dte+' DTE · ~$'+(pick.mid*100).toFixed(0)+'/contract</div>'+
+    '<div class="plain" style="margin-top:4px">Deep in-the-money, ~0.70 delta. <i>In plain terms: mostly real value, little hope-premium — it moves ~70¢ per stock dollar and time decay can\'t gut it.</i> Order at MID, never market.</div>'+
+    '<div class="cverdict '+((liqOK&&oiOK)?'ok':'no')+'">'+((liqOK&&oiOK)?'✓ PASSES the liquidity gate':'✗ '+(liqOK?'':'spread wide ')+(oiOK?'':'· OI thin')+' — smaller size or PICKER for an alternate')+'</div>';
+  sizeIt();
+}
+function sizeIt(){
+  const T=DESK.T,c=DESK.contract;const out=document.getElementById('riskOut');
+  const risk=parseFloat(document.getElementById('riskIn').value)||400;
+  localStorage.setItem('kRisk',risk);
+  if(!T){out.textContent='size appears when the setup is priced';return;}
+  const stopDist=Math.abs(T.trig-T.stop);
+  const dlt=c?c.d:0.70;
+  const per=stopDist*dlt*100;
+  if(per<=0){out.textContent='—';return;}
+  const nC=Math.max(1,Math.floor(risk/per));
+  out.innerHTML='≈ $'+per.toFixed(0)+' at risk per contract → <b>'+nC+' contract'+(nC>1?'s':'')+'</b><br>trigger-to-stop '+stopDist.toFixed(2)+' × Δ'+dlt.toFixed(2)+' — <i style="color:var(--dim)">size from risk, never from conviction</i>';
+}
+/* ================= III. position ================= */
+function drawPos(){
+  let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
+  const card=document.getElementById('posCard'),none=document.getElementById('noPos');
+  const avg=pos?parseFloat(pos.oentry):null;
+  if(!pos||!pos.tk||!avg){card.classList.remove('show');none.style.display='block';return;}
+  card.classList.add('show');none.style.display='none';
+  const q=parseInt(pos.qty)||1;
+  document.getElementById('pName').textContent=pos.tk.toUpperCase()+' $'+(pos.strike||'?')+' '+(pos.side||'')+' ×'+q+' @ $'+avg.toFixed(2);
+  /* mid from chain */
+  let mid=null;
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+pos.tk.toUpperCase()));
+    if(c&&Date.now()-c.ts<45*60000){
+      const raw=(c.cj&&c.cj.data&&c.cj.data.options)||[];
+      const isC=pos.side!=='PUT';const eK=(pos.exp||'').replaceAll('-','').slice(2);
+      for(const o of raw){const m=(o.option||o.symbol||'').match(/(\d{6})([CP])(\d{8})$/);if(!m)continue;
+        if(m[1]!==eK||m[2]!==(isC?'C':'P'))continue;
+        if(Math.abs(+m[3]/1000-parseFloat(pos.strike))>0.01)continue;
+        const bid=+o.bid||0,ask=+o.ask||0;const mm=(bid+ask)/2;if(mm>0)mid=mm;break;}}}catch(e){}
+  const PL=document.getElementById('pPL');
+  if(mid!=null){const pl=(mid-avg)*100*q;PL.textContent=(pl>=0?'+':'')+'$'+pl.toFixed(0);PL.className=pl>=0?'g':'r';}
+  else{PL.textContent='chain stale';PL.className='n';}
+  const A=(DESK.best&&DESK.best.tk===pos.tk.toUpperCase())?DESK.A:null;
+  const cells=[];
+  if(mid!=null)cells.push(['Mid','$'+mid.toFixed(2),mid>=avg?'g':'r']);
+  const stop=parseFloat(pos.stop),tgt=parseFloat(pos.target);
+  if(A){cells.push(['Stock','$'+n2(A.px),'']);
+    if(stop){const d=A.px-stop;cells.push(['To stop','$'+d.toFixed(2)+' ('+(A.atr?(d/A.atr).toFixed(1):'—')+' candles)',d<0?'r':(A.atr&&d/A.atr<1.5?'a':'')]);}
+    if(tgt){cells.push(['To target','$'+(tgt-A.px).toFixed(2),'']);}}
+  document.getElementById('pCells').innerHTML=cells.map(c=>'<div class="pc"><div class="l">'+c[0]+'</div><div class="v '+(c[2]||'')+' mono">'+c[1]+'</div></div>').join('');
+  let adv='<b>Standing orders:</b> bracket resting in Fidelity (stop + target, OCO). Half off at T1, stop to breakeven. ';
+  const m=ctMin();
+  if(m>=14*60+45)adv+='<b style="color:var(--red)">PAST 2:45 — the flat law is in force. Close it.</b>';
+  else if(m>=14*60)adv+='<b style="color:var(--amber)">Wind-down: no adds, exits only.</b>';
+  else adv+='Flat by 2:45 CT.';
+  document.getElementById('pAdvice').innerHTML=adv;
+}
+/* ================= IV. clock ================= */
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function ctMin(){const n=ctNow();return n.getHours()*60+n.getMinutes();}
+function drawClock(){
+  const bar=document.getElementById('clockBar');
+  const phases=[[8.5,8.583,'RANGE'],[8.583,11,'PRIME HUNT'],[11,12.5,'LUNCH — NO NEW RISK'],[12.5,14,'AFTERNOON'],[14,14.75,'WIND-DOWN'],[14.75,15,'FLAT']];
+  const t0=8.5,t1=15;
+  bar.innerHTML=phases.map(p=>{
+    const l=(p[0]-t0)/(t1-t0)*100,w=(p[1]-p[0])/(t1-t0)*100;
+    return '<div class="ph" style="left:'+l+'%;width:'+w+'%">'+p[2]+'</div>';
+  }).join('');
+  const m=ctMin()/60;
+  if(m>=t0&&m<=t1){
+    bar.innerHTML+='<div id="nowMark" style="left:'+((m-t0)/(t1-t0)*100)+'%"></div>';
+  }
+  const mm=ctMin();let txt;
+  if(mm<8*60+30)txt='<b>Pre-market.</b> Plan only — the 8:30–8:35 range decides, not the futures.';
+  else if(mm<8*60+35)txt='<b>The range is printing.</b> Hands off — mark the high and low of this candle.';
+  else if(mm<11*60)txt='<b>Prime hunt.</b> Triggers with volume are live. Bracket on every fill.';
+  else if(mm<12*60+30)txt='<b>Lunch.</b> Half size, no new trades — the tape lies between 11 and 12:30.';
+  else if(mm<14*60)txt='<b>Afternoon.</b> Setups valid again. Last entry 2:00.';
+  else if(mm<14*60+45)txt='<b>Wind-down.</b> No new entries. Exits only.';
+  else if(mm<15*60)txt='<b style="color:var(--red)">FLAT BY 2:45 — the law.</b> No overnights.';
+  else txt='<b>Closed.</b> Journal in TRADES, log in LEDGER, read one Playbook chapter.';
+  document.getElementById('clockTxt').innerHTML=txt;
+  document.getElementById('clk').textContent=ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  const ph=document.getElementById('phase');
+  ph.innerHTML=txt;
+}
+/* ================= actions ================= */
+function openWhy(){
+  const b=DESK.best;if(!b)return;
+  document.getElementById('mTitle').textContent=b.tk+' — why '+b.sc.side+', signal by signal ('+b.sc.score+'/100)';
+  document.getElementById('mBody').innerHTML=b.sc.det.map(d=>{
+    const cls=d.ok?(d.pts>=d.max?'g':'a'):'r';
+    return '<div class="wr"><div class="wh"><span>'+d.lbl+'</span><span class="p '+cls+'">'+d.pts+'/'+d.max+'</span></div><div class="wb">'+d.plain+'</div></div>';
+  }).join('')+'<div class="wb" style="margin-top:8px">Red rows are the honest problems with this setup — they are why the stop exists.</div>';
+  document.getElementById('mWrap').classList.add('open');
+}
+function speakDesk(){
+  if(!('speechSynthesis' in window)||!DESK.best)return;
+  const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
+  const b=DESK.best,T=DESK.T,c=DESK.contract;
+  say('The desk. Today\'s setup.',0.68);
+  say(b.tk+'. '+b.sc.side+'. Score '+b.sc.score+' out of 100.',0.66);
+  say('Trigger: a 5 minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Until then, nothing.',0.66);
+  say('Stop: '+n2(T.stop)+'. Target one: '+n2(T.t1)+'. Half off at target, stop to breakeven.',0.66);
+  if(c)say('The contract: '+b.tk+' '+c.K+' '+(T.L?'call':'put')+', '+c.dte+' days out, about '+c.mid.toFixed(2)+' at the mid, delta '+c.d.toFixed(2)+'.',0.66);
+  say('Bracket on the ticket. Flat by 2 45.',0.64);
+}
+function sendCoach(){
+  const b=DESK.best,T=DESK.T,c=DESK.contract;if(!b)return;
+  let pos={};try{pos=JSON.parse(localStorage.getItem('kCoach_pos'))||{};}catch(e){}
+  pos.tk=b.tk;pos.side=T.L?'CALL':'PUT';
+  if(c){pos.strike=c.K;pos.exp=c.exp.toISOString().slice(0,10);}
+  pos.oentry='';pos.stop=n2(T.stop);pos.target=n2(T.t1);pos.qty=pos.qty||'1';
+  localStorage.setItem('kCoach_pos',JSON.stringify(pos));
+  location.href='coach.html';
+}
+function printDesk(){
+  const b=DESK.best,T=DESK.T,c=DESK.contract;if(!b)return;
+  document.getElementById('pdDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+  let d='THE TRADE — '+b.tk+' '+b.sc.side+'  ·  score '+b.sc.score+'/100 (pass line '+passLine()+')\n\n';
+  d+='TRIGGER   $'+n2(T.trig)+'  — 5m close '+(T.L?'above':'below')+' with expanding volume. No trigger, no trade.\n';
+  d+='STOP      $'+n2(T.stop)+'  — structure ('+(T.L?'below':'above')+' VWAP/9EMA shelf). Resting order, immediately.\n';
+  d+='TARGET 1  $'+n2(T.t1)+'  — sell half, stop to breakeven.\n';
+  if(c)d+='CONTRACT  '+b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT')+'  Δ'+c.d.toFixed(2)+'  mid $'+c.mid.toFixed(2)+'  '+c.dte+' DTE\n';
+  d+='\nRULES     Order at MID · bracket on the ticket · half size in lunch · last entry 2:00 · FLAT 2:45 · exit by 21 DTE\n';
+  d+='\nSIGNALS\n'+b.sc.det.map(x=>'  '+(x.ok?'[+'+x.pts+']':'[ 0 ]')+' '+x.lbl+' — '+x.plain.replace(/<[^>]+>/g,'')).join('\n');
+  document.getElementById('printDigest').textContent=d;
+  window.print();
+}
+/* ================= boot ================= */
+async function runDesk(force){
+  drawClock();
+  document.getElementById('riskIn').value=localStorage.getItem('kRisk')||400;
+  await readWorld();
+  await findTrade(force);
+  drawPos();
+}
+document.getElementById('riskIn').addEventListener('input',sizeIt);
+setInterval(drawClock,20000);
+setInterval(drawPos,60000);
+runDesk(false);
+</script>
+</body></html>
