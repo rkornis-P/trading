@@ -32,7 +32,11 @@ button.go{background:var(--gold);color:#000;border:none;border-radius:8px;paddin
 .gc .l{font-size:8px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
 .gc .v{font-size:13px;font-weight:800;color:var(--gold-soft)}
 .gc .v.ok{color:var(--green)} .gc .v.bad{color:var(--red)}
-.alt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;font-size:12px}
+.alt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer}
+.alt:active{border-color:var(--gold)}
+.alt .mk{flex:none;font-size:9px;color:var(--gold-soft);border:1px solid var(--gold);border-radius:5px;padding:2px 6px}
+.go2{display:flex;gap:6px;margin-top:9px}
+.go2 a{flex:1;text-align:center;background:#0F1728;color:var(--gold-soft);border:1px solid var(--gold);border-radius:7px;padding:9px 0;font-weight:800;font-size:11px;text-decoration:none;cursor:pointer}
 .alt .nm{font-weight:800;width:120px;flex:none;color:#fff}
 .alt .dt{color:var(--dim);font-size:11px;flex:1}
 .alt .dl{font-weight:800;color:var(--gold-soft);flex:none}
@@ -149,9 +153,16 @@ async function pick(){
   }
   if(!cands.length){st.textContent='No contracts in the '+dteLo+'–'+dteHi+' DTE window at that delta. Try the next strategy over.';return;}
   cands.sort((a,b)=>a.fit-b.fit);
-  const b=cands[0];
+  PK={cands:cands.slice(0,4),tk,isC,spot,cached:R.cached};
+  renderPick(0);
+  st.textContent=cands.length+' candidates in window · spot $'+(+spot).toFixed(2)+' · tap any alternate to promote it';
+}
+let PK=null;
+function renderPick(ix){
+  const P=PK;if(!P)return;
   const fmt=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  let h='<div class="best"><div class="tag">★ The Contract'+(R.cached?' · chain '+R.cached+'m old':'')+'</div>'
+  const b=P.cands[ix];const tk=P.tk,isC=P.isC;
+  let h='<div class="best"><div class="tag">'+(ix===0?'★ The Contract':'★ Alternate — promoted by you')+(P.cached?' · chain '+P.cached+'m old':'')+'</div>'
     +'<div class="name">'+tk+' <span>'+fmt(b.exp)+' $'+b.K.toFixed(b.K%1?2:0)+' '+(isC?'CALL':'PUT')+'</span></div>'
     +'<div class="grid">'
     +'<div class="gc"><div class="l">Δ Delta</div><div class="v">'+b.delta.toFixed(2)+'</div></div>'
@@ -164,14 +175,23 @@ async function pick(){
     +'<div class="gc"><div class="l">Cost</div><div class="v">$'+(b.mid*100).toFixed(0)+'</div></div>'
     +'</div>'
     +'<div class="verdict '+(b.liqOK?'pass':'fail')+'">'+(b.liqOK?'✓ PASSES the liquidity gate — order at MID, bracket on the ticket':'✗ Liquidity gate: '+(b.spread>0.30?'spread wide ':'')+(b.oi<500?'OI thin':'')+' — trade smaller or pick an alternate')+'</div>'
+    +'<div class="go2"><a onclick="sendToCoach('+ix+')">🧭 COACH THIS CONTRACT</a>'
+    +'<a href="cockpit.html?tk='+tk+'">🎛 COCKPIT '+tk+'</a></div>'
     +'</div>';
-  const alts=cands.slice(1,4);
-  if(alts.length){h+='<div style="font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 6px">Alternates</div>';
-    for(const a of alts)h+='<div class="alt"><span class="nm">'+fmt(a.exp)+' $'+a.K.toFixed(a.K%1?2:0)+'</span>'
+  const others=P.cands.map((a,k)=>({a,k})).filter(x=>x.k!==ix);
+  if(others.length){h+='<div style="font-size:9.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin:4px 0 6px">Alternates — tap one to give it the full card</div>';
+    for(const {a,k} of others)h+='<div class="alt" onclick="renderPick('+k+')"><span class="nm">'+fmt(a.exp)+' $'+a.K.toFixed(a.K%1?2:0)+'</span>'
       +'<span class="dt">mid $'+a.mid.toFixed(2)+' · spr $'+a.spread.toFixed(2)+' · OI '+a.oi.toLocaleString()+' · Θ '+a.thPct.toFixed(1)+'%</span>'
-      +'<span class="dl">Δ'+a.delta.toFixed(2)+'</span></div>';}
-  out.innerHTML=h;
-  st.textContent=cands.length+' candidates in window · spot $'+(+spot).toFixed(2);
+      +'<span class="dl">Δ'+a.delta.toFixed(2)+'</span><span class="mk">'+(k===0?'★ orig':'view')+'</span></div>';}
+  document.getElementById('out').innerHTML=h;
+}
+function sendToCoach(ix){
+  const P=PK;if(!P)return;const b=P.cands[ix];
+  let pos={};try{pos=JSON.parse(localStorage.getItem('kCoach_pos'))||{};}catch(e){}
+  pos.tk=P.tk;pos.side=P.isC?'CALL':'PUT';pos.strike=b.K;
+  pos.exp=b.exp.toISOString().slice(0,10);pos.oentry=b.mid.toFixed(2);pos.qty=pos.qty||'1';
+  localStorage.setItem('kCoach_pos',JSON.stringify(pos));
+  location.href='coach.html';
 }
 </script>
 </body></html>
