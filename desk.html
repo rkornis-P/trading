@@ -56,6 +56,17 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #tBtns{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
 #tBtns button,#tBtns a{flex:1;min-width:86px;text-align:center;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:9px;padding:10px 4px;font-weight:800;font-size:10.5px;cursor:pointer;text-decoration:none;letter-spacing:.04em}
 #tBtns .gold{background:var(--gold);color:#000;border-color:var(--gold)}
+#bench{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+#bench .bh{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.bi{display:flex;align-items:center;gap:9px;padding:8px 6px;border-radius:9px;cursor:pointer;border:1px solid transparent}
+.bi:active{border-color:var(--gold);background:var(--card2)}
+.bi .rk{flex:none;width:18px;font-family:Georgia,serif;font-size:14px;color:var(--dim)}
+.bi .tk2{flex:none;width:56px;font-weight:800;font-size:13px}
+.bi .sd{flex:none;width:44px;font-size:9.5px;font-weight:800;letter-spacing:.05em}
+.bi .sd.C{color:var(--green)}.bi .sd.P{color:var(--red)}
+.bi .px2{flex:1;font-size:10.5px;color:var(--dim)}
+.bi .scb{flex:none;font-family:Georgia,serif;font-size:15px;font-weight:700}
+.bi .scb.pass{color:var(--green)}.bi .scb.watch{color:var(--amber)}.bi .scb.fail{color:var(--red)}
 #riskRow{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 #riskRow .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
 #riskIn{width:80px;background:var(--card2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:7px;font-size:13px;text-align:center}
@@ -135,6 +146,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div id="riskRow">
     <span class="l">Risk $</span><input id="riskIn" type="number" step="50" value="400">
     <span id="riskOut">size appears when the setup is priced</span>
+  </div>
+  <div id="bench" style="display:none">
+    <div class="bh">The bench — tap any name to make it THE TRADE</div>
+    <div id="benchList"></div>
   </div>
   <div id="tBtns">
     <button class="gold" onclick="speakDesk()">🔊 SPEAK</button>
@@ -289,7 +304,7 @@ async function findTrade(force){
   const st=document.getElementById('st');
   let bench=cget('kDeskSPY',5*60000);
   if(!bench||force){try{const {B}=await pull('SPY','5d','5m');bench=analyze(B).chg;cset('kDeskSPY',bench);}catch(e){bench=null;}await sleep(900);}
-  let best=null;
+  let all=[];
   for(const tk of board()){
     st.textContent='Scoring '+tk+'…';
     let d=force?null:cget('kDeskS_'+tk,5*60000);
@@ -300,11 +315,14 @@ async function findTrade(force){
       catch(e){d=null;}
       await sleep(900);
     }
-    if(d&&(!best||d.sc.score>best.sc.score))best={tk,...d};
+    if(d)all.push({tk,...d});
   }
-  if(!best){st.textContent='Board unreadable (rate-limited?) — tap REFRESH in 60s.';return;}
+  if(!all.length){st.textContent='Board unreadable (rate-limited?) — tap REFRESH in 60s.';return;}
+  all.sort((a,b)=>b.sc.score-a.sc.score);
+  DESK.all=all;
+  const best=all[0];
   DESK.best=best;DESK.A=best.A;DESK.sc=best.sc;
-  drawTrade();
+  drawTrade();drawBench();
   st.textContent='';
   await findContract();
 }
@@ -399,6 +417,29 @@ function sizeIt(){
   if(per<=0){out.textContent='—';return;}
   const nC=Math.max(1,Math.floor(risk/per));
   out.innerHTML='≈ $'+per.toFixed(0)+' at risk per contract → <b>'+nC+' contract'+(nC>1?'s':'')+'</b><br>trigger-to-stop '+stopDist.toFixed(2)+' × Δ'+dlt.toFixed(2)+' — <i style="color:var(--dim)">size from risk, never from conviction</i>';
+}
+function drawBench(){
+  const all=DESK.all||[];const w=document.getElementById('bench');
+  if(all.length<2){w.style.display='none';return;}
+  w.style.display='block';
+  const PL=passLine();
+  document.getElementById('benchList').innerHTML=all.map((e,i)=>{
+    const on=e.tk===DESK.best.tk;
+    const cls=e.sc.score>=PL?'pass':e.sc.score>=50?'watch':'fail';
+    return '<div class="bi" style="'+(on?'border-color:var(--gold);background:var(--card2)':'')+'" onclick="promote('+i+')">'+
+      '<span class="rk">'+(i+1)+'</span>'+
+      '<span class="tk2">'+e.tk+'</span>'+
+      '<span class="sd '+e.sc.cls+'">'+e.sc.side+'</span>'+
+      '<span class="px2 mono">$'+e.A.px.toFixed(2)+(e.A.chg!=null?(' '+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%'):'')+'</span>'+
+      '<span class="scb '+cls+'">'+e.sc.score+'</span>'+
+    '</div>';}).join('');
+}
+async function promote(i){
+  const e=(DESK.all||[])[i];if(!e)return;
+  DESK.best=e;DESK.A=e.A;DESK.sc=e.sc;DESK.contract=null;
+  drawTrade();drawBench();
+  await findContract();
+  drawPos();
 }
 /* ================= III. position ================= */
 function drawPos(){
