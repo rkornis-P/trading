@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper Desk · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
+h1{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-soft);text-align:center}
+.sub{text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.08em;margin:3px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px;margin-bottom:10px}
+.sec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin:14px 0 6px}
+input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:10px;font-size:12px;margin-bottom:6px}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+button{flex:1;min-width:80px;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:9px;padding:11px 4px;font-weight:800;font-size:10.5px;cursor:pointer;letter-spacing:.04em}
+button.gold{background:var(--gold);color:#000}
+button.red{border-color:var(--red);color:var(--red)}
+#eq{font-family:Georgia,serif;font-size:30px;font-weight:700;text-align:center}
+#eqSub{text-align:center;font-size:10.5px;color:var(--dim);margin-top:2px}
+#pausedBadge{display:none;text-align:center;color:var(--amber);font-weight:800;font-size:11px;margin-top:6px}
+canvas{width:100%;height:auto;display:block;margin-top:8px}
+.pos{background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:12px;margin-top:8px}
+.pos b{color:var(--gold-soft)}
+.pos .pl.g{color:var(--green);font-weight:800}.pos .pl.r{color:var(--red);font-weight:800}
+.ji{padding:8px 2px;border-bottom:1px solid var(--line);font-size:11.5px;line-height:1.5}
+.ji:last-child{border:none}
+.ji .jt{color:var(--dim);font-size:9px}
+.ji .ja{font-weight:800;letter-spacing:.05em;font-size:10px;padding:1px 7px;border-radius:5px;border:1px solid var(--line);margin-right:6px}
+.ji .ja.ENTER{color:var(--green);border-color:var(--green)}
+.ji .ja.VETO,.ji .ja.PASS,.ji .ja.WAIT,.ji .ja.SKIP{color:var(--amber);border-color:var(--amber)}
+.ji .ja.FLAT-LAW,.ji .ja.KILL,.ji .ja.ERROR{color:var(--red);border-color:var(--red)}
+.ji .ja.MANAGE,.ji .ja.FLAT-CHECK{color:var(--dim)}
+#st{font-size:10px;color:var(--dim);text-align:center;min-height:16px;padding:4px 0}
+.edu{background:#0d1526;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:8px 11px;font-size:11px;line-height:1.55;margin-top:8px}
+.edu b{color:var(--gold-soft)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}
+.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<h1>Paper Desk — The Machine's Own Account</h1>
+<div class="sub">AUTONOMOUS · PAPER MONEY ONLY · THE LAW LIVES IN CODE · CLAUDE HOLDS VETO, NEVER THE PEN</div>
+
+<div class="card" id="setup">
+  <div class="sec" style="margin-top:0">Connect (one time)</div>
+  <input id="wurl" placeholder="Worker URL — https://kornis-autopilot.YOURNAME.workers.dev">
+  <input id="wkey" placeholder="Panel key (the PANEL_KEY secret you set)">
+  <div class="row"><button class="gold" onclick="connect()">CONNECT</button></div>
+</div>
+
+<div id="main" style="display:none">
+<div class="card">
+  <div id="eq">—</div>
+  <div id="eqSub">paper equity</div>
+  <div id="pausedBadge">⏸ PAUSED — the agent will not trade until resumed</div>
+  <canvas id="curve" width="600" height="160"></canvas>
+  <div id="posBox"></div>
+</div>
+
+<div class="row">
+  <button onclick="refresh()">↻ REFRESH</button>
+  <button onclick="runNow()">▶ RUN CYCLE NOW</button>
+  <button id="pauseBtn" onclick="togglePause()">⏸ PAUSE</button>
+  <button class="red" onclick="killFlat()">🛑 FORCE FLAT</button>
+</div>
+<div id="st"></div>
+
+<div class="sec">The Journal — every decision, with its reasoning</div>
+<div class="card" id="journal">loading…</div>
+
+<div class="edu"><b>How to read this experiment:</b> the agent runs on a schedule — scores your board, and only when a setup clears <b>70</b> does it even reach Claude, who can <b>VETO but never invent</b>. Entries are bracket orders (stop + target attached at birth), sized from $500 risk, one trade per day, flat at 2:45 by code. <b>PASS and VETO entries are as important as ENTER</b> — an agent that mostly declines is an agent with standards. Judge it after 60 trades in the Ledger, not after 6.</div>
+</div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="desk.html">DESK</a>
+  <a href="cockpit.html">COCKPIT</a>
+  <a href="paperdesk.html" class="on">PAPER</a>
+  <a href="coach.html">COACH</a>
+  <a href="trades.html">TRADES</a>
+  <a href="ledger.html">LEDGER</a>
+</div>
+
+<script>
+let W=null,K=null;
+function saved(){try{return JSON.parse(localStorage.getItem('kPaper'))||null;}catch(e){return null;}}
+function connect(){
+  W=document.getElementById('wurl').value.trim().replace(/\/$/,'');
+  K=document.getElementById('wkey').value.trim();
+  if(!W||!K){alert('Both fields.');return;}
+  localStorage.setItem('kPaper',JSON.stringify({W,K}));
+  boot();
+}
+async function api(path){
+  const r=await fetch(W+path+(path.includes('?')?'&':'?')+'k='+encodeURIComponent(K));
+  const j=await r.json();
+  if(j.error)throw new Error(j.error);
+  return j;
+}
+async function refresh(){
+  const st=document.getElementById('st');st.textContent='refreshing…';
+  try{
+    const s=await api('/status');
+    document.getElementById('eq').textContent='$'+s.equity.toLocaleString(undefined,{maximumFractionDigits:0});
+    document.getElementById('eqSub').textContent='paper equity · cash $'+s.cash.toLocaleString(undefined,{maximumFractionDigits:0});
+    document.getElementById('pausedBadge').style.display=s.paused?'block':'none';
+    document.getElementById('pauseBtn').textContent=s.paused?'▶ RESUME':'⏸ PAUSE';
+    drawCurve(s.curve||[]);
+    const pb=document.getElementById('posBox');
+    if(s.positions&&s.positions.length){
+      pb.innerHTML=s.positions.map(p=>{
+        const pl=+p.unrealized_pl;
+        return '<div class="pos"><b>'+p.symbol+'</b> '+p.side+' '+p.qty+' @ $'+(+p.avg_entry_price).toFixed(2)+
+        ' · now $'+(+p.current_price).toFixed(2)+' · <span class="pl '+(pl>=0?'g':'r')+'">'+(pl>=0?'+':'')+'$'+pl.toFixed(0)+'</span>'+
+        '<div style="color:var(--dim);font-size:10px;margin-top:2px">bracket is live at the broker — stop and target resting</div></div>';}).join('');
+    }else pb.innerHTML='<div class="pos" style="color:var(--dim)">Flat. Flat is a position.</div>';
+    const jj=await api('/journal');
+    document.getElementById('journal').innerHTML=(jj.journal||[]).map(e=>
+      '<div class="ji"><span class="ja '+(e.a||'')+'">'+(e.a||'?')+'</span><span class="jt">'+(e.ct||'')+'</span><div>'+(e.r||'')+'</div></div>'
+    ).join('')||'<div style="color:var(--dim)">No entries yet — first cron cycle writes here.</div>';
+    st.textContent='updated '+new Date().toLocaleTimeString();
+  }catch(e){st.textContent='⚠ '+e.message;}
+}
+function drawCurve(E){
+  const cv=document.getElementById('curve'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(E.length<2)return;
+  const vals=E.map(e=>e.eq),lo=Math.min(...vals),hi=Math.max(...vals),pad=(hi-lo)*0.1||1;
+  const y=v=>cv.height-8-((v-(lo-pad))/((hi+pad)-(lo-pad)))*(cv.height-16);
+  const x=i=>8+i/(E.length-1)*(cv.width-16);
+  ctx.beginPath();ctx.moveTo(x(0),y(vals[0]));
+  for(let i=1;i<vals.length;i++)ctx.lineTo(x(i),y(vals[i]));
+  ctx.strokeStyle=vals[vals.length-1]>=vals[0]?'#2FB673':'#E05B44';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#7E8AA0';ctx.font='10px sans-serif';
+  ctx.fillText('$'+hi.toLocaleString(undefined,{maximumFractionDigits:0}),10,12);
+  ctx.fillText('$'+lo.toLocaleString(undefined,{maximumFractionDigits:0}),10,cv.height-2);
+}
+async function runNow(){
+  const st=document.getElementById('st');st.textContent='running a cycle…';
+  try{const r=await api('/run');st.textContent='cycle: '+JSON.stringify(r).slice(0,120);refresh();}
+  catch(e){st.textContent='⚠ '+e.message;}
+}
+async function togglePause(){
+  const paused=document.getElementById('pauseBtn').textContent.includes('RESUME');
+  try{await api(paused?'/resume':'/pause');refresh();}catch(e){document.getElementById('st').textContent='⚠ '+e.message;}
+}
+async function killFlat(){
+  if(!confirm('Force the paper account flat and cancel all orders?'))return;
+  try{await api('/flat');refresh();}catch(e){document.getElementById('st').textContent='⚠ '+e.message;}
+}
+function boot(){
+  const s=saved();
+  if(s){W=s.W;K=s.K;
+    document.getElementById('setup').style.display='none';
+    document.getElementById('main').style.display='block';
+    refresh();setInterval(refresh,120000);}
+}
+boot();
+</script>
+</body></html>
