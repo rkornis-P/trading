@@ -3,10 +3,10 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cockpit · Kornis Protocol</title>
 <style>
-:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:10px 8px 84px;max-width:640px;margin:0 auto}
-h1{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:8px}
+h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
 .bar{display:flex;gap:6px;margin-bottom:8px}
 .bar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px;font-size:14px}
 .bar select{background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px;font-size:13px}
@@ -59,6 +59,17 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+
+/* ===== KORNIS INTERIOR KIT — phase two facelift ===== */
+button{border-radius:9px!important;font-weight:800!important;letter-spacing:.05em!important}
+input,select,textarea{border-radius:8px!important;border-color:var(--line)!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important}
+::placeholder{color:#5A6478!important}
+
+#alert{border-radius:10px!important;box-shadow:none!important}
+.lamp{border-radius:8px!important}
+#st{letter-spacing:.02em}
+
 </style></head><body>
 
 <h1>Cockpit — Only What You Need</h1>

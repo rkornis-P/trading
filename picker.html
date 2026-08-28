@@ -3,10 +3,10 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contract Picker · Kornis Protocol</title>
 <style>
-:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;padding:14px 12px 90px;max-width:600px;margin:0 auto}
-h1{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
 .sub{text-align:center;font-size:10px;color:var(--dim);margin-bottom:12px;letter-spacing:.06em}
 .bar{display:flex;gap:6px;margin-bottom:8px}
 .bar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:9px;font-size:14px}
@@ -36,7 +36,7 @@ button.go{background:var(--gold);color:#000;border:none;border-radius:8px;paddin
 .alt:active{border-color:var(--gold)}
 .alt .mk{flex:none;font-size:9px;color:var(--gold-soft);border:1px solid var(--gold);border-radius:5px;padding:2px 6px}
 .go2{display:flex;gap:6px;margin-top:9px}
-.go2 a{flex:1;text-align:center;background:#0F1728;color:var(--gold-soft);border:1px solid var(--gold);border-radius:7px;padding:9px 0;font-weight:800;font-size:11px;text-decoration:none;cursor:pointer}
+.go2 a{flex:1;text-align:center;background:#0D1526;color:var(--gold-soft);border:1px solid var(--gold);border-radius:7px;padding:9px 0;font-weight:800;font-size:11px;text-decoration:none;cursor:pointer}
 .alt .nm{font-weight:800;width:120px;flex:none;color:#fff}
 .alt .dt{color:var(--dim);font-size:11px;flex:1}
 .alt .dl{font-weight:800;color:var(--gold-soft);flex:none}
@@ -47,6 +47,16 @@ button.go{background:var(--gold);color:#000;border:none;border-radius:8px;paddin
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+
+/* ===== KORNIS INTERIOR KIT — phase two facelift ===== */
+button{border-radius:9px!important;font-weight:800!important;letter-spacing:.05em!important}
+input,select,textarea{border-radius:8px!important;border-color:var(--line)!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important}
+::placeholder{color:#5A6478!important}
+
+.gold-card,.pickcard,.cardG{box-shadow:none!important}
+.strike,.cline{font-family:Georgia,serif!important}
+
 </style></head><body>
 
 <h1>Contract Picker</h1>
