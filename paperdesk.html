@@ -40,7 +40,7 @@ canvas{width:100%;height:auto;display:block;margin-top:8px}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 </style></head><body>
 
-<h1>Paper Desk — The Machine's Own Account</h1>
+<h1>Paper Desk — The Machine's Own Account <span style='font-size:8px;color:var(--dim)'>v1.1</span></h1>
 <div class="sub">AUTONOMOUS · PAPER MONEY ONLY · THE LAW LIVES IN CODE · CLAUDE HOLDS VETO, NEVER THE PEN</div>
 
 <div class="card" id="setup">
@@ -66,6 +66,7 @@ canvas{width:100%;height:auto;display:block;margin-top:8px}
   <button class="red" onclick="killFlat()">🛑 FORCE FLAT</button>
 </div>
 <div id="st"></div>
+<div style="text-align:center;margin-top:2px"><span onclick="localStorage.removeItem('kPaper');location.reload()" style="font-size:10px;color:var(--dim);text-decoration:underline;cursor:pointer">change connection / re-enter password</span></div>
 
 <div class="sec">The Journal — every decision, with its reasoning</div>
 <div class="card" id="journal">loading…</div>
@@ -121,7 +122,17 @@ async function refresh(){
       '<div class="ji"><span class="ja '+(e.a||'')+'">'+(e.a||'?')+'</span><span class="jt">'+(e.ct||'')+'</span><div>'+(e.r||'')+'</div></div>'
     ).join('')||'<div style="color:var(--dim)">No entries yet — first cron cycle writes here.</div>';
     st.textContent='updated '+new Date().toLocaleTimeString();
-  }catch(e){st.textContent='⚠ '+e.message;}
+  }catch(e){
+    if(String(e.message).toLowerCase().includes('bad key')){
+      localStorage.removeItem('kPaper');W=null;K=null;
+      document.getElementById('main').style.display='none';
+      const s=document.getElementById('setup');s.style.display='block';
+      s.querySelector('.sec').textContent='Password didn\'t match — enter the worker URL and the password from your paper, then CONNECT';
+      document.getElementById('wurl').value='https://kornis-autopilot.rick-018.workers.dev';
+      return;
+    }
+    st.textContent='⚠ '+e.message;
+  }
 }
 function drawCurve(E){
   const cv=document.getElementById('curve'),ctx=cv.getContext('2d');
