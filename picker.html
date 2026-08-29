@@ -57,7 +57,38 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 .gold-card,.pickcard,.cardG{box-shadow:none!important}
 .strike,.cline{font-family:Georgia,serif!important}
 
+
+/* ===== KORNIS TAPE ===== */
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape::-webkit-scrollbar{display:none}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+
+/* ===== GREEKS LAB ===== */
+#glab{background:var(--panel,#111A2D);border:1.5px solid var(--gold);border-radius:14px;padding:13px;margin:12px 0}
+#glab h3{font-family:Georgia,serif;font-size:14px;color:var(--gold-soft);letter-spacing:.08em;margin-bottom:8px}
+#glab select,#glab .gbtn{background:#0D1526;border:1px solid #1E2A45;border-radius:8px;color:#EBEFF6;padding:8px;font-size:11.5px}
+#glab select{width:100%;margin-bottom:8px;color:var(--gold-soft);font-weight:700}
+#glRow{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
+#glRow .gbtn{flex:1;min-width:60px;text-align:center;cursor:pointer;font-weight:700}
+#glRow .gbtn.on{border-color:var(--gold);color:var(--gold-soft);background:#16223E}
+#glDef{font-size:11.5px;line-height:1.6;margin-bottom:9px}
+#glDef b{color:var(--gold-soft)}
+#glDef .tech{color:#7E8AA0;font-size:10.5px;display:block;margin-top:3px}
+#glGrid{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
+#glGrid th{font-size:8.5px;color:#7E8AA0;text-transform:uppercase;letter-spacing:.06em;padding:4px;border-bottom:1px solid #1E2A45}
+#glGrid td{padding:5px 4px;text-align:center;border-bottom:1px solid #14203A}
+#glGrid td:first-child{text-align:left;color:#7E8AA0;font-size:9.5px}
+#glGrid .gv{font-family:Georgia,serif;font-weight:700}
+#glGrid .up{color:#2FB673}.dn2{color:#E05B44}
+#glGrid .base{background:#16223E;border-radius:6px}
+#glNote{font-size:10.5px;color:#7E8AA0;line-height:1.55;margin-top:8px;border-top:1px solid #1E2A45;padding-top:8px}
+#glNote b{color:var(--gold-soft)}
 </style></head><body>
+<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
 <h1>Contract Picker</h1>
 <div style="text-align:center;font-size:8.5px;color:#8A93A6;letter-spacing:.1em;margin:-4px 0 8px">PICKER v2.1 — tappable alternates</div>
@@ -80,6 +111,32 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <button class="go" onclick="pick()">⚡ FIND MY CONTRACT</button>
 <div id="status">Pick direction + strategy → tap. Uses the cockpit's cached chain when available.</div>
 <div id="out"></div>
+
+
+<div id="glab">
+  <h3>🎓 GREEKS LAB — how the numbers move, so emotion doesn't have to</h3>
+  <select id="glG" onchange="glDraw()">
+    <option value="delta">Δ DELTA — how fast the option tracks the stock</option>
+    <option value="gamma">Γ GAMMA — how delta itself changes as price moves</option>
+    <option value="theta">Θ THETA — the rent you pay for each day</option>
+    <option value="vega">V VEGA — sensitivity to fear (implied volatility)</option>
+    <option value="crush">⚡ IV CRUSH — why earnings coin-flips lose</option>
+    <option value="together">⚖ PUTTING IT TOGETHER — the whole machine</option>
+  </select>
+  <div id="glRow">
+    <div class="gbtn on" data-k="side" data-v="C" onclick="glSet(this)">CALL</div>
+    <div class="gbtn" data-k="side" data-v="P" onclick="glSet(this)">PUT</div>
+    <div class="gbtn on" data-k="mny" data-v="0.70" onclick="glSet(this)">DEEP ITM .70Δ</div>
+    <div class="gbtn" data-k="mny" data-v="0.50" onclick="glSet(this)">ATM .50Δ</div>
+    <div class="gbtn" data-k="mny" data-v="0.30" onclick="glSet(this)">OTM .30Δ</div>
+    <div class="gbtn on" data-k="dte" data-v="7" onclick="glSet(this)">7 DTE</div>
+    <div class="gbtn" data-k="dte" data-v="14" onclick="glSet(this)">14 DTE</div>
+    <div class="gbtn" data-k="dte" data-v="3" onclick="glSet(this)">3 DTE</div>
+  </div>
+  <div id="glDef"></div>
+  <table id="glGrid"></table>
+  <div id="glNote"></div>
+</div>
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
@@ -207,4 +264,110 @@ function sendToCoach(ix){
   location.href='coach.html';
 }
 </script>
+
+<script>
+(function(){
+  var REL='https://kornis-ai-relay.rick-018.workers.dev';
+  var el=document.getElementById('ktape'); if(!el) return;
+  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+  function cell(tk,px,chg){
+    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
+    var sign=chg==null?'':(chg>=0?'+':'');
+    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+  }
+  function paint(data){ el.innerHTML=board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
+  function setC(tk,px,chg){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg}));}catch(e){}}
+  var DATA={};
+  function load(){
+    var tks=board(); var i=0;
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg};}});
+    paint(DATA);
+    function next(){
+      if(i>=tks.length)return;
+      var tk=tks[i++];
+      if(getC(tk)){setTimeout(next,80);return;}
+      fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];break;} }
+        var pc=res.meta&&res.meta.chartPreviousClose;
+        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
+        if(px!=null){DATA[tk]={px:px,chg:chg};setC(tk,px,chg);paint(DATA);}
+      }).catch(function(){}).finally(function(){setTimeout(next,350);});
+    }
+    next();
+  }
+  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
+})();
+</script>
+
+
+<script>
+/* ---- Greeks Lab: self-contained Black-Scholes teaching grid ---- */
+var GL={side:'C',mny:0.70,dte:7,iv:0.45,spot:100};
+function glN(x){var a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;var s=x<0?-1:1;var ax=Math.abs(x)/Math.sqrt(2);var t=1/(1+p*ax);var y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
+function glP(S,K,T,sg,c){if(T<=0)T=1e-6;var st=Math.sqrt(T);var d1=(Math.log(S/K)+(0.05+.5*sg*sg)*T)/(sg*st);var d2=d1-sg*st;return c?S*glN(d1)-K*Math.exp(-0.05*T)*glN(d2):K*Math.exp(-0.05*T)*glN(-d2)-S*glN(-d1);}
+function glD(S,K,T,sg,c){var st=Math.sqrt(T);var d1=(Math.log(S/K)+(0.05+.5*sg*sg)*T)/(sg*st);return c?glN(d1):glN(d1)-1;}
+function glStrike(){ // find strike matching target |delta|
+  var c=GL.side==='C',T=GL.dte/365,tgt=GL.mny;
+  var lo=GL.spot*0.6,hi=GL.spot*1.4;
+  for(var i=0;i<50;i++){var m=(lo+hi)/2;var d=Math.abs(glD(GL.spot,m,T,GL.iv,c));
+    if(c){ if(d>tgt)lo=m;else hi=m; } else { if(d>tgt)hi=m;else lo=m; } }
+  return Math.round((lo+hi)/2*2)/2;
+}
+function glSet(el){
+  var k=el.getAttribute('data-k'),v=el.getAttribute('data-v');
+  GL[k]=(k==='side')?v:parseFloat(v);
+  document.querySelectorAll('#glRow .gbtn[data-k="'+k+'"]').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on');
+  glDraw();
+}
+var GLTXT={
+ delta:{d:'<b>Delta is your share count in disguise.</b> A 0.70-delta contract moves about 70¢ for every $1 the stock moves — like renting 70 shares. <span class="tech">Technical: Δ = ∂option/∂stock. Calls 0→1, puts 0→−1. Deep ITM ≈ mostly real value; OTM ≈ mostly hope.</span>',
+  n:'<b>Trend translation:</b> in an uptrend your call\'s delta GROWS as price rises (see the widening gains down each column) — winners accelerate. This is why the playbook buys 0.65–0.75Δ: high enough to track the trend faithfully, low enough to cost less than shares. If delta feels like it stopped responding, the trend stalled — that\'s a number telling you what boredom used to.'},
+ gamma:{d:'<b>Gamma is delta\'s throttle.</b> It says how much delta itself changes per $1 of stock move. High gamma = your exposure snowballs fast, both directions. <span class="tech">Technical: Γ = ∂Δ/∂S. Peaks at-the-money and explodes near expiry — the 0DTE casino is pure gamma.</span>',
+  n:'<b>Trend translation:</b> gamma is why ATM options near expiry feel like lightning — tiny stock moves whip the option around. Deep ITM has LOW gamma: steadier, more share-like, easier to hold through trend wiggles. Compare the grid at 3 DTE vs 14 DTE: same stock moves, wilder option swings short-dated. Discipline rule: if you want gamma\'s lottery, you\'re not trend-trading anymore.'},
+ theta:{d:'<b>Theta is the rent.</b> Every day that passes, the option loses this much value even if the stock does NOTHING. You are paying for time; the seller is collecting it. <span class="tech">Technical: Θ = ∂option/∂t, quoted per day. Accelerates as expiry nears; hits ATM hardest in dollar terms relative to hope-value.</span>',
+  n:'<b>Trend translation:</b> read ACROSS a row — same stock price, days passing, value bleeding. A stalled trend isn\'t neutral for you; it\'s a slow loss. This is the math behind the time-stop: if the move hasn\'t come, the rent is eating the thesis. Deep ITM softens theta (most of the price is real value, not melting hope) — another reason it\'s the playbook vehicle. Sideways + long options = losing. The gauges\' THETA WAR panel is this exact battle, live.'},
+ vega:{d:'<b>Vega is your exposure to fear itself.</b> When implied volatility rises, ALL options get pricier (panic premium); when it falls, they deflate — stock unchanged. <span class="tech">Technical: V = ∂option/∂IV per 1 vol point. Biggest in longer-dated and ATM contracts.</span>',
+  n:'<b>Trend translation:</b> the grid below is computed at three IV levels — same stock, three different option prices. Buy when IV is pumped (pre-news, after a scare) and the trend has to overcome DEFLATION as fear fades. Buy in quiet IV and vega becomes tailwind if volatility wakes. Rule of numbers: check IV percentile before entry; buying calls at 90th-percentile IV is buying umbrellas mid-hurricane.'},
+ crush:{d:'<b>IV crush is vega\'s ambush.</b> Before earnings, IV inflates because the move is COMING. The instant numbers print, uncertainty dies — IV collapses — and every option deflates at once, winners included. <span class="tech">Technical: event risk premium removal; front expiries can lose 20–40 IV points in minutes.</span>',
+  n:'<b>Trend translation:</b> this is the math behind the NVDA rule you followed Wednesday. Stock up 4% on great earnings, call BARELY profitable or red, because crush ate the vega value. The grid shows the same contract at IV 60 → 35: that gap is what evaporates at the bell no matter which way the stock goes. The professional plays the day AFTER: direction known, IV cheap, delta clean. You didn\'t miss the coin flip — you declined the rigged one.'},
+ together:{d:'<b>One trade, four forces.</b> Delta earns from direction. Gamma bends delta as the move extends. Theta bleeds you for every flat hour. Vega swings with the fear index. Your P/L every minute = the sum of the four. <span class="tech">P&L ≈ Δ·ΔS + ½Γ·ΔS² + Θ·Δt + V·ΔIV.</span>',
+  n:'<b>The playbook in Greek:</b> deep ITM (high Δ, low Γ, soft Θ, modest V) + 5–10 DTE + a trending, fueled stock = a position where DIRECTION dominates the equation and the other three are noise you\'ve minimized. That is the entire Kornis vehicle doctrine expressed in four letters. When the trade feels bad, ask WHICH Greek is talking: not moving (theta), moving against (delta), whipping (gamma), or deflating on no news (vega). Name the force — then apply that force\'s rule, not your stomach\'s.'}
+};
+function glDraw(){
+  var g=document.getElementById('glG').value;
+  var c=GL.side==='C';
+  var K=glStrike();
+  var moves=[-3,-1.5,0,1.5,3];
+  var days=(g==='theta'||g==='together')?[0,1,3,5]:[0,1,3];
+  var ivs=(g==='vega')?[0.30,0.45,0.60]:(g==='crush'?[0.60,0.35]:[GL.iv]);
+  document.getElementById('glDef').innerHTML=GLTXT[g].d;
+  document.getElementById('glNote').innerHTML=GLTXT[g].n+
+    '<br><br><i>Sample contract: $'+GL.spot+' stock · $'+K+' '+(c?'call':'put')+' · '+GL.dte+' DTE · '+(GL.mny*100).toFixed(0)+'Δ target'+(g==='vega'||g==='crush'?'':' · IV '+(GL.iv*100).toFixed(0)+'%')+'. Prices per share; ×100 per contract.</i>';
+  var base=glP(GL.spot,K,GL.dte/365,ivs[0],c);
+  var html='<tr><th>Stock</th>';
+  ivs.forEach(function(iv){ days.forEach(function(d){
+    html+='<th>'+(ivs.length>1?('IV'+(iv*100).toFixed(0)+' '):'')+(d===0?'now':'+'+d+'d')+'</th>'; });});
+  html+='</tr>';
+  moves.forEach(function(mv){
+    var S=GL.spot*(1+mv/100);
+    html+='<tr><td>'+(mv>0?'+':'')+mv+'% $'+S.toFixed(1)+'</td>';
+    ivs.forEach(function(iv){ days.forEach(function(d){
+      var T=Math.max(GL.dte-d,0.05)/365;
+      var v=glP(S,K,T,iv,c);
+      var pl=(v-base)*100;
+      var cls=pl>1?'up':(pl<-1?'dn2':'');
+      var isBase=(mv===0&&d===0&&iv===ivs[0]);
+      html+='<td class="'+(isBase?'base':'')+'"><span class="gv '+cls+'">'+(pl>=0?'+':'')+pl.toFixed(0)+'</span></td>';
+    });});
+    html+='</tr>';
+  });
+  document.getElementById('glGrid').innerHTML=html;
+}
+glDraw();
+</script>
+
 </body></html>
