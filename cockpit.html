@@ -79,6 +79,17 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 .ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
 .ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+
+/* ===== THE READ ===== */
+#readPanel{background:var(--panel,#111A2D);border:1px solid var(--line,#1E2A45);border-radius:12px;padding:10px 12px;margin:8px 0}
+.rp-h{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#7E8AA0;margin-bottom:6px}
+.rp-h span:last-child{color:var(--gold-soft)}
+.rpr{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #14203A;align-items:start}
+.rpr:last-child{border-bottom:none}
+.rpr .nm{font-size:10px;font-weight:800;letter-spacing:.06em;padding-top:1px}
+.rpr .nm.g{color:#2FB673}.rpr .nm.r{color:#E05B44}.rpr .nm.a{color:#E0A93F}.rpr .nm.n{color:#7E8AA0}
+.rpr .rel{font-size:11px;color:#EBEFF6;font-variant-numeric:tabular-nums}
+.rpr .why{font-size:10.5px;color:#7E8AA0;line-height:1.45;margin-top:2px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
@@ -99,6 +110,11 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <canvas id="cv" height="404"></canvas>
 <div id="status">Enter ticker → PULL. Auto-refreshes every 45s.</div>
 
+<div id="readPanel" style="display:none">
+  <div class="rp-h"><span>THE READ — where price stands, and what each line means</span><span id="rpSide"></span></div>
+  <div id="rpRows"></div>
+</div>
+
 <div class="strip" id="gkStrip">
   <div class="gk"><div class="l">Δ Delta</div><div class="v" id="g_d">—</div></div>
   <div class="gk"><div class="l">Γ Gamma</div><div class="v" id="g_g">—</div></div>
@@ -109,7 +125,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 </div>
 
 <div class="pos">
-  <select id="dir"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
+  <select id="dir" onchange="draw();drawRead();"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
   <input id="entry" type="number" step="0.01" placeholder="Entry">
   <input id="stop" type="number" step="0.01" placeholder="Stop">
   <input id="target" type="number" step="0.01" placeholder="Target">
@@ -172,6 +188,18 @@ function vwapAll(t,h,l,c,v){const o=[];let pv=0,vv=0,day=null;for(let i=0;i<c.le
 function rsiAll(c,p){p=p||14;const o=new Array(c.length).fill(null);let g=0,l=0;for(let i=1;i<=p&&i<c.length;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}g/=p;l/=p;if(c.length>p)o[p]=100-100/(1+(l===0?100:g/l));for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;o[i]=100-100/(1+(l===0?100:g/l));}return o;}
 function macdAll(c){const a=emaAll(c,12),b=emaAll(c,26);const m=c.map((_,i)=>a[i]-b[i]);const s=emaAll(m,9);return{m,s,hist:m.map((x,i)=>x-s[i])};}
 function momAll(c,p){p=p||12;return c.map((x,i)=>i<p?null:x-c[i-p]);}
+function structLevels(){
+  if(!BARS)return null;const T=BARS.T,H=BARS.H,L=BARS.L,C=BARS.C;
+  const days=[];let cur=[];let d0=null;
+  for(let i=0;i<T.length;i++){const d=new Date(T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+    if(d0!==null&&d!==d0){days.push(cur);cur=[];}d0=d;cur.push(i);}
+  days.push(cur);
+  const today=days[days.length-1],prior=days.length>1?days[days.length-2]:null;
+  const o={};
+  if(prior&&prior.length){o.pdh=Math.max(...prior.map(i=>H[i]));o.pdl=Math.min(...prior.map(i=>L[i]));o.pdc=C[prior[prior.length-1]];}
+  if(today&&today.length){o.orH=H[today[0]];o.orL=L[today[0]];o.dayHi=Math.max(...today.map(i=>H[i]));o.dayLo=Math.min(...today.map(i=>L[i]));}
+  return o;
+}
 function adxAll(H,L,C,p){p=p||14;const n=C.length;const tr=[],pdm=[],ndm=[];
   for(let i=0;i<n;i++){if(i===0){tr.push(H[0]-L[0]);pdm.push(0);ndm.push(0);continue;}
     const up=H[i]-H[i-1],dn=L[i-1]-L[i];
@@ -212,8 +240,8 @@ async function loadAll(){
   if(!b){st.innerHTML='<b>No history at any interval.</b> The worker needs the v4.2 ?hist route — repaste worker code + API key in Cloudflare.';return;}
   BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12),adx:adxAll(b.H,b.L,b.C,14)};
   st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString();
-  loadChain(tk);draw();health();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();}},45000);
+  loadChain(tk);draw();health();drawRead();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();}},45000);
 }
 let CHAIN_RETRY=null;
 function loadChain(tk){
@@ -355,6 +383,10 @@ function draw(){
     ctx.beginPath();ctx.moveTo(0,y(v));ctx.lineTo(W-padR,y(v));ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.stroke();ctx.restore();
     ctx.fillStyle=col;ctx.font='700 9px sans-serif';ctx.fillText(lbl+' '+n2(v),W-padR+2,y(v)+3);};
   if(LVL){hline(LVL.cw,'#E05B44','CW',true);hline(LVL.pw,'#2FB673','PW',true);hline(LVL.mp,'#E0A93F','MP',true);}
+  /* structural walls — always drawn from the tape itself */
+  const SL=structLevels();
+  if(SL){hline(SL.pdh,'rgba(224,169,63,0.75)','PDH',true);hline(SL.pdl,'rgba(224,169,63,0.75)','PDL',true);
+    hline(SL.pdc,'rgba(126,138,160,0.8)','PDC',true);hline(SL.orH,'rgba(217,180,74,0.55)','ORH',true);hline(SL.orL,'rgba(217,180,74,0.55)','ORL',true);}
   hline(E,'#D9B44A','E');hline(S,'#E05B44','S');hline(Tg,'#2FB673','T');
   /* last price */
   const last=BARS.C[n-1];
@@ -395,9 +427,70 @@ function draw(){
     const al=document.getElementById('h_adx');if(al&&av!=null)al.className='lp '+(av>=25?'ok':av>=20?'warn':'bad');
   }
 }
+
+/* ---- THE READ: every indicator, price relation, one-sentence meaning ---- */
+function drawRead(){
+  const P=document.getElementById('readPanel');if(!BARS){P.style.display='none';return;}
+  P.style.display='block';
+  const n=BARS.C.length-1,px=BARS.C[n],L=document.getElementById('dir').value==='long';
+  document.getElementById('rpSide').textContent=(BARS.tk||'')+' · reading for '+(L?'CALLS':'PUTS');
+  const rel=(v)=>{if(v==null)return null;const d=px-v;return {d,pct:d/v*100,above:d>=0};};
+  const fmtRel=(r,lbl)=>r==null?'—':(r.above?'above ':'below ')+lbl+' by $'+Math.abs(r.d).toFixed(2)+' ('+Math.abs(r.pct).toFixed(2)+'%)';
+  const good=(above)=>L?above:!above;   /* is being above good for this side? */
+  const rows=[];
+  const SL=structLevels()||{};
+  /* 9 EMA */
+  {const r=rel(BARS.e9[n]);const ok=good(r.above);
+   rows.push(['9 EMA',ok?'g':'r',fmtRel(r,'$'+n2(BARS.e9[n])),ok?'Riding the fast average — momentum is current, hold while it holds.':'On the wrong side of the ride line — the short-term move against you is live; this is the scalp exit line.']);}
+  /* 20 SMA */
+  {const r=rel(BARS.s20[n]);const ok=good(r.above);const x9=L?BARS.e9[n]>BARS.s20[n]:BARS.e9[n]<BARS.s20[n];
+   rows.push(['20 SMA',ok?(x9?'g':'a'):'r',fmtRel(r,'$'+n2(BARS.s20[n]))+(x9?' · 9 over 20 aligned':' · 9/20 NOT aligned'),ok?(x9?'The hundred-minute trend agrees with the short-term one — the textbook alignment.':'Price is right but the averages haven\'t crossed yet — early, needs confirmation.'):'Below the slow average — the broader intraday trend is against this side.']);}
+  /* VWAP */
+  {const r=rel(BARS.vw[n]);const ok=good(r.above);
+   rows.push(['VWAP',ok?'g':'r',fmtRel(r,'$'+n2(BARS.vw[n])),ok?'The day\'s crowd paid less than this — they\'re in profit and defending; your side owns the session.':'The average buyer today is underwater on your side — the crowd is against you; two closes here = character change.']);}
+  /* Bollinger */
+  {const u=BARS.bb.u[n],l=BARS.bb.l[n],m=BARS.bb.m[n];let s='n',t='',w='';
+   if(u!=null){const pos=(px-l)/((u-l)||1);t='at '+(pos*100).toFixed(0)+'% of the band ($'+n2(l)+'–$'+n2(u)+')';
+     if(pos>0.95){s=L?'a':'g';w=L?'Riding the upper band — strong, but stretched: no chasing here, trail instead.':'Pinned to the upper band — for puts this is the stretch that snaps back.';}
+     else if(pos<0.05){s=L?'g':'a';w=L?'At the lower band — washed out; for calls this is where reclaims start, not where you chase down.':'Riding the lower band — strong for puts, but stretched: trail, don\'t add.';}
+     else if(pos>0.5){s=L?'g':'r';w=L?'Upper half of the band — buyers in control with room to the top.':'Upper half — puts are fighting the band\'s lean.';}
+     else{s=L?'r':'g';w=L?'Lower half — calls are fighting the band\'s lean.':'Lower half — sellers in control with room to the bottom.';}}
+   rows.push(['BOLL',s,t||'—',w||'Insufficient bars.']);}
+  /* RSI */
+  {const v=BARS.rsi[n];let s='n',w='';
+   if(v!=null){const okL=v>=45&&v<=72,okS=v>=28&&v<=55;const ok=L?okL:okS;s=ok?'g':(v>72||v<28?'a':'r');
+     w=v>72?'Stretched hot — momentum is real but late; entries here are chasing.':v<28?'Washed out — sellers exhausted; puts here are chasing, calls need a reclaim first.':ok?'Momentum in the healthy zone with room left to run.':'Momentum is leaning the other way — this side lacks thrust right now.';
+     rows.push(['RSI 14',s,v.toFixed(0)+(v>=50?' — above 50 (bullish half)':' — below 50 (bearish half)'),w]);}}
+  /* MACD */
+  {const mh=BARS.macd.hist;const a=mh[n],b=mh[n-1];const grow=Math.abs(a)>=Math.abs(b);const bull=a>0;
+   const ok=L?(bull&&grow)||(a>b):(!bull&&grow)||(a<b);
+   rows.push(['MACD',ok?'g':'r',(bull?'positive':'negative')+' histogram, '+(grow?'growing':'shrinking'),ok?'Acceleration is with you — the engine turns before price; this is the earliest confirmation.':'Deceleration against you — reversals show here 2–4 candles before the 9 EMA breaks; stop adding.']);}
+  /* Momentum */
+  {const v=BARS.mom[n];if(v!=null){const ok=L?v>0:v<0;
+   rows.push(['MOM 12',ok?'g':'r',(v>=0?'+':'')+v.toFixed(2)+' over the last hour',ok?'The last hour is net in your favor — thrust confirms the tape.':'The last hour is net against you even if the current candle looks fine — slow bleeds start here.']);}}
+  /* ADX */
+  {const A=BARS.adx;if(A){const v=A.adx[n],p=A.pdi[n],q=A.ndi[n];if(v!=null){const s=v>=25?'g':v>=20?'a':'r';const dom=p>q?'+DI leads (buyers)':'−DI leads (sellers)';
+   rows.push(['ADX 14',s,v.toFixed(0)+' · '+dom,v>=25?'A real trend exists — trend-following rules apply; trail the 9 EMA and let winners run.':v>=20?'A trend is forming — breakouts are starting to stick; be ready, not early.':'Chop — breakouts fail and theta wins; no new trend trades until this rises.']);}}}
+  /* Structure */
+  if(SL.pdh){const r1=rel(SL.pdh),r2=rel(SL.pdl);let s,t,w;
+   if(px>SL.pdh){s=L?'g':'r';t='above yesterday\'s high ($'+n2(SL.pdh)+')';w=L?'Breaking yesterday\'s high — trapped shorts fuel calls; hold above it or it\'s a failed break.':'Above yesterday\'s high — puts here are fighting fresh breakout buyers.';}
+   else if(px<SL.pdl){s=L?'r':'g';t='below yesterday\'s low ($'+n2(SL.pdl)+')';w=L?'Below yesterday\'s low — calls are catching a knife; wait for a reclaim.':'Breaking yesterday\'s low — trapped longs fuel puts; hold below it or it\'s a failed break.';}
+   else{s='a';t='inside yesterday\'s range ($'+n2(SL.pdl)+'–$'+n2(SL.pdh)+')';w='Inside the prior range — no one is trapped yet; the break of either edge is the event.';}
+   rows.push(['PD RANGE',s,t,w]);}
+  if(SL.orH){let s,t,w;
+   if(px>SL.orH){s=L?'g':'r';t='above the opening range high ($'+n2(SL.orH)+')';w=L?'Opening-range breakout held — the day\'s first decision went to buyers.':'Above the opening range — the morning voted against puts.';}
+   else if(px<SL.orL){s=L?'r':'g';t='below the opening range low ($'+n2(SL.orL)+')';w=L?'Below the opening range — the morning voted against calls.':'Opening-range breakdown held — the day\'s first decision went to sellers.';}
+   else{s='a';t='inside the opening range ($'+n2(SL.orL)+'–$'+n2(SL.orH)+')';w='Still inside the first five minutes\' range — the day has not chosen; no trigger exists yet.';}
+   rows.push(['OPEN RANGE',s,t,w]);}
+  if(LVL&&LVL.cw&&LVL.pw){const dc=LVL.cw-px,dp=px-LVL.pw;
+   rows.push(['WALLS',dc>0&&dp>0?'a':'n','$'+dc.toFixed(2)+' below the call wall ($'+n2(LVL.cw)+') · $'+dp.toFixed(2)+' above the put wall ($'+n2(LVL.pw)+')',
+     'The walls are where dealers defend — expect stalls at the first touch; a third test usually breaks. Targets live just inside them.']);}
+  document.getElementById('rpRows').innerHTML=rows.map(r=>'<div class="rpr"><div class="nm '+r[1]+'">'+r[0]+'</div><div><div class="rel">'+r[2]+'</div><div class="why">'+r[3]+'</div></div></div>').join('');
+}
+
 window.addEventListener('resize',draw);
 document.getElementById('dir').addEventListener('change',()=>{if(BARS){loadChain(BARS.tk);health();}});
-['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();}));
+['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();}));
 
 /* ---------- health + alerts ---------- */
 function lamp(id,state){const el=document.getElementById('h_'+id);el.className='lp '+(state===1?'ok':state===0?'bad':'warn');return state===1?1:0;}
