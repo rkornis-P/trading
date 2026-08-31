@@ -97,6 +97,14 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #riskOut b{color:var(--gold-soft);font-size:13px}
 
 /* position */
+#briefCard{margin-top:8px}
+#briefNote{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:9px;color:#fff;padding:9px;font-size:12px;min-height:54px;resize:vertical;font-family:inherit}
+#briefBtns{display:flex;gap:6px;margin:8px 0}
+#briefBtns button{flex:1;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:9px;padding:10px 4px;font-weight:800;font-size:10.5px;cursor:pointer;letter-spacing:.04em}
+#briefBtns .gold{background:var(--gold);color:#000}
+#briefOut{font-size:12px;line-height:1.65;white-space:pre-wrap;display:none;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+#briefOut b{color:var(--gold-soft)}
+#briefSt{font-size:10px;color:var(--dim);min-height:14px}
 #posCard{display:none}
 #posCard.show{display:block}
 #pTop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
@@ -161,7 +169,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.3</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.4</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The Read — what world did we wake up in</span></div>
@@ -201,6 +209,18 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
     <a id="toCock" href="cockpit.html">COCKPIT</a>
     <button onclick="printDesk()">🖨 PRINT</button>
   </div>
+</div>
+
+<div class="sec"><span class="n">II½ · The Brief — the argument behind the numbers</span></div>
+<div class="card" id="briefCard">
+  <textarea id="briefNote" placeholder="Overnight context (optional): paste headlines, futures, what you saw on the London read… e.g. 'Kospi −3.5%, oil +2% on Hormuz strike, Warsh hawkish'"></textarea>
+  <div id="briefBtns">
+    <button class="gold" onclick="writeBrief()">🧠 WRITE THE BRIEF</button>
+    <button onclick="printBrief()">🖨 PRINT</button>
+    <button onclick="speakBrief()">🔊 READ</button>
+  </div>
+  <div id="briefSt">Scores the whole board, then writes a ranked pre-market argument — calls and puts — with triggers, in both languages. Saves to the Library.</div>
+  <div id="briefOut"></div>
 </div>
 
 <div class="sec"><span class="n">III · Your Position — live</span></div>
@@ -636,6 +656,58 @@ function printDesk(){
   d+='\nSIGNALS\n'+b.sc.det.map(x=>'  '+(x.ok?'[+'+x.pts+']':'[ 0 ]')+' '+x.lbl+' — '+x.plain.replace(/<[^>]+>/g,'')).join('\n');
   document.getElementById('printDigest').textContent=d;
   window.print();
+}
+
+
+/* ================= THE BRIEF — board narrative via the relay ================= */
+let BRIEF='';
+async function writeBrief(){
+  const st=document.getElementById('briefSt');const out=document.getElementById('briefOut');
+  if(!DESK.all||!DESK.all.length){st.textContent='Scoring the board first…';await findTrade(false);}
+  if(!DESK.all||!DESK.all.length){st.textContent='Board unreadable — try REFRESH.';return;}
+  st.textContent='Writing… (15–25 seconds)';
+  const r=DESK.read||{};const note=document.getElementById('briefNote').value.trim();
+  const ct=ctNow();const when=ct.toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  const rows=DESK.all.map(e=>{const A=e.A;return e.tk+': px '+n2(A.px)+' ('+(A.chg!=null?(A.chg>=0?'+':'')+A.chg.toFixed(1)+'%':'')+') · best side '+e.sc.side+' '+e.sc.score+'/100 · signals '+e.sc.det.map(d=>(d.ok?'+':'-')+d.lbl).join(' ')+' · VWAP '+n2(A.vw)+' 9EMA '+n2(A.e9)+' RSI '+A.rsi.toFixed(0)+' RVOL '+(A.rvol?A.rvol.toFixed(2):'?')+' ATR '+n2(A.atr)+' · PDH '+n2(A.pdh)+' PDL '+n2(A.pdl)+' PDC '+n2(A.pdc)+' · ORH '+n2(A.orH)+' ORL '+n2(A.orL)+' dayHi '+n2(A.dayHi)+' dayLo '+n2(A.dayLo);}).join('\n');
+  const sys='You are the pre-market strategist for the Kornis Protocol, an options scalping rulebook: deep ITM 0.65-0.75 delta, 5-10 DTE, triggers are 5-minute candle CLOSES beyond structure (opening-range high/low, prior-day high/low) WITH volume >=1.2x prior bars, stops are structural (VWAP/9EMA shelf), half off at T1 then stop to breakeven, no new risk 11:00-12:30 CT, last entry 2:00, flat by 2:45, bracket (OTOCO) on every ticket, never buy a gap, one name per day. '+
+   'Write a printable brief for a disciplined trader who wants to learn: rank the board for BOTH sides. Format exactly:\n'+
+   'REGIME: one paragraph on the overnight/tape context and what kind of day it favors.\n'+
+   'CALL CANDIDATES: ranked #1.. with for each: ticker, thesis (2-3 sentences, technical terms then plain English), exact trigger (level + volume condition), stop level, T1, vehicle (strike zone/delta/DTE), and the one thing that would kill the idea.\n'+
+   'PUT CANDIDATES: same format.\n'+
+   'THE MORNING SCRIPT: 5-7 numbered steps from 8:15 to first trade, by the rulebook.\n'+
+   'THE TRAP OF THE DAY: the single mistake this tape invites, in two sentences.\n'+
+   'Be specific with the numbers given. Never invent a catalyst not in the data or the note. Plain text, no markdown symbols other than line breaks.';
+  const user='Time: '+when+' CT. Overnight read: ES '+(r.es&&r.es.chg!=null?r.es.chg.toFixed(2)+'%':'?')+', NQ '+(r.nq&&r.nq.chg!=null?r.nq.chg.toFixed(2)+'%':'?')+(r.nq&&r.nq.pos!=null?', NQ at '+(r.nq.pos*100).toFixed(0)+'% of its overnight range':'')+'.\nTrader note: '+(note||'(none)')+'\nBoard (5m data, 5 days):\n'+rows;
+  try{
+    const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1400,system:sys,messages:[{role:'user',content:user}]})});
+    const j=await resp.json();
+    const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    if(!txt)throw new Error(j.error?JSON.stringify(j.error).slice(0,120):'empty reply');
+    BRIEF=txt;
+    out.style.display='block';
+    out.innerHTML=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/^(REGIME|CALL CANDIDATES|PUT CANDIDATES|THE MORNING SCRIPT|THE TRAP OF THE DAY)(:?)/gm,'<b>$1$2</b>');
+    st.textContent='Brief written '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · saved to the Library.';
+    try{const L=JSON.parse(localStorage.getItem('kLibrary'))||[];L.unshift({t:Date.now(),topic:'Morning Brief',q:'Board brief — '+when+(note?(' · '+note.slice(0,80)):''),a:txt});while(L.length>300)L.pop();localStorage.setItem('kLibrary',JSON.stringify(L));}catch(e){}
+  }catch(e){st.textContent='⚠ '+e.message;}
+}
+function printBrief(){
+  if(!BRIEF){alert('Write the brief first.');return;}
+  document.getElementById('pdDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
+  const b=DESK.best;
+  let d='THE BRIEF — '+ctNow().toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' CT\n';
+  d+='Board: '+(DESK.all||[]).map(e=>e.tk+' '+e.sc.side+' '+e.sc.score).join(' · ')+'\n';
+  const note=document.getElementById('briefNote').value.trim();if(note)d+='Context: '+note+'\n';
+  d+='\n'+BRIEF+'\n\n';
+  if(b&&DESK.T){const T=DESK.T;d+='DESK FEATURED SETUP: '+b.tk+' '+b.sc.side+' '+b.sc.score+'/100 · trigger '+n2(T.trig)+' · stop '+n2(T.stop)+' · T1 '+n2(T.t1)+'\n';}
+  d+='\nRULES: bracket on the ticket · half at T1, stop to breakeven · no new risk 11:00–12:30 · last entry 2:00 · FLAT 2:45 · never buy the gap';
+  document.getElementById('printDigest').textContent=d;
+  window.print();
+}
+function speakBrief(){
+  if(!BRIEF||!('speechSynthesis' in window))return;
+  const parts=BRIEF.split(/\n+/).filter(Boolean);
+  parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}});
 }
 
 /* ================= SENTINEL — 8:35 recompose + 5-min close watch ================= */
