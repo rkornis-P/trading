@@ -32,6 +32,18 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .rc .v.up{color:var(--green)}.rc .v.dn{color:var(--red)}.rc .v.fl{color:var(--amber)}
 
 /* the trade */
+#sentinel{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--dim)}
+#sentinel label{display:flex;gap:8px;align-items:center;color:var(--ink);cursor:pointer}
+#sentinel input{accent-color:#BF9000}
+#sentSt{margin-top:4px;font-size:10px}
+#fireBanner{display:none;background:linear-gradient(160deg,#2a2208,#16223E);border:2px solid var(--gold-soft);border-radius:14px;padding:12px;margin-bottom:8px;animation:fbp 1.2s ease-in-out infinite alternate}
+#fireBanner.on{display:block}
+@keyframes fbp{from{box-shadow:0 0 0 rgba(217,180,74,0)}to{box-shadow:0 0 18px rgba(217,180,74,.55)}}
+#fireBanner .fb-t{font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--gold-soft);letter-spacing:.08em}
+#fireBanner .fb-d{font-size:11.5px;line-height:1.5;margin:4px 0 8px}
+#fireBanner .fb-b{display:flex;gap:6px}
+#fireBanner .fb-b button{flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px 4px;font-weight:800;font-size:10px;cursor:pointer}
+#fireBanner .fb-b button:last-child{background:var(--card2);color:var(--dim);border:1px solid var(--line)}
 #trade{border:1.5px solid var(--gold);background:linear-gradient(165deg,#152039,var(--card))}
 #tTop{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
 #tTk{font-family:Georgia,serif;font-size:26px;font-weight:700;letter-spacing:.02em}
@@ -67,6 +79,17 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .bi .px2{flex:1;font-size:10.5px;color:var(--dim)}
 .bi .scb{flex:none;font-family:Georgia,serif;font-size:15px;font-weight:700}
 .bi .scb.pass{color:var(--green)}.bi .scb.watch{color:var(--amber)}.bi .scb.fail{color:var(--red)}
+#tTicket{display:none;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+#tTicket .th{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#tTicket .th span:last-child{font-size:9px;color:var(--gold-soft)}
+#tkIn{display:flex;gap:6px;align-items:center;margin-bottom:8px;font-size:10.5px;color:var(--dim)}
+#tkIn input{width:70px;background:var(--card2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:6px;font-size:12px;text-align:center}
+.leg{display:grid;grid-template-columns:86px 1fr;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.leg:last-child{border-bottom:none}
+.leg .ln{font-size:9.5px;font-weight:800;letter-spacing:.06em;color:var(--dim)}
+.leg .lv{font-family:Georgia,serif;font-size:14px;font-weight:700}
+.leg .lv.g{color:var(--green)}.leg .lv.r{color:var(--red)}.leg .lv.gold{color:var(--gold-soft)}
+.leg .ld{font-size:10px;color:var(--dim);margin-top:1px}
 #riskRow{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 #riskRow .l{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
 #riskIn{width:80px;background:var(--card2);border:1px solid var(--line);border-radius:7px;color:#fff;padding:7px;font-size:13px;text-align:center}
@@ -138,7 +161,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.1</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.3</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The Read — what world did we wake up in</span></div>
@@ -148,11 +171,21 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </div>
 
 <div class="sec"><span class="n">II · The Trade — today's definitive setup</span><span class="x" onclick="runDesk(true)">↻ REFRESH</span></div>
+<div id="sentinel">
+  <label><input type="checkbox" id="autoW" checked> 🔔 SENTINEL — recompose at 8:35, watch every 5-min close, speak when the trigger fires</label>
+  <div id="sentSt">armed · waiting for the opening range</div>
+</div>
+<div id="fireBanner"><div class="fb-t" id="fbT">TRIGGER FIRED</div><div class="fb-d" id="fbD"></div><div class="fb-b"><button onclick="printDesk()">🖨 PRINT SETUP + TICKET</button><button onclick="speakDesk()">🔊 READ IT</button><button onclick="document.getElementById('fireBanner').classList.remove('on')">DISMISS</button></div></div>
 <div class="card" id="trade">
   <div id="tTop"><span id="tTk" class="mono">—</span><span id="tSide" class="N">SCANNING</span></div>
   <div id="tScore">running the board…</div>
   <div id="tRows"></div>
   <div id="tContract" class="trow" style="display:none"></div>
+  <div id="tTicket">
+    <div class="th"><span>The Ticket — OTOCO, ready to type</span><span>delta math done for you</span></div>
+    <div id="tkIn">E (your option fill) $<input id="tkE" type="number" step="0.01"> <span>· defaults to the live mid; overwrite with your real fill</span></div>
+    <div id="tkLegs"></div>
+  </div>
   <div id="riskRow">
     <span class="l">Risk $</span><input id="riskIn" type="number" step="50" value="400">
     <span id="riskOut">size appears when the setup is priced</span>
@@ -250,7 +283,14 @@ function analyze(B5){
   const orH=B[0].h,orL=B[0].l;
   const dayHi=Math.max(...B.map(b=>b.h)),dayLo=Math.min(...B.map(b=>b.l));
   const chg=pdc?(px-pdc)/pdc*100:null;
-  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atr,atrP:atr/px*100,up15,up60,pdh,pdl,pdc,gapP,orH,orL,dayHi,dayLo};
+  /* closed-candle logic: if the last bar is still forming (<90s old), the last CLOSED bar is n-1 */
+  const nowS=Date.now()/1000;const ci=(nowS-B[n].t<90&&n>0)?n-1:n;
+  const cClose=B[ci].c,cVol=B[ci].v;
+  let av=0,ac=0;for(let i=Math.max(0,ci-5);i<ci;i++){av+=B[i].v;ac++;}const avgVol=ac?av/ac:cVol;
+  const prevHi=ci>0?Math.max(...B.slice(0,ci).map(b=>b.h)):orH;
+  const prevLo=ci>0?Math.min(...B.slice(0,ci).map(b=>b.l)):orL;
+  const orDone=B.length>=2||(nowS-B[0].t>=300);
+  return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atr,atrP:atr/px*100,up15,up60,pdh,pdl,pdc,gapP,orH,orL,dayHi,dayLo,cClose,cVol,avgVol,prevHi,prevLo,orDone,bars:B.length};
 }
 function score(A,rs){
   function side(dir){
@@ -338,8 +378,11 @@ async function findTrade(force){
 }
 function composeTrade(){
   const A=DESK.A,sc=DESK.sc;const L=sc.dir>0;
-  const trig=L?Math.max(A.dayHi,A.orH):Math.min(A.dayLo,A.orL);
-  const trigWhy=L?('break of '+(A.dayHi>=A.orH?'the day high':'the opening-range high')):('break of '+(A.dayLo<=A.orL?'the day low':'the opening-range low'));
+  const hiRef=A.prevHi!=null?A.prevHi:A.dayHi,loRef=A.prevLo!=null?A.prevLo:A.dayLo;
+  const trig=L?Math.max(hiRef,A.orH):Math.min(loRef,A.orL);
+  const trigWhy=L?('break of '+(hiRef>=A.orH?'the day high':'the opening-range high')):('break of '+(loRef<=A.orL?'the day low':'the opening-range low'));
+  const fired=L?(A.cClose>trig&&A.cVol>=1.2*A.avgVol):(A.cClose<trig&&A.cVol>=1.2*A.avgVol);
+  const firedNoVol=L?(A.cClose>trig):(A.cClose<trig);
   let stop=L?Math.min(A.vw,A.e9):Math.max(A.vw,A.e9);
   if(L&&stop>=trig)stop=trig-1.6*A.atr;
   if(!L&&stop<=trig)stop=trig+1.6*A.atr;
@@ -347,7 +390,7 @@ function composeTrade(){
   if(L)t1=(A.pdh&&A.pdh>trig+0.5*A.atr)?A.pdh:trig+2.5*A.atr;
   else t1=(A.pdl&&A.pdl<trig-0.5*A.atr)?A.pdl:trig-2.5*A.atr;
   const t1Why=L?((A.pdh&&t1===A.pdh)?'yesterday\'s high — the most-watched line above':'2.5 average candles of travel'):((A.pdl&&t1===A.pdl)?'yesterday\'s low — the most-watched line below':'2.5 average candles of travel');
-  return {L,trig,trigWhy,stop,t1,t1Why};
+  return {L,trig,trigWhy,stop,t1,t1Why,fired,firedNoVol};
 }
 function drawTrade(){
  try{
@@ -418,6 +461,29 @@ async function findContract(){
     '<div class="cverdict '+((liqOK&&oiOK)?'ok':'no')+'">'+((liqOK&&oiOK)?'✓ PASSES the liquidity gate':'✗ '+(liqOK?'':'spread wide ')+(oiOK?'':'· OI thin')+' — smaller size or PICKER for an alternate')+'</div>';
   sizeIt();
 }
+
+function buildTicket(){
+  const T=DESK.T,c=DESK.contract,b=DESK.best;const box=document.getElementById('tTicket');
+  if(!T||!c||!b){box.style.display='none';return;}
+  box.style.display='block';
+  const Ein=document.getElementById('tkE');
+  if(!Ein.value||Ein.dataset.tk!==b.tk){Ein.value=c.mid.toFixed(2);Ein.dataset.tk=b.tk;}
+  const E=parseFloat(Ein.value)||c.mid;const d=c.d;
+  const stopDist=Math.abs(T.trig-T.stop),t1Dist=Math.abs(T.t1-T.trig);
+  const tp=E+t1Dist*d, tpS=tp-0.05;
+  const st=E-stopDist*d, stL=st-0.20;
+  const risk=parseFloat(document.getElementById('riskIn').value)||400;
+  const per=stopDist*d*100;const n=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(n/2));
+  const sym=b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT');
+  const legs=[
+   ['PRIMARY','$'+E.toFixed(2),'gold','Buy to Open · '+n+' · Limit at mid · Day — '+sym],
+   ['TAKE PROFIT','$'+tpS.toFixed(2),'g','Sell to Close · '+half+' (half) · Limit · Day — math: '+E.toFixed(2)+' + ('+t1Dist.toFixed(2)+' × Δ'+d.toFixed(2)+') = '+tp.toFixed(2)+', shaded 5¢'],
+   ['STOP','$'+st.toFixed(2)+' / '+stL.toFixed(2),'r','Sell to Close · '+n+' (ALL held) · Stop Limit · Day — math: '+E.toFixed(2)+' − ('+stopDist.toFixed(2)+' × Δ'+d.toFixed(2)+'); limit 20¢ under'],
+   ['AFTER T1','breakeven','gold','Re-place a stop for '+(n-half)+' at $'+E.toFixed(2)+' (or trail $'+(t1Dist*0.5*d).toFixed(2)+'). If the ticket forces equal legs: use '+n+' / '+n+', all off at T1.']
+  ];
+  document.getElementById('tkLegs').innerHTML=legs.map(l=>'<div class="leg"><div class="ln">'+l[0]+'</div><div><div class="lv '+l[2]+'">'+l[1]+'</div><div class="ld">'+l[3]+'</div></div></div>').join('');
+}
+
 function sizeIt(){
   const T=DESK.T,c=DESK.contract;const out=document.getElementById('riskOut');
   const risk=parseFloat(document.getElementById('riskIn').value)||400;
@@ -429,6 +495,7 @@ function sizeIt(){
   if(per<=0){out.textContent='—';return;}
   const nC=Math.max(1,Math.floor(risk/per));
   out.innerHTML='≈ $'+per.toFixed(0)+' at risk per contract → <b>'+nC+' contract'+(nC>1?'s':'')+'</b><br>trigger-to-stop '+stopDist.toFixed(2)+' × Δ'+dlt.toFixed(2)+' — <i style="color:var(--dim)">size from risk, never from conviction</i>';
+  try{buildTicket();}catch(e){}
 }
 function drawBench(){
   const all=DESK.all||[];const w=document.getElementById('bench');
@@ -543,6 +610,7 @@ function speakDesk(){
   say('Trigger: a 5 minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Until then, nothing.',0.66);
   say('Stop: '+n2(T.stop)+'. Target one: '+n2(T.t1)+'. Half off at target, stop to breakeven.',0.66);
   if(c)say('The contract: '+b.tk+' '+c.K+' '+(T.L?'call':'put')+', '+c.dte+' days out, about '+c.mid.toFixed(2)+' at the mid, delta '+c.d.toFixed(2)+'.',0.66);
+  try{const tl=[...document.querySelectorAll('#tkLegs .leg')].map(l=>l.querySelector('.ln').textContent+': '+l.querySelector('.lv').textContent);if(tl.length)say('The ticket. '+tl.slice(0,3).join('. ')+'.',0.64);}catch(e){}
   say('Bracket on the ticket. Flat by 2 45.',0.64);
 }
 function sendCoach(){
@@ -558,15 +626,70 @@ function printDesk(){
   const b=DESK.best,T=DESK.T,c=DESK.contract;if(!b)return;
   document.getElementById('pdDate').textContent=new Date().toLocaleDateString('en-US',{timeZone:'America/Chicago'});
   let d='THE TRADE — '+b.tk+' '+b.sc.side+'  ·  score '+b.sc.score+'/100 (pass line '+passLine()+')\n\n';
+  const A=b.A;d+='STRUCTURE  ORH '+n2(A.orH)+' · ORL '+n2(A.orL)+' · PDH '+n2(A.pdh)+' · PDL '+n2(A.pdl)+' · PDC '+n2(A.pdc)+' · stock now '+n2(A.px)+' · ATR '+n2(A.atr)+(T.fired?'  ·  *** TRIGGER FIRED ***':'')+'\n\n';
   d+='TRIGGER   $'+n2(T.trig)+'  — 5m close '+(T.L?'above':'below')+' with expanding volume. No trigger, no trade.\n';
   d+='STOP      $'+n2(T.stop)+'  — structure ('+(T.L?'below':'above')+' VWAP/9EMA shelf). Resting order, immediately.\n';
   d+='TARGET 1  $'+n2(T.t1)+'  — sell half, stop to breakeven.\n';
   if(c)d+='CONTRACT  '+b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT')+'  Δ'+c.d.toFixed(2)+'  mid $'+c.mid.toFixed(2)+'  '+c.dte+' DTE\n';
+  try{const tl=[...document.querySelectorAll('#tkLegs .leg')].map(l=>'  '+l.querySelector('.ln').textContent.padEnd(12)+l.querySelector('.lv').textContent+'  — '+l.querySelector('.ld').textContent);if(tl.length)d+='\nTHE TICKET (OTOCO)\n'+tl.join('\n')+'\n';}catch(e){}
   d+='\nRULES     Order at MID · bracket on the ticket · half size in lunch · last entry 2:00 · FLAT 2:45 · exit by 21 DTE\n';
   d+='\nSIGNALS\n'+b.sc.det.map(x=>'  '+(x.ok?'[+'+x.pts+']':'[ 0 ]')+' '+x.lbl+' — '+x.plain.replace(/<[^>]+>/g,'')).join('\n');
   document.getElementById('printDigest').textContent=d;
   window.print();
 }
+
+/* ================= SENTINEL — 8:35 recompose + 5-min close watch ================= */
+const SENT={lastSlot:null,did835:null};
+function sSay(t,r){try{if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=r||0.7;speechSynthesis.speak(u);}catch(e){}}
+function sStatus(t){const e=document.getElementById('sentSt');if(e)e.textContent=t;}
+function firedKey(){return 'kDeskFired_'+ctNow().toDateString();}
+async function sentinelTick(){
+  const on=document.getElementById('autoW').checked;localStorage.setItem('kDeskAuto',on?'1':'0');
+  if(!on){sStatus('sentinel off');return;}
+  const n=ctNow();const m=n.getHours()*60+n.getMinutes(),s=n.getSeconds();
+  const wd=n.getDay()>=1&&n.getDay()<=5;
+  if(!wd||m<8*60+30||m>=14*60+45){sStatus(m<8*60+30?'armed · waiting for the 8:30 open':'stood down for the day');return;}
+  /* 8:35:20 — the opening range has printed: full recompose, announce, offer print */
+  const today=n.toDateString();
+  if(m===8*60+35&&s>=20&&SENT.did835!==today){
+    SENT.did835=today;sStatus('8:35 — opening range printed. Recomposing…');
+    await runDesk(true);
+    const b=DESK.best,T=DESK.T;
+    if(b&&T){
+      sSay('Opening range printed. The setup is ready. '+b.tk+', '+b.sc.side+', score '+b.sc.score+'. Trigger '+n2(T.trig)+', stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is on the desk.',0.68);
+      const fb=document.getElementById('fireBanner');document.getElementById('fbT').textContent='8:35 SETUP READY';
+      document.getElementById('fbD').textContent=b.tk+' '+b.sc.side+' · trigger '+n2(T.trig)+' · stop '+n2(T.stop)+' · T1 '+n2(T.t1)+' — bench and ticket are current. Print it, then wait for the 5-minute close.';
+      fb.classList.add('on');
+      if(localStorage.getItem('kAutoPrint')==='1'){setTimeout(()=>{try{printDesk();}catch(e){}},1500);}
+    }
+    return;
+  }
+  /* every 5-minute close (+20s) during entry windows: quiet refresh + trigger check */
+  const slot=Math.floor(m/5);
+  if(m%5===0&&s>=20&&s<50&&SENT.lastSlot!==slot&&m>=8*60+40){
+    SENT.lastSlot=slot;
+    const entries=(m<11*60)||(m>=12*60+30&&m<14*60);
+    sStatus((entries?'watching · ':'lunch/wind-down · ')+'5-min close at '+n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+    try{await findTrade(true);}catch(e){}
+    const b=DESK.best,T=DESK.T;if(!b||!T)return;
+    if(!entries)return;
+    if(T.fired&&localStorage.getItem(firedKey())!==b.tk){
+      localStorage.setItem(firedKey(),b.tk);
+      const fb=document.getElementById('fireBanner');document.getElementById('fbT').textContent='TRIGGER FIRED — '+b.tk+' '+b.sc.side;
+      document.getElementById('fbD').textContent='5-minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume ('+(b.A.cVol/b.A.avgVol).toFixed(1)+'× the prior bars). The ticket below is computed at the live mid — fill, then type E. Bracket on the ticket.';
+      fb.classList.add('on');
+      try{navigator.vibrate&&navigator.vibrate([200,100,200,100,400]);}catch(e){}
+      sSay('Trigger fired. '+b.tk+' '+b.sc.side+'. Five minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is ready. Bracket on the ticket.',0.66);
+      setTimeout(()=>sSay('Again. Trigger fired, '+b.tk+' '+b.sc.side+'. Ticket is ready.',0.66),9000);
+    }else if(T.firedNoVol&&localStorage.getItem(firedKey()+'_nv')!==b.tk+slot){
+      localStorage.setItem(firedKey()+'_nv',b.tk+slot);
+      sStatus('close beyond trigger but volume thin ('+(b.A.cVol/b.A.avgVol).toFixed(1)+'×) — no trade; waiting for a real bar');
+    }
+  }
+}
+setInterval(sentinelTick,5000);
+(function(){const a=localStorage.getItem('kDeskAuto');if(a==='0')document.getElementById('autoW').checked=false;})();
+
 /* ================= boot ================= */
 async function runDesk(force){
   drawClock();
@@ -576,6 +699,7 @@ async function runDesk(force){
   drawPos();
 }
 document.getElementById('riskIn').addEventListener('input',sizeIt);
+document.getElementById('tkE').addEventListener('input',buildTicket);
 setInterval(drawClock,20000);
 setInterval(drawPos,60000);
 runDesk(false);
