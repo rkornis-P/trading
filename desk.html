@@ -170,7 +170,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.5</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.5.1</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The London Read — what world did we wake up in</span></div>
@@ -702,14 +702,23 @@ async function writeBrief(){
    'PUT CANDIDATES: same format.\n'+
    'THE MORNING SCRIPT: 5-7 numbered steps from 8:15 to first trade, by the rulebook.\n'+
    'THE TRAP OF THE DAY: the single mistake this tape invites, in two sentences.\n'+
-   'Be specific with the numbers given. Never invent a catalyst not in the data or the note. Plain text, no markdown symbols other than line breaks.';
+   'Be specific with the numbers given. Never invent a catalyst not in the data or the note. Plain text, no markdown symbols other than line breaks. Length discipline: at most 3 candidates per side, each candidate under 110 words; whole brief under 900 words; always finish every section.';
   const user='Time: '+when+' CT. Overnight read: ES '+(r.es&&r.es.chg!=null?r.es.chg.toFixed(2)+'%':'?')+', NQ '+(r.nq&&r.nq.chg!=null?r.nq.chg.toFixed(2)+'%':'?')+(r.nq&&r.nq.pos!=null?', NQ at '+(r.nq.pos*100).toFixed(0)+'% of its overnight range':'')+'.\nTrader note: '+(note||'(none)')+'\nBoard (5m data, 5 days):\n'+rows;
   try{
-    const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1400,system:sys,messages:[{role:'user',content:user}]})});
-    const j=await resp.json();
-    const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+    const ask=async(msgs)=>{const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,system:sys,messages:msgs})});return resp.json();};
+    let msgs=[{role:'user',content:user}];
+    let j=await ask(msgs);
+    let txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
     if(!txt)throw new Error(j.error?JSON.stringify(j.error).slice(0,120):'empty reply');
+    /* if the model hit its length ceiling, ask it to finish — up to twice */
+    for(let k=0;k<2&&j.stop_reason==='max_tokens';k++){
+      st.textContent='Finishing the brief…';
+      msgs=msgs.concat([{role:'assistant',content:txt},{role:'user',content:'Continue exactly where you stopped. Do not repeat anything already written; finish the remaining sections in the same format.'}]);
+      j=await ask(msgs);
+      const more=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
+      if(!more)break;txt+='\n'+more;
+    }
     BRIEF=txt;
     out.style.display='block';
     out.innerHTML=txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/^(REGIME|CALL CANDIDATES|PUT CANDIDATES|THE MORNING SCRIPT|THE TRAP OF THE DAY)(:?)/gm,'<b>$1$2</b>');
