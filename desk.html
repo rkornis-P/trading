@@ -25,7 +25,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 /* the read */
 #readLine{font-size:12.5px;line-height:1.6}
 #readLine b{color:var(--gold-soft)}
-#readCells{display:flex;gap:6px;margin-top:10px}
+#readCells{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.rc{min-width:28%}
 .rc{flex:1;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 4px}
 .rc .l{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .rc .v{font-size:13px;font-weight:800}
@@ -169,10 +170,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.4</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.5</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
-<div class="sec"><span class="n">I · The Read — what world did we wake up in</span></div>
+<div class="sec"><span class="n">I · The London Read — what world did we wake up in</span></div>
 <div class="card">
   <div id="readLine">Reading the overnight tape…</div>
   <div id="readCells"></div>
@@ -219,6 +220,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
     <button onclick="printBrief()">🖨 PRINT</button>
     <button onclick="speakBrief()">🔊 READ</button>
   </div>
+  <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;color:var(--ink);margin-bottom:6px;cursor:pointer"><input type="checkbox" id="autoBrief" onchange="localStorage.setItem('kAutoBrief',this.checked?'1':'0')" style="accent-color:#BF9000"> auto-write the brief at the 8:00 London read</label>
   <div id="briefSt">Scores the whole board, then writes a ranked pre-market argument — calls and puts — with triggers, in both languages. Saves to the Library.</div>
   <div id="briefOut"></div>
 </div>
@@ -340,35 +342,59 @@ function cget(k,ttl){try{const c=JSON.parse(localStorage.getItem(k));if(c&&Date.
 function cset(k,d){try{localStorage.setItem(k,JSON.stringify({ts:Date.now(),d}));}catch(e){}}
 
 /* ================= I. the read ================= */
-async function readWorld(){
-  let cached=cget('kDeskRead',4*60000);
+async function readWorld(force){
+  let cached=force?null:cget('kDeskRead',4*60000);
   if(cached){DESK.read=cached;drawRead();return;}
   const out={};
-  for(const [tk,key] of [['ES=F','es'],['NQ=F','nq']]){
+  const feeds=[['ES=F','es'],['NQ=F','nq'],['CL=F','oil'],['JPY=X','jpy'],['^VIX','vix']];
+  for(const [tk,key] of feeds){
     try{const {B,meta}=await pull(tk,'2d','15m');
       const prevC=meta.chartPreviousClose||null;const last=B[B.length-1].c;
-      const cut=B[B.length-1].t-16*3600;const ON=B.filter(b=>b.t>=cut);
-      const hi=Math.max(...ON.map(b=>b.h)),lo=Math.min(...ON.map(b=>b.l));
-      out[key]={chg:prevC?(last-prevC)/prevC*100:null,pos:(last-lo)/((hi-lo)||1)};
-      await sleep(800);
+      const nowS=B[B.length-1].t;
+      /* overnight = last 16h ; London = bars since 02:00 CT today */
+      const cut=nowS-16*3600;const ON=B.filter(b=>b.t>=cut);
+      const ct0=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));ct0.setHours(2,0,0,0);
+      const lonStart=Math.floor(Date.now()/1000-(new Date()-ct0)/1000);
+      const LON=B.filter(b=>b.t>=lonStart);
+      const hourAgo=B.filter(b=>b.t<=nowS-3600);const hc=hourAgo.length?hourAgo[hourAgo.length-1].c:null;
+      const o={chg:prevC?(last-prevC)/prevC*100:null,last};
+      if(ON.length){const hi=Math.max(...ON.map(b=>b.h)),lo=Math.min(...ON.map(b=>b.l));o.pos=(last-lo)/((hi-lo)||1);o.onHi=hi;o.onLo=lo;}
+      if(LON.length>=2){o.lonHi=Math.max(...LON.map(b=>b.h));o.lonLo=Math.min(...LON.map(b=>b.l));o.lonOpen=LON[0].o;o.lonPos=(last-o.lonLo)/((o.lonHi-o.lonLo)||1);o.lonChg=(last-o.lonOpen)/o.lonOpen*100;}
+      if(hc)o.h1=(last-hc)/hc*100;
+      out[key]=o;
+      await sleep(700);
     }catch(e){out[key]={err:e.message};}
   }
   DESK.read=out;cset('kDeskRead',out);drawRead();
 }
 function drawRead(){
-  const r=DESK.read||{};const es=r.es||{},nq=r.nq||{};
+  const r=DESK.read||{};const es=r.es||{},nq=r.nq||{},oil=r.oil||{},jpy=r.jpy||{},vix=r.vix||{};
   const f=x=>x==null?'—':((x>=0?'+':'')+x.toFixed(2)+'%');
   const avg=((es.chg||0)+(nq.chg||0))/2;
   let tone='FLAT',cls='fl',plain='No overnight edge — the opening range decides everything.';
-  if(avg>0.25){tone='RISK ON';cls='up';plain='Futures green overnight: tailwind for call setups — but green overnights often fade the first 15 minutes, so let the range confirm.';}
-  else if(avg<-0.25){tone='RISK OFF';cls='dn';plain='Futures red overnight: headwind — favor put-side setups or demand a reclaim before any long.';}
-  document.getElementById('readLine').innerHTML='<b>'+tone+'.</b> '+plain+(nq.pos!=null?(' NQ sits in the '+(nq.pos>0.7?'upper third of the overnight range — buyers held the night.':nq.pos<0.3?'lower third — sellers held the night.':'middle of the overnight range — nobody won.')):'');
+  if(avg>0.25){tone='RISK ON';cls='up';plain='Futures green: tailwind for call setups — but green overnights often fade the first 15 minutes, so let the range confirm.';}
+  else if(avg<-0.25){tone='RISK OFF';cls='dn';plain='Futures red: headwind — favor put-side setups or demand a reclaim before any long.';}
+  /* modifiers */
+  const mods=[];
+  if(vix.chg!=null&&vix.chg>6)mods.push('<b>Fear rising</b> (VIX '+f(vix.chg)+') — expect wider ranges and failed bounces; size down.');
+  if(vix.chg!=null&&vix.chg<-6)mods.push('<b>Fear draining</b> (VIX '+f(vix.chg)+') — dips get bought; puts need real breaks.');
+  if(oil.chg!=null&&Math.abs(oil.chg)>1.5)mods.push('<b>Energy '+(oil.chg>0?'bid':'offered')+'</b> (crude '+f(oil.chg)+') — XOM gaps with it; never buy the gap, trade the range.');
+  if(jpy.chg!=null&&jpy.chg<-0.6)mods.push('<b>Yen surging</b> (USDJPY '+f(jpy.chg)+') — carry-unwind tell; high-beta tech is the first casualty.');
+  /* London session line */
+  let lon='';
+  if(es.lonHi!=null){
+    const where=es.lonPos>0.75?'the top of its London range':es.lonPos<0.25?'the bottom of its London range':'the middle of its London range';
+    const mom=es.h1==null?'':(es.h1>0.12?' and <b>pressing higher into the open</b> (last hour '+f(es.h1)+')':es.h1<-0.12?' and <b>being sold into the open</b> (last hour '+f(es.h1)+')':' with the last hour flat');
+    lon='<br><b>London (2:00 CT → now):</b> ES ranged '+es.lonLo.toFixed(0)+'–'+es.lonHi.toFixed(0)+' and sits at '+where+mom+'. '+
+      (es.lonChg!=null?('Since the European open '+f(es.lonChg)+'. '):'')+
+      ((es.lonPos>0.75&&es.h1>0.12)?'Conviction gap-up: strength that holds the first 15 minutes is real.':(es.lonPos<0.25&&es.h1<-0.12)?'Conviction gap-down: bounces are for selling until the ORH is reclaimed.':(es.lonChg!=null&&Math.abs(es.lonChg)>0.3&&Math.abs(es.h1||0)<0.12)?'The move is stalling into the open — fade risk is high; wait for the range.':'Undecided into the open — the 8:35 candle is the whole story.');
+  }
+  document.getElementById('readLine').innerHTML='<b>'+tone+'.</b> '+plain+(nq.pos!=null?(' NQ sits in the '+(nq.pos>0.7?'upper third of the overnight range — buyers held the night.':nq.pos<0.3?'lower third — sellers held the night.':'middle of the overnight range — nobody won.')):'')+(mods.length?'<br>'+mods.join(' '):'')+lon;
+  const cell=(l,v,c)=>'<div class="rc"><div class="l">'+l+'</div><div class="v '+c+'">'+v+'</div></div>';
   document.getElementById('readCells').innerHTML=
-    '<div class="rc"><div class="l">Tone</div><div class="v '+cls+'">'+tone+'</div></div>'+
-    '<div class="rc"><div class="l">S&amp;P fut</div><div class="v '+(es.chg>=0?'up':'dn')+'">'+f(es.chg)+'</div></div>'+
-    '<div class="rc"><div class="l">Nasdaq fut</div><div class="v '+(nq.chg>=0?'up':'dn')+'">'+f(nq.chg)+'</div></div>';
+    cell('Tone',tone,cls)+cell('S&amp;P fut',f(es.chg),es.chg>=0?'up':'dn')+cell('Nasdaq fut',f(nq.chg),nq.chg>=0?'up':'dn')+
+    cell('Crude',f(oil.chg),oil.chg>=0?'up':'dn')+cell('USDJPY',f(jpy.chg),jpy.chg>=0?'up':'dn')+cell('VIX',f(vix.chg),vix.chg<=0?'up':'dn');
 }
-
 /* ================= II. the trade ================= */
 async function findTrade(force){
   const st=document.getElementById('st');
@@ -711,7 +737,7 @@ function speakBrief(){
 }
 
 /* ================= SENTINEL — 8:35 recompose + 5-min close watch ================= */
-const SENT={lastSlot:null,did835:null};
+const SENT={lastSlot:null,did835:null,did800:null};
 function sSay(t,r){try{if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=r||0.7;speechSynthesis.speak(u);}catch(e){}}
 function sStatus(t){const e=document.getElementById('sentSt');if(e)e.textContent=t;}
 function firedKey(){return 'kDeskFired_'+ctNow().toDateString();}
@@ -720,7 +746,17 @@ async function sentinelTick(){
   if(!on){sStatus('sentinel off');return;}
   const n=ctNow();const m=n.getHours()*60+n.getMinutes(),s=n.getSeconds();
   const wd=n.getDay()>=1&&n.getDay()<=5;
-  if(!wd||m<8*60+30||m>=14*60+45){sStatus(m<8*60+30?'armed · waiting for the 8:30 open':'stood down for the day');return;}
+  if(!wd||m<8*60||m>=14*60+45){sStatus(m<8*60?'armed · London read at 8:00, range at 8:35':'stood down for the day');return;}
+  /* 8:00:15 — THE LONDON READ: fresh futures/oil/yen/VIX, score the board, speak the regime, optional auto-brief */
+  if(m===8*60&&s>=15&&SENT.did800!==today){
+    SENT.did800=today;sStatus('8:00 — reading London…');
+    await readWorld(true);await findTrade(true);
+    const rl=document.getElementById('readLine').textContent;
+    sSay('Eight A M. The London read. '+rl,0.7);
+    if(localStorage.getItem('kAutoBrief')==='1'){sStatus('8:00 — writing the brief…');try{await writeBrief();}catch(e){}}
+    sStatus('London read done · waiting for the 8:30 open');
+    return;
+  }
   /* 8:35:20 — the opening range has printed: full recompose, announce, offer print */
   const today=n.toDateString();
   if(m===8*60+35&&s>=20&&SENT.did835!==today){
@@ -760,7 +796,7 @@ async function sentinelTick(){
   }
 }
 setInterval(sentinelTick,5000);
-(function(){const a=localStorage.getItem('kDeskAuto');if(a==='0')document.getElementById('autoW').checked=false;})();
+(function(){const a=localStorage.getItem('kDeskAuto');if(a==='0')document.getElementById('autoW').checked=false;if(localStorage.getItem('kAutoBrief')==='1')document.getElementById('autoBrief').checked=true;})();
 
 /* ================= boot ================= */
 async function runDesk(force){
