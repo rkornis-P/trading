@@ -90,6 +90,23 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 .rpr .nm.g{color:#2FB673}.rpr .nm.r{color:#E05B44}.rpr .nm.a{color:#E0A93F}.rpr .nm.n{color:#7E8AA0}
 .rpr .rel{font-size:11px;color:#EBEFF6;font-variant-numeric:tabular-nums}
 .rpr .why{font-size:10.5px;color:#7E8AA0;line-height:1.45;margin-top:2px}
+
+/* ===== PRINT THE READ ===== */
+#printHead,#printDigest,#prChart{display:none}
+@media print{
+  body{background:#fff;color:#111;font-family:Georgia,serif;padding:0;max-width:none}
+  body>*:not(#printHead):not(#prChart):not(#printDigest){display:none!important}
+  #printHead{display:block;text-align:center;border-bottom:2.5px solid #BF9000;padding-bottom:10px;margin-bottom:12px}
+  #printHead .k{font-size:19px;font-weight:900;letter-spacing:.1em}
+  #printHead .s{font-size:10px;letter-spacing:.18em;color:#555;text-transform:uppercase;margin-top:4px}
+  #prChart{display:block;width:100%;border:1px solid #ccc;border-radius:6px;margin-bottom:12px}
+  #printDigest{display:block;font-size:11.5px;line-height:1.55}
+  .prr{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid #ddd;page-break-inside:avoid}
+  .prr .n{font-weight:900;letter-spacing:.06em;font-size:10px}
+  .prr .n.g{color:#1f8f57}.prr .n.r{color:#b8412f}.prr .n.a{color:#a8791c}.prr .n.n{color:#666}
+  .prr .w{color:#444;font-size:10.5px;margin-top:2px}
+  .prf{margin-top:14px;font-size:9.5px;color:#666;border-top:1px solid #BF9000;padding-top:8px}
+}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
@@ -112,6 +129,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 
 <div id="readPanel" style="display:none">
   <div class="rp-h"><span>THE READ — where price stands, and what each line means</span><span id="rpSide"></span></div>
+  <div style="display:flex;gap:6px;margin:4px 0 8px"><button onclick="printRead()" style="flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px;font-weight:800;font-size:10.5px;cursor:pointer">🖨 PRINT THE READ (chart + every signal)</button></div>
   <div id="rpRows"></div>
 </div>
 
@@ -162,6 +180,10 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div id="imBox"><h3 id="imTitle">—</h3><div class="body" id="imBody"></div>
   <button class="close" onclick="closeInfo()">CLOSE</button></div>
 </div>
+
+<div id="printHead"><div class="k">KORNIS PROTOCOL — THE READ</div><div class="s"><span id="prMeta"></span></div></div>
+<img id="prChart" alt="">
+<div id="printDigest"></div>
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
@@ -429,6 +451,22 @@ function draw(){
 }
 
 /* ---- THE READ: every indicator, price relation, one-sentence meaning ---- */
+
+function printRead(){
+  if(!BARS){alert('Pull a ticker first.');return;}
+  const n=BARS.C.length-1,L=document.getElementById('dir').value==='long';
+  const when=new Date().toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  document.getElementById('prMeta').textContent=BARS.tk+' · $'+n2(BARS.C[n])+' · reading for '+(L?'CALLS':'PUTS')+' · '+when+' CT · '+IV+' bars';
+  try{document.getElementById('prChart').src=cv.toDataURL('image/png');}catch(e){}
+  const rows=[...document.querySelectorAll('#rpRows .rpr')].map(r=>({n:r.querySelector('.nm').textContent,c:r.querySelector('.nm').className.replace('nm ','').trim(),rel:r.querySelector('.rel').textContent,why:r.querySelector('.why').textContent}));
+  const E=document.getElementById('entry').value,S=document.getElementById('stop').value,Tg=document.getElementById('target').value;
+  let d=rows.map(r=>'<div class="prr"><div class="n '+r.c+'">'+r.n+'</div><div><div>'+r.rel+'</div><div class="w">'+r.why+'</div></div></div>').join('');
+  d+='<div class="prf">Position plan: entry '+(E||'—')+' · stop '+(S||'—')+' · target '+(Tg||'—')+' · Lines: gold 9 EMA · blue 20 SMA · pink VWAP · dashed walls PDH/PDL/PDC/ORH/ORL + CW/PW/MP when loaded. '+
+     'Green = in favor of this side · Red = against · Amber = stretched or undecided. Standing law: bracket on the ticket, half at T1, flat by 2:45 CT.</div>';
+  document.getElementById('printDigest').innerHTML=d;
+  window.print();
+}
+
 function drawRead(){
   const P=document.getElementById('readPanel');if(!BARS){P.style.display='none';return;}
   P.style.display='block';
