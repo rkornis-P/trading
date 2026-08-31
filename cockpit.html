@@ -96,7 +96,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div class="tf" data-i="1d" data-r="3mo" onclick="setTF(this)">1D</div>
 </div>
 
-<canvas id="cv" height="340"></canvas>
+<canvas id="cv" height="404"></canvas>
 <div id="status">Enter ticker → PULL. Auto-refreshes every 45s.</div>
 
 <div class="strip" id="gkStrip">
@@ -127,6 +127,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div class="lp" id="h_rsi" onclick="info('rsi')"><div class="d"></div><div class="n">RSI</div></div>
   <div class="lp" id="h_macd" onclick="info('macd')"><div class="d"></div><div class="n">MACD</div></div>
   <div class="lp" id="h_mom" onclick="info('mom')"><div class="d"></div><div class="n">MOM</div></div>
+  <div class="lp" id="h_adx" onclick="info('adx')"><div class="d"></div><div class="n">ADX</div></div>
   <div class="lp" id="h_vol" onclick="info('vol')"><div class="d"></div><div class="n">VOL</div></div>
 </div>
 <div class="lamps">
@@ -171,6 +172,21 @@ function vwapAll(t,h,l,c,v){const o=[];let pv=0,vv=0,day=null;for(let i=0;i<c.le
 function rsiAll(c,p){p=p||14;const o=new Array(c.length).fill(null);let g=0,l=0;for(let i=1;i<=p&&i<c.length;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}g/=p;l/=p;if(c.length>p)o[p]=100-100/(1+(l===0?100:g/l));for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;o[i]=100-100/(1+(l===0?100:g/l));}return o;}
 function macdAll(c){const a=emaAll(c,12),b=emaAll(c,26);const m=c.map((_,i)=>a[i]-b[i]);const s=emaAll(m,9);return{m,s,hist:m.map((x,i)=>x-s[i])};}
 function momAll(c,p){p=p||12;return c.map((x,i)=>i<p?null:x-c[i-p]);}
+function adxAll(H,L,C,p){p=p||14;const n=C.length;const tr=[],pdm=[],ndm=[];
+  for(let i=0;i<n;i++){if(i===0){tr.push(H[0]-L[0]);pdm.push(0);ndm.push(0);continue;}
+    const up=H[i]-H[i-1],dn=L[i-1]-L[i];
+    pdm.push(up>dn&&up>0?up:0);ndm.push(dn>up&&dn>0?dn:0);
+    tr.push(Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1])));}
+  const sm=(a)=>{const o=[];let s=null;for(let i=0;i<n;i++){if(i<p){o.push(null);if(i===p-1){s=0;for(let j=0;j<p;j++)s+=a[j];o[i]=s;}continue;}s=s-s/p+a[i];o.push(s);}return o;};
+  const str=sm(tr),spd=sm(pdm),snd=sm(ndm);
+  const pdi=[],ndi=[],dx=[];
+  for(let i=0;i<n;i++){if(str[i]==null||!str[i]){pdi.push(null);ndi.push(null);dx.push(null);continue;}
+    const a=100*spd[i]/str[i],b=100*snd[i]/str[i];pdi.push(a);ndi.push(b);dx.push((a+b)?100*Math.abs(a-b)/(a+b):0);}
+  const adx=[];let s=null,cnt=0;
+  for(let i=0;i<n;i++){if(dx[i]==null){adx.push(null);continue;}
+    if(s==null){cnt++;s=(s||0)+dx[i];if(cnt<p){adx.push(null);continue;}s=s/p;adx.push(s);continue;}
+    s=(s*(p-1)+dx[i])/p;adx.push(s);}
+  return {adx,pdi,ndi};}
 
 /* ---------- Black-Scholes ---------- */
 function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
@@ -194,10 +210,10 @@ async function loadAll(){
   let b=null,used=null;
   for(const[i,r] of plan){try{b=await fetchHist(tk,i,r);if(b){used=i;break;}}catch(e){}}
   if(!b){st.innerHTML='<b>No history at any interval.</b> The worker needs the v4.2 ?hist route — repaste worker code + API key in Cloudflare.';return;}
-  BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12)};
+  BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12),adx:adxAll(b.H,b.L,b.C,14)};
   st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString();
   loadChain(tk);draw();health();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12)};draw();health();}},45000);
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();}},45000);
 }
 let CHAIN_RETRY=null;
 function loadChain(tk){
@@ -296,7 +312,7 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 function draw(){
   if(!BARS)return;
   const dpr=window.devicePixelRatio||1;
-  const W=cv.clientWidth,Hh=340,MH=44,PH=Hh-MH-6;cv.height=Hh*dpr;cv.width=W*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=cv.clientWidth,Hh=404,MH=44,AH=50,PH=Hh-MH-AH-12;cv.height=Hh*dpr;cv.width=W*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,Hh);
   const n=BARS.C.length,show=Math.min(n,IV==='1d'?60:78),s0=n-show;
   const padR=52,cw=(W-padR)/show;
@@ -357,6 +373,26 @@ function draw(){
       const bh=(Math.abs(mh[i])/mmax)*(MH/2-2);
       ctx.fillRect(x(i)-bw2/2,mh[i]>=0?zy-bh:zy,bw2,Math.max(1,bh));}
     ctx.fillStyle='#8A93A6';ctx.font='700 8px sans-serif';ctx.fillText('MACD',W-padR+2,zy+3);
+  }
+  /* legend — name the lines */
+  ctx.font='700 9px sans-serif';
+  const leg=[['9 EMA','#D9B44A'],['20 SMA','#5a82c8'],['VWAP','#c95aa0'],['BB','rgba(90,130,200,0.9)']];
+  let lx=6;leg.forEach(([t,c])=>{ctx.fillStyle=c;ctx.fillRect(lx,6,10,3);ctx.fillText(t,lx+13,10);lx+=ctx.measureText(t).width+26;});
+  /* ADX strip: +DI green, -DI red, ADX gold; 20/25 trend thresholds */
+  if(BARS.adx){
+    const A=BARS.adx;const top=PH+6+MH+6,bot=top+AH;
+    const ya=v=>bot-2-(Math.min(v,60)/60)*(AH-4);
+    ctx.fillStyle='rgba(13,21,38,0.6)';ctx.fillRect(0,top,W-padR,AH);
+    [20,25].forEach(t=>{ctx.beginPath();ctx.setLineDash([3,3]);ctx.moveTo(0,ya(t));ctx.lineTo(W-padR,ya(t));ctx.strokeStyle='rgba(138,147,166,0.35)';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);});
+    const aline=(arr,col,wd)=>{ctx.beginPath();let st=false;for(let i=s0;i<n;i++){if(arr[i]==null)continue;if(!st){ctx.moveTo(x(i),ya(arr[i]));st=true;}else ctx.lineTo(x(i),ya(arr[i]));}ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.stroke();};
+    aline(A.pdi,'rgba(47,182,115,0.9)',1);aline(A.ndi,'rgba(224,91,68,0.9)',1);aline(A.adx,'#D9B44A',1.8);
+    const av=A.adx[n-1],pv=A.pdi[n-1],nv=A.ndi[n-1];
+    ctx.fillStyle='#D9B44A';ctx.font='800 9px sans-serif';ctx.fillText('ADX '+(av!=null?av.toFixed(0):'—'),W-padR+2,top+11);
+    ctx.fillStyle='#2FB673';ctx.font='700 8px sans-serif';ctx.fillText('+DI '+(pv!=null?pv.toFixed(0):'—'),W-padR+2,top+23);
+    ctx.fillStyle='#E05B44';ctx.fillText('-DI '+(nv!=null?nv.toFixed(0):'—'),W-padR+2,top+34);
+    ctx.fillStyle='#8A93A6';ctx.fillText(av==null?'':(av>=25?'TRENDING':av>=20?'BUILDING':'CHOP'),W-padR+2,top+46);
+    /* unscored lamp: ADX strength */
+    const al=document.getElementById('h_adx');if(al&&av!=null)al.className='lp '+(av>=25?'ok':av>=20?'warn':'bad');
   }
 }
 window.addEventListener('resize',draw);
@@ -478,6 +514,7 @@ ema:{t:'9 EMA — Ride Line',b:'Gold line on the chart. Strong scalps ride it li
 align:{t:'Trend — 9EMA vs 20SMA',b:'Gold (9 EMA) vs blue (20 SMA): the argument between the PRESENT and the recent past. Four states:<br><br><b>1 RIDE</b> <span class="gg">9 over 20, both rising, price on the 9</span> — the only fully open state. Enter the pullback that kisses the 9 and holds.<br><b>2 STRETCHED</b> — price 3–4 ATRs above the 9: a chase, not an entry. The 9 is an anchor; snapbacks feed on late buyers.<br><b>3 BRAID</b> <span class="rr">lines flat &amp; twisted, price whipping through</span> — chop. Every cross in a braid is a lie. NO TRADE.<br><b>4 CROSS</b> — 9 under 20 after a trend: no-new-longs gate; first structural short sign.<br><br><b>The 20 is the first wall:</b> first touch usually REJECTS (buy it, stop below) — second/third touch usually BREAKS (the resting orders are eaten).<br><br><b>Gap = health:</b> new price high on a NARROWER 9-to-20 gap = the move is dying while the chart still looks fine.<br><br><b>Do:</b> 60 seconds before every trigger — which state, which touch, expanding or narrowing. Full masterclass in PLAYBOOK 4a.'},
 rsi:{t:'RSI 14 — Fuel Gauge',b:'<span class="gg">GREEN long:</span> 45–75 with room to run. <span class="gg">GREEN short:</span> 25–55.<br><span class="rr">RED:</span> fuel gone (rolled out of zone) or over-stretched (&gt;75 / &lt;25) where snapbacks live.<br><br><b>Do:</b> stretched with profit showing = take some off into strength. Faded = watch the 9 EMA; it breaks next.'},
 macd:{t:'MACD Histogram — Acceleration',b:'Turns before price — your earliest warning.<br><br><span class="rr">RED:</span> bars shrinking or flipped against you. Deceleration precedes reversal, usually 2–4 candles ahead of the 9 EMA break.<br><br><b>Do:</b> don\'t exit on this alone — stop adding, raise the stop, treat the next 9 EMA test as decisive.'},
+adx:{t:'ADX 14 — Trend Strength (not direction)',b:'The gold line in the bottom strip measures how STRONG the trend is, regardless of which way. +DI (green) vs −DI (red) show who is winning.<br><br><span class=\"gg\">ADX ≥ 25:</span> a real trend — trend-following rules apply, trail the 9 EMA, let winners run.<br><span class=\"rr\">ADX &lt; 20:</span> chop — breakouts fail, the 9/20 whipsaw, theta wins. No new trend trades.<br>20–25: a trend forming — the moment breakouts start to stick.<br><br><b>Read with the lines above:</b> 9 EMA (gold) above 20 SMA (blue) + ADX rising + +DI over −DI = the textbook long. The same picture inverted = the textbook short. ADX rising while price goes sideways = coiling; the break is near.<br><br><b>Do:</b> this lamp is NOT in the 7-score — it is context. Green: trust breakouts. Red: fade them or stay out. Not a timing tool; a permission tool.'},
 mom:{t:'Momentum 12',b:'Price now minus price 12 bars ago — raw thrust of the last hour.<br><br><span class="rr">RED:</span> the last hour is net against you even if the current candle looks fine. Slow bleeds show here first.<br><br><b>Do:</b> red alone is noise. Red + red MACD together = the fade is real; tighten.'},
 vol:{t:'Volume With vs Against — The Veto',b:'Sums the last six candles\' volume by direction. Price can drift; volume shows where real money pushes.<br><br><span class="rr">RED:</span> heavier volume on the candles moving against you — a light-volume rally over heavy red bars is a fake.<br><br><b>Do:</b> volume holds the VETO. Believe the volume, not the price. Scale down or out.'},
 stop:{t:'Stop Distance',b:'Runway left, measured against total risk (entry→stop).<br><br><span style="color:var(--amber);font-weight:700">AMBER:</span> inside 25% — one candle can take you out. Decide: setup valid = hold; decaying = exit on YOUR terms at a better price than the stop.<br><span class="rr">RED:</span> level touched — the voice tells you: execute, no debate.'},
