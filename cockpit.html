@@ -3,10 +3,10 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cockpit · Kornis Protocol</title>
 <style>
-:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:10px 8px 84px;max-width:640px;margin:0 auto}
-h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
+h1{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:8px}
 .bar{display:flex;gap:6px;margin-bottom:8px}
 .bar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px;font-size:14px}
 .bar select{background:var(--panel);border:1px solid var(--line);border-radius:7px;color:#fff;padding:8px;font-size:13px}
@@ -59,56 +59,7 @@ canvas{width:100%;background:var(--panel2);border:1px solid var(--line);border-r
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:9px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
-
-/* ===== KORNIS INTERIOR KIT — phase two facelift ===== */
-button{border-radius:9px!important;font-weight:800!important;letter-spacing:.05em!important}
-input,select,textarea{border-radius:8px!important;border-color:var(--line)!important}
-input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important}
-::placeholder{color:#5A6478!important}
-
-#alert{border-radius:10px!important;box-shadow:none!important}
-.lamp{border-radius:8px!important}
-#st{letter-spacing:.02em}
-
-
-/* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
-.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
-
-/* ===== THE READ ===== */
-#readPanel{background:var(--panel,#111A2D);border:1px solid var(--line,#1E2A45);border-radius:12px;padding:10px 12px;margin:8px 0}
-.rp-h{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#7E8AA0;margin-bottom:6px}
-.rp-h span:last-child{color:var(--gold-soft)}
-.rpr{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #14203A;align-items:start}
-.rpr:last-child{border-bottom:none}
-.rpr .nm{font-size:10px;font-weight:800;letter-spacing:.06em;padding-top:1px}
-.rpr .nm.g{color:#2FB673}.rpr .nm.r{color:#E05B44}.rpr .nm.a{color:#E0A93F}.rpr .nm.n{color:#7E8AA0}
-.rpr .rel{font-size:11px;color:#EBEFF6;font-variant-numeric:tabular-nums}
-.rpr .why{font-size:10.5px;color:#7E8AA0;line-height:1.45;margin-top:2px}
-
-/* ===== PRINT THE READ ===== */
-#printHead,#printDigest,#prChart{display:none}
-@media print{
-  body{background:#fff;color:#111;font-family:Georgia,serif;padding:0;max-width:none}
-  body>*:not(#printHead):not(#prChart):not(#printDigest){display:none!important}
-  #printHead{display:block;text-align:center;border-bottom:2.5px solid #BF9000;padding-bottom:10px;margin-bottom:12px}
-  #printHead .k{font-size:19px;font-weight:900;letter-spacing:.1em}
-  #printHead .s{font-size:10px;letter-spacing:.18em;color:#555;text-transform:uppercase;margin-top:4px}
-  #prChart{display:block;width:100%;border:1px solid #ccc;border-radius:6px;margin-bottom:12px}
-  #printDigest{display:block;font-size:11.5px;line-height:1.55}
-  .prr{display:grid;grid-template-columns:90px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid #ddd;page-break-inside:avoid}
-  .prr .n{font-weight:900;letter-spacing:.06em;font-size:10px}
-  .prr .n.g{color:#1f8f57}.prr .n.r{color:#b8412f}.prr .n.a{color:#a8791c}.prr .n.n{color:#666}
-  .prr .w{color:#444;font-size:10.5px;margin-top:2px}
-  .prf{margin-top:14px;font-size:9.5px;color:#666;border-top:1px solid #BF9000;padding-top:8px}
-}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
 <h1>Cockpit — Only What You Need</h1>
 <div id="alertBanner"></div>
@@ -124,14 +75,8 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div class="tf" data-i="1d" data-r="3mo" onclick="setTF(this)">1D</div>
 </div>
 
-<canvas id="cv" height="404"></canvas>
+<canvas id="cv" height="340"></canvas>
 <div id="status">Enter ticker → PULL. Auto-refreshes every 45s.</div>
-
-<div id="readPanel" style="display:none">
-  <div class="rp-h"><span>THE READ — where price stands, and what each line means</span><span id="rpSide"></span></div>
-  <div style="display:flex;gap:6px;margin:4px 0 8px"><button onclick="printRead()" style="flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px;font-weight:800;font-size:10.5px;cursor:pointer">🖨 PRINT THE READ (chart + every signal)</button></div>
-  <div id="rpRows"></div>
-</div>
 
 <div class="strip" id="gkStrip">
   <div class="gk"><div class="l">Δ Delta</div><div class="v" id="g_d">—</div></div>
@@ -143,7 +88,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 </div>
 
 <div class="pos">
-  <select id="dir" onchange="draw();drawRead();"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
+  <select id="dir"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
   <input id="entry" type="number" step="0.01" placeholder="Entry">
   <input id="stop" type="number" step="0.01" placeholder="Stop">
   <input id="target" type="number" step="0.01" placeholder="Target">
@@ -161,7 +106,6 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div class="lp" id="h_rsi" onclick="info('rsi')"><div class="d"></div><div class="n">RSI</div></div>
   <div class="lp" id="h_macd" onclick="info('macd')"><div class="d"></div><div class="n">MACD</div></div>
   <div class="lp" id="h_mom" onclick="info('mom')"><div class="d"></div><div class="n">MOM</div></div>
-  <div class="lp" id="h_adx" onclick="info('adx')"><div class="d"></div><div class="n">ADX</div></div>
   <div class="lp" id="h_vol" onclick="info('vol')"><div class="d"></div><div class="n">VOL</div></div>
 </div>
 <div class="lamps">
@@ -180,10 +124,6 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div id="imBox"><h3 id="imTitle">—</h3><div class="body" id="imBody"></div>
   <button class="close" onclick="closeInfo()">CLOSE</button></div>
 </div>
-
-<div id="printHead"><div class="k">KORNIS PROTOCOL — THE READ</div><div class="s"><span id="prMeta"></span></div></div>
-<img id="prChart" alt="">
-<div id="printDigest"></div>
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
@@ -210,33 +150,6 @@ function vwapAll(t,h,l,c,v){const o=[];let pv=0,vv=0,day=null;for(let i=0;i<c.le
 function rsiAll(c,p){p=p||14;const o=new Array(c.length).fill(null);let g=0,l=0;for(let i=1;i<=p&&i<c.length;i++){const d=c[i]-c[i-1];if(d>0)g+=d;else l-=d;}g/=p;l/=p;if(c.length>p)o[p]=100-100/(1+(l===0?100:g/l));for(let i=p+1;i<c.length;i++){const d=c[i]-c[i-1];g=(g*(p-1)+(d>0?d:0))/p;l=(l*(p-1)+(d<0?-d:0))/p;o[i]=100-100/(1+(l===0?100:g/l));}return o;}
 function macdAll(c){const a=emaAll(c,12),b=emaAll(c,26);const m=c.map((_,i)=>a[i]-b[i]);const s=emaAll(m,9);return{m,s,hist:m.map((x,i)=>x-s[i])};}
 function momAll(c,p){p=p||12;return c.map((x,i)=>i<p?null:x-c[i-p]);}
-function structLevels(){
-  if(!BARS)return null;const T=BARS.T,H=BARS.H,L=BARS.L,C=BARS.C;
-  const days=[];let cur=[];let d0=null;
-  for(let i=0;i<T.length;i++){const d=new Date(T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});
-    if(d0!==null&&d!==d0){days.push(cur);cur=[];}d0=d;cur.push(i);}
-  days.push(cur);
-  const today=days[days.length-1],prior=days.length>1?days[days.length-2]:null;
-  const o={};
-  if(prior&&prior.length){o.pdh=Math.max(...prior.map(i=>H[i]));o.pdl=Math.min(...prior.map(i=>L[i]));o.pdc=C[prior[prior.length-1]];}
-  if(today&&today.length){o.orH=H[today[0]];o.orL=L[today[0]];o.dayHi=Math.max(...today.map(i=>H[i]));o.dayLo=Math.min(...today.map(i=>L[i]));}
-  return o;
-}
-function adxAll(H,L,C,p){p=p||14;const n=C.length;const tr=[],pdm=[],ndm=[];
-  for(let i=0;i<n;i++){if(i===0){tr.push(H[0]-L[0]);pdm.push(0);ndm.push(0);continue;}
-    const up=H[i]-H[i-1],dn=L[i-1]-L[i];
-    pdm.push(up>dn&&up>0?up:0);ndm.push(dn>up&&dn>0?dn:0);
-    tr.push(Math.max(H[i]-L[i],Math.abs(H[i]-C[i-1]),Math.abs(L[i]-C[i-1])));}
-  const sm=(a)=>{const o=[];let s=null;for(let i=0;i<n;i++){if(i<p){o.push(null);if(i===p-1){s=0;for(let j=0;j<p;j++)s+=a[j];o[i]=s;}continue;}s=s-s/p+a[i];o.push(s);}return o;};
-  const str=sm(tr),spd=sm(pdm),snd=sm(ndm);
-  const pdi=[],ndi=[],dx=[];
-  for(let i=0;i<n;i++){if(str[i]==null||!str[i]){pdi.push(null);ndi.push(null);dx.push(null);continue;}
-    const a=100*spd[i]/str[i],b=100*snd[i]/str[i];pdi.push(a);ndi.push(b);dx.push((a+b)?100*Math.abs(a-b)/(a+b):0);}
-  const adx=[];let s=null,cnt=0;
-  for(let i=0;i<n;i++){if(dx[i]==null){adx.push(null);continue;}
-    if(s==null){cnt++;s=(s||0)+dx[i];if(cnt<p){adx.push(null);continue;}s=s/p;adx.push(s);continue;}
-    s=(s*(p-1)+dx[i])/p;adx.push(s);}
-  return {adx,pdi,ndi};}
 
 /* ---------- Black-Scholes ---------- */
 function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
@@ -260,10 +173,10 @@ async function loadAll(){
   let b=null,used=null;
   for(const[i,r] of plan){try{b=await fetchHist(tk,i,r);if(b){used=i;break;}}catch(e){}}
   if(!b){st.innerHTML='<b>No history at any interval.</b> The worker needs the v4.2 ?hist route — repaste worker code + API key in Cloudflare.';return;}
-  BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12),adx:adxAll(b.H,b.L,b.C,14)};
+  BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12)};
   st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString();
-  loadChain(tk);draw();health();drawRead();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();}},45000);
+  loadChain(tk);draw();health();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12)};draw();health();}},45000);
 }
 let CHAIN_RETRY=null;
 function loadChain(tk){
@@ -362,7 +275,7 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 function draw(){
   if(!BARS)return;
   const dpr=window.devicePixelRatio||1;
-  const W=cv.clientWidth,Hh=404,MH=44,AH=50,PH=Hh-MH-AH-12;cv.height=Hh*dpr;cv.width=W*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+  const W=cv.clientWidth,Hh=340,MH=44,PH=Hh-MH-6;cv.height=Hh*dpr;cv.width=W*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,W,Hh);
   const n=BARS.C.length,show=Math.min(n,IV==='1d'?60:78),s0=n-show;
   const padR=52,cw=(W-padR)/show;
@@ -405,10 +318,6 @@ function draw(){
     ctx.beginPath();ctx.moveTo(0,y(v));ctx.lineTo(W-padR,y(v));ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.stroke();ctx.restore();
     ctx.fillStyle=col;ctx.font='700 9px sans-serif';ctx.fillText(lbl+' '+n2(v),W-padR+2,y(v)+3);};
   if(LVL){hline(LVL.cw,'#E05B44','CW',true);hline(LVL.pw,'#2FB673','PW',true);hline(LVL.mp,'#E0A93F','MP',true);}
-  /* structural walls — always drawn from the tape itself */
-  const SL=structLevels();
-  if(SL){hline(SL.pdh,'rgba(224,169,63,0.75)','PDH',true);hline(SL.pdl,'rgba(224,169,63,0.75)','PDL',true);
-    hline(SL.pdc,'rgba(126,138,160,0.8)','PDC',true);hline(SL.orH,'rgba(217,180,74,0.55)','ORH',true);hline(SL.orL,'rgba(217,180,74,0.55)','ORL',true);}
   hline(E,'#D9B44A','E');hline(S,'#E05B44','S');hline(Tg,'#2FB673','T');
   /* last price */
   const last=BARS.C[n-1];
@@ -428,107 +337,10 @@ function draw(){
       ctx.fillRect(x(i)-bw2/2,mh[i]>=0?zy-bh:zy,bw2,Math.max(1,bh));}
     ctx.fillStyle='#8A93A6';ctx.font='700 8px sans-serif';ctx.fillText('MACD',W-padR+2,zy+3);
   }
-  /* legend — name the lines */
-  ctx.font='700 9px sans-serif';
-  const leg=[['9 EMA','#D9B44A'],['20 SMA','#5a82c8'],['VWAP','#c95aa0'],['BB','rgba(90,130,200,0.9)']];
-  let lx=6;leg.forEach(([t,c])=>{ctx.fillStyle=c;ctx.fillRect(lx,6,10,3);ctx.fillText(t,lx+13,10);lx+=ctx.measureText(t).width+26;});
-  /* ADX strip: +DI green, -DI red, ADX gold; 20/25 trend thresholds */
-  if(BARS.adx){
-    const A=BARS.adx;const top=PH+6+MH+6,bot=top+AH;
-    const ya=v=>bot-2-(Math.min(v,60)/60)*(AH-4);
-    ctx.fillStyle='rgba(13,21,38,0.6)';ctx.fillRect(0,top,W-padR,AH);
-    [20,25].forEach(t=>{ctx.beginPath();ctx.setLineDash([3,3]);ctx.moveTo(0,ya(t));ctx.lineTo(W-padR,ya(t));ctx.strokeStyle='rgba(138,147,166,0.35)';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);});
-    const aline=(arr,col,wd)=>{ctx.beginPath();let st=false;for(let i=s0;i<n;i++){if(arr[i]==null)continue;if(!st){ctx.moveTo(x(i),ya(arr[i]));st=true;}else ctx.lineTo(x(i),ya(arr[i]));}ctx.strokeStyle=col;ctx.lineWidth=wd;ctx.stroke();};
-    aline(A.pdi,'rgba(47,182,115,0.9)',1);aline(A.ndi,'rgba(224,91,68,0.9)',1);aline(A.adx,'#D9B44A',1.8);
-    const av=A.adx[n-1],pv=A.pdi[n-1],nv=A.ndi[n-1];
-    ctx.fillStyle='#D9B44A';ctx.font='800 9px sans-serif';ctx.fillText('ADX '+(av!=null?av.toFixed(0):'—'),W-padR+2,top+11);
-    ctx.fillStyle='#2FB673';ctx.font='700 8px sans-serif';ctx.fillText('+DI '+(pv!=null?pv.toFixed(0):'—'),W-padR+2,top+23);
-    ctx.fillStyle='#E05B44';ctx.fillText('-DI '+(nv!=null?nv.toFixed(0):'—'),W-padR+2,top+34);
-    ctx.fillStyle='#8A93A6';ctx.fillText(av==null?'':(av>=25?'TRENDING':av>=20?'BUILDING':'CHOP'),W-padR+2,top+46);
-    /* unscored lamp: ADX strength */
-    const al=document.getElementById('h_adx');if(al&&av!=null)al.className='lp '+(av>=25?'ok':av>=20?'warn':'bad');
-  }
 }
-
-/* ---- THE READ: every indicator, price relation, one-sentence meaning ---- */
-
-function printRead(){
-  if(!BARS){alert('Pull a ticker first.');return;}
-  const n=BARS.C.length-1,L=document.getElementById('dir').value==='long';
-  const when=new Date().toLocaleString('en-US',{timeZone:'America/Chicago',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  document.getElementById('prMeta').textContent=BARS.tk+' · $'+n2(BARS.C[n])+' · reading for '+(L?'CALLS':'PUTS')+' · '+when+' CT · '+IV+' bars';
-  try{document.getElementById('prChart').src=cv.toDataURL('image/png');}catch(e){}
-  const rows=[...document.querySelectorAll('#rpRows .rpr')].map(r=>({n:r.querySelector('.nm').textContent,c:r.querySelector('.nm').className.replace('nm ','').trim(),rel:r.querySelector('.rel').textContent,why:r.querySelector('.why').textContent}));
-  const E=document.getElementById('entry').value,S=document.getElementById('stop').value,Tg=document.getElementById('target').value;
-  let d=rows.map(r=>'<div class="prr"><div class="n '+r.c+'">'+r.n+'</div><div><div>'+r.rel+'</div><div class="w">'+r.why+'</div></div></div>').join('');
-  d+='<div class="prf">Position plan: entry '+(E||'—')+' · stop '+(S||'—')+' · target '+(Tg||'—')+' · Lines: gold 9 EMA · blue 20 SMA · pink VWAP · dashed walls PDH/PDL/PDC/ORH/ORL + CW/PW/MP when loaded. '+
-     'Green = in favor of this side · Red = against · Amber = stretched or undecided. Standing law: bracket on the ticket, half at T1, flat by 2:45 CT.</div>';
-  document.getElementById('printDigest').innerHTML=d;
-  window.print();
-}
-
-function drawRead(){
-  const P=document.getElementById('readPanel');if(!BARS){P.style.display='none';return;}
-  P.style.display='block';
-  const n=BARS.C.length-1,px=BARS.C[n],L=document.getElementById('dir').value==='long';
-  document.getElementById('rpSide').textContent=(BARS.tk||'')+' · reading for '+(L?'CALLS':'PUTS');
-  const rel=(v)=>{if(v==null)return null;const d=px-v;return {d,pct:d/v*100,above:d>=0};};
-  const fmtRel=(r,lbl)=>r==null?'—':(r.above?'above ':'below ')+lbl+' by $'+Math.abs(r.d).toFixed(2)+' ('+Math.abs(r.pct).toFixed(2)+'%)';
-  const good=(above)=>L?above:!above;   /* is being above good for this side? */
-  const rows=[];
-  const SL=structLevels()||{};
-  /* 9 EMA */
-  {const r=rel(BARS.e9[n]);const ok=good(r.above);
-   rows.push(['9 EMA',ok?'g':'r',fmtRel(r,'$'+n2(BARS.e9[n])),ok?'Riding the fast average — momentum is current, hold while it holds.':'On the wrong side of the ride line — the short-term move against you is live; this is the scalp exit line.']);}
-  /* 20 SMA */
-  {const r=rel(BARS.s20[n]);const ok=good(r.above);const x9=L?BARS.e9[n]>BARS.s20[n]:BARS.e9[n]<BARS.s20[n];
-   rows.push(['20 SMA',ok?(x9?'g':'a'):'r',fmtRel(r,'$'+n2(BARS.s20[n]))+(x9?' · 9 over 20 aligned':' · 9/20 NOT aligned'),ok?(x9?'The hundred-minute trend agrees with the short-term one — the textbook alignment.':'Price is right but the averages haven\'t crossed yet — early, needs confirmation.'):'Below the slow average — the broader intraday trend is against this side.']);}
-  /* VWAP */
-  {const r=rel(BARS.vw[n]);const ok=good(r.above);
-   rows.push(['VWAP',ok?'g':'r',fmtRel(r,'$'+n2(BARS.vw[n])),ok?'The day\'s crowd paid less than this — they\'re in profit and defending; your side owns the session.':'The average buyer today is underwater on your side — the crowd is against you; two closes here = character change.']);}
-  /* Bollinger */
-  {const u=BARS.bb.u[n],l=BARS.bb.l[n],m=BARS.bb.m[n];let s='n',t='',w='';
-   if(u!=null){const pos=(px-l)/((u-l)||1);t='at '+(pos*100).toFixed(0)+'% of the band ($'+n2(l)+'–$'+n2(u)+')';
-     if(pos>0.95){s=L?'a':'g';w=L?'Riding the upper band — strong, but stretched: no chasing here, trail instead.':'Pinned to the upper band — for puts this is the stretch that snaps back.';}
-     else if(pos<0.05){s=L?'g':'a';w=L?'At the lower band — washed out; for calls this is where reclaims start, not where you chase down.':'Riding the lower band — strong for puts, but stretched: trail, don\'t add.';}
-     else if(pos>0.5){s=L?'g':'r';w=L?'Upper half of the band — buyers in control with room to the top.':'Upper half — puts are fighting the band\'s lean.';}
-     else{s=L?'r':'g';w=L?'Lower half — calls are fighting the band\'s lean.':'Lower half — sellers in control with room to the bottom.';}}
-   rows.push(['BOLL',s,t||'—',w||'Insufficient bars.']);}
-  /* RSI */
-  {const v=BARS.rsi[n];let s='n',w='';
-   if(v!=null){const okL=v>=45&&v<=72,okS=v>=28&&v<=55;const ok=L?okL:okS;s=ok?'g':(v>72||v<28?'a':'r');
-     w=v>72?'Stretched hot — momentum is real but late; entries here are chasing.':v<28?'Washed out — sellers exhausted; puts here are chasing, calls need a reclaim first.':ok?'Momentum in the healthy zone with room left to run.':'Momentum is leaning the other way — this side lacks thrust right now.';
-     rows.push(['RSI 14',s,v.toFixed(0)+(v>=50?' — above 50 (bullish half)':' — below 50 (bearish half)'),w]);}}
-  /* MACD */
-  {const mh=BARS.macd.hist;const a=mh[n],b=mh[n-1];const grow=Math.abs(a)>=Math.abs(b);const bull=a>0;
-   const ok=L?(bull&&grow)||(a>b):(!bull&&grow)||(a<b);
-   rows.push(['MACD',ok?'g':'r',(bull?'positive':'negative')+' histogram, '+(grow?'growing':'shrinking'),ok?'Acceleration is with you — the engine turns before price; this is the earliest confirmation.':'Deceleration against you — reversals show here 2–4 candles before the 9 EMA breaks; stop adding.']);}
-  /* Momentum */
-  {const v=BARS.mom[n];if(v!=null){const ok=L?v>0:v<0;
-   rows.push(['MOM 12',ok?'g':'r',(v>=0?'+':'')+v.toFixed(2)+' over the last hour',ok?'The last hour is net in your favor — thrust confirms the tape.':'The last hour is net against you even if the current candle looks fine — slow bleeds start here.']);}}
-  /* ADX */
-  {const A=BARS.adx;if(A){const v=A.adx[n],p=A.pdi[n],q=A.ndi[n];if(v!=null){const s=v>=25?'g':v>=20?'a':'r';const dom=p>q?'+DI leads (buyers)':'−DI leads (sellers)';
-   rows.push(['ADX 14',s,v.toFixed(0)+' · '+dom,v>=25?'A real trend exists — trend-following rules apply; trail the 9 EMA and let winners run.':v>=20?'A trend is forming — breakouts are starting to stick; be ready, not early.':'Chop — breakouts fail and theta wins; no new trend trades until this rises.']);}}}
-  /* Structure */
-  if(SL.pdh){const r1=rel(SL.pdh),r2=rel(SL.pdl);let s,t,w;
-   if(px>SL.pdh){s=L?'g':'r';t='above yesterday\'s high ($'+n2(SL.pdh)+')';w=L?'Breaking yesterday\'s high — trapped shorts fuel calls; hold above it or it\'s a failed break.':'Above yesterday\'s high — puts here are fighting fresh breakout buyers.';}
-   else if(px<SL.pdl){s=L?'r':'g';t='below yesterday\'s low ($'+n2(SL.pdl)+')';w=L?'Below yesterday\'s low — calls are catching a knife; wait for a reclaim.':'Breaking yesterday\'s low — trapped longs fuel puts; hold below it or it\'s a failed break.';}
-   else{s='a';t='inside yesterday\'s range ($'+n2(SL.pdl)+'–$'+n2(SL.pdh)+')';w='Inside the prior range — no one is trapped yet; the break of either edge is the event.';}
-   rows.push(['PD RANGE',s,t,w]);}
-  if(SL.orH){let s,t,w;
-   if(px>SL.orH){s=L?'g':'r';t='above the opening range high ($'+n2(SL.orH)+')';w=L?'Opening-range breakout held — the day\'s first decision went to buyers.':'Above the opening range — the morning voted against puts.';}
-   else if(px<SL.orL){s=L?'r':'g';t='below the opening range low ($'+n2(SL.orL)+')';w=L?'Below the opening range — the morning voted against calls.':'Opening-range breakdown held — the day\'s first decision went to sellers.';}
-   else{s='a';t='inside the opening range ($'+n2(SL.orL)+'–$'+n2(SL.orH)+')';w='Still inside the first five minutes\' range — the day has not chosen; no trigger exists yet.';}
-   rows.push(['OPEN RANGE',s,t,w]);}
-  if(LVL&&LVL.cw&&LVL.pw){const dc=LVL.cw-px,dp=px-LVL.pw;
-   rows.push(['WALLS',dc>0&&dp>0?'a':'n','$'+dc.toFixed(2)+' below the call wall ($'+n2(LVL.cw)+') · $'+dp.toFixed(2)+' above the put wall ($'+n2(LVL.pw)+')',
-     'The walls are where dealers defend — expect stalls at the first touch; a third test usually breaks. Targets live just inside them.']);}
-  document.getElementById('rpRows').innerHTML=rows.map(r=>'<div class="rpr"><div class="nm '+r[1]+'">'+r[0]+'</div><div><div class="rel">'+r[2]+'</div><div class="why">'+r[3]+'</div></div></div>').join('');
-}
-
 window.addEventListener('resize',draw);
 document.getElementById('dir').addEventListener('change',()=>{if(BARS){loadChain(BARS.tk);health();}});
-['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();}));
+['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();}));
 
 /* ---------- health + alerts ---------- */
 function lamp(id,state){const el=document.getElementById('h_'+id);el.className='lp '+(state===1?'ok':state===0?'bad':'warn');return state===1?1:0;}
@@ -645,7 +457,6 @@ ema:{t:'9 EMA — Ride Line',b:'Gold line on the chart. Strong scalps ride it li
 align:{t:'Trend — 9EMA vs 20SMA',b:'Gold (9 EMA) vs blue (20 SMA): the argument between the PRESENT and the recent past. Four states:<br><br><b>1 RIDE</b> <span class="gg">9 over 20, both rising, price on the 9</span> — the only fully open state. Enter the pullback that kisses the 9 and holds.<br><b>2 STRETCHED</b> — price 3–4 ATRs above the 9: a chase, not an entry. The 9 is an anchor; snapbacks feed on late buyers.<br><b>3 BRAID</b> <span class="rr">lines flat &amp; twisted, price whipping through</span> — chop. Every cross in a braid is a lie. NO TRADE.<br><b>4 CROSS</b> — 9 under 20 after a trend: no-new-longs gate; first structural short sign.<br><br><b>The 20 is the first wall:</b> first touch usually REJECTS (buy it, stop below) — second/third touch usually BREAKS (the resting orders are eaten).<br><br><b>Gap = health:</b> new price high on a NARROWER 9-to-20 gap = the move is dying while the chart still looks fine.<br><br><b>Do:</b> 60 seconds before every trigger — which state, which touch, expanding or narrowing. Full masterclass in PLAYBOOK 4a.'},
 rsi:{t:'RSI 14 — Fuel Gauge',b:'<span class="gg">GREEN long:</span> 45–75 with room to run. <span class="gg">GREEN short:</span> 25–55.<br><span class="rr">RED:</span> fuel gone (rolled out of zone) or over-stretched (&gt;75 / &lt;25) where snapbacks live.<br><br><b>Do:</b> stretched with profit showing = take some off into strength. Faded = watch the 9 EMA; it breaks next.'},
 macd:{t:'MACD Histogram — Acceleration',b:'Turns before price — your earliest warning.<br><br><span class="rr">RED:</span> bars shrinking or flipped against you. Deceleration precedes reversal, usually 2–4 candles ahead of the 9 EMA break.<br><br><b>Do:</b> don\'t exit on this alone — stop adding, raise the stop, treat the next 9 EMA test as decisive.'},
-adx:{t:'ADX 14 — Trend Strength (not direction)',b:'The gold line in the bottom strip measures how STRONG the trend is, regardless of which way. +DI (green) vs −DI (red) show who is winning.<br><br><span class=\"gg\">ADX ≥ 25:</span> a real trend — trend-following rules apply, trail the 9 EMA, let winners run.<br><span class=\"rr\">ADX &lt; 20:</span> chop — breakouts fail, the 9/20 whipsaw, theta wins. No new trend trades.<br>20–25: a trend forming — the moment breakouts start to stick.<br><br><b>Read with the lines above:</b> 9 EMA (gold) above 20 SMA (blue) + ADX rising + +DI over −DI = the textbook long. The same picture inverted = the textbook short. ADX rising while price goes sideways = coiling; the break is near.<br><br><b>Do:</b> this lamp is NOT in the 7-score — it is context. Green: trust breakouts. Red: fade them or stay out. Not a timing tool; a permission tool.'},
 mom:{t:'Momentum 12',b:'Price now minus price 12 bars ago — raw thrust of the last hour.<br><br><span class="rr">RED:</span> the last hour is net against you even if the current candle looks fine. Slow bleeds show here first.<br><br><b>Do:</b> red alone is noise. Red + red MACD together = the fade is real; tighten.'},
 vol:{t:'Volume With vs Against — The Veto',b:'Sums the last six candles\' volume by direction. Price can drift; volume shows where real money pushes.<br><br><span class="rr">RED:</span> heavier volume on the candles moving against you — a light-volume rally over heavy red bars is a fake.<br><br><b>Do:</b> volume holds the VETO. Believe the volume, not the price. Scale down or out.'},
 stop:{t:'Stop Distance',b:'Runway left, measured against total risk (entry→stop).<br><br><span style="color:var(--amber);font-weight:700">AMBER:</span> inside 25% — one candle can take you out. Decide: setup valid = hold; decaying = exit on YOUR terms at a better price than the stop.<br><span class="rr">RED:</span> level touched — the voice tells you: execute, no debate.'},
@@ -655,42 +466,4 @@ clock:{t:'Clock — No Overnights',b:'Your rule, enforced.<br><br><span class="g
 function info(k){const d=INFO[k];if(!d)return;document.getElementById('imTitle').textContent=d.t;document.getElementById('imBody').innerHTML=d.b;document.getElementById('imWrap').classList.add('open');}
 function closeInfo(){document.getElementById('imWrap').classList.remove('open');}
 </script>
-
-<script>
-(function(){
-  var REL='https://kornis-ai-relay.rick-018.workers.dev';
-  var el=document.getElementById('ktape'); if(!el) return;
-  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
-  function cell(tk,px,chg){
-    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
-    var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
-  }
-  function paint(data){ el.innerHTML=board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
-  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
-  function setC(tk,px,chg){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg}));}catch(e){}}
-  var DATA={};
-  function load(){
-    var tks=board(); var i=0;
-    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg};}});
-    paint(DATA);
-    function next(){
-      if(i>=tks.length)return;
-      var tk=tks[i++];
-      if(getC(tk)){setTimeout(next,80);return;}
-      fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
-        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
-        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null;
-        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];break;} }
-        var pc=res.meta&&res.meta.chartPreviousClose;
-        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
-        if(px!=null){DATA[tk]={px:px,chg:chg};setC(tk,px,chg);paint(DATA);}
-      }).catch(function(){}).finally(function(){setTimeout(next,350);});
-    }
-    next();
-  }
-  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
-})();
-</script>
-
 </body></html>

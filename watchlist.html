@@ -4,10 +4,10 @@
 <title>Morning Autopilot · Kornis Protocol</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:12px 9px 90px;max-width:640px;margin:0 auto}
-h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
+h1{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
 .sub{text-align:center;font-size:9.5px;color:var(--dim);margin-bottom:10px;letter-spacing:.06em}
 .sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:12px 0 6px;display:flex;justify-content:space-between;align-items:center}
 .row{display:flex;gap:6px;margin-top:4px}
@@ -98,30 +98,7 @@ button.big:disabled{opacity:.4}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
-
-/* ===== KORNIS INTERIOR KIT — phase two facelift ===== */
-button{border-radius:9px!important;font-weight:800!important;letter-spacing:.05em!important}
-input,select,textarea{border-radius:8px!important;border-color:var(--line)!important}
-input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important}
-::placeholder{color:#5A6478!important}
-
-.card{border-radius:12px!important;box-shadow:none!important}
-.badge .n{font-family:Georgia,serif!important}
-.tk{font-family:Georgia,serif!important;letter-spacing:.02em}
-.px{font-variant-numeric:tabular-nums}
-.sec{letter-spacing:.2em!important;font-size:9.5px!important}
-
-
-/* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-#ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
-.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
 <h1>Morning Autopilot</h1>
 <div class="sub">TAP ANY SCORE TO SEE EXACTLY WHY — EVERY NUMBER IS A LESSON</div>
@@ -630,42 +607,4 @@ drawPinned();drawUniverse();
 if(Object.keys(SCORES).length)buildFeature();
 document.getElementById('addTk').addEventListener('keydown',e=>{if(e.key==='Enter')addBoard();});
 </script>
-
-<script>
-(function(){
-  var REL='https://kornis-ai-relay.rick-018.workers.dev';
-  var el=document.getElementById('ktape'); if(!el) return;
-  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
-  function cell(tk,px,chg){
-    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
-    var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
-  }
-  function paint(data){ el.innerHTML=board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
-  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
-  function setC(tk,px,chg){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg}));}catch(e){}}
-  var DATA={};
-  function load(){
-    var tks=board(); var i=0;
-    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg};}});
-    paint(DATA);
-    function next(){
-      if(i>=tks.length)return;
-      var tk=tks[i++];
-      if(getC(tk)){setTimeout(next,80);return;}
-      fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
-        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
-        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null;
-        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];break;} }
-        var pc=res.meta&&res.meta.chartPreviousClose;
-        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
-        if(px!=null){DATA[tk]={px:px,chg:chg};setC(tk,px,chg);paint(DATA);}
-      }).catch(function(){}).finally(function(){setTimeout(next,350);});
-    }
-    next();
-  }
-  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
-})();
-</script>
-
 </body></html>
