@@ -191,26 +191,31 @@ boot();
     var sign=chg==null?'':(chg>=0?'+':'');
     return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
-  function paint(data){ el.innerHTML=board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
+  function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
+  function paint(data){ el.innerHTML=chip(data)+board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
   function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
-  function setC(tk,px,chg){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg}));}catch(e){}}
+  function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
   var DATA={};
   function load(){
     var tks=board(); var i=0;
-    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg};}});
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
     paint(DATA);
     function next(){
       if(i>=tks.length)return;
       var tk=tks[i++];
       if(getC(tk)){setTimeout(next,80);return;}
-      fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+      var pre=phase()==='PRE'||phase()==='AFTER';
+      var p=pre?fetch(REL+'/?pm='+encodeURIComponent(tk)).then(function(r){return r.json();}).then(function(j){if(j&&j.last!=null){return {px:j.last,chg:j.gapPct,t:j.lastT,pm:true};}throw 0;}):Promise.reject(0);
+      p.catch(function(){return fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
         var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
-        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null;
-        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];break;} }
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null,t=0;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];t=ts[k];break;} }
         var pc=res.meta&&res.meta.chartPreviousClose;
         var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
-        if(px!=null){DATA[tk]={px:px,chg:chg};setC(tk,px,chg);paint(DATA);}
-      }).catch(function(){}).finally(function(){setTimeout(next,350);});
+        return {px:px,chg:chg,t:t,pm:false};});})
+      .then(function(d){if(d&&d.px!=null){DATA[tk]=d;setC(tk,d.px,d.chg,d.t,d.pm);paint(DATA);}})
+      .catch(function(){}).finally(function(){setTimeout(next,350);});
     }
     next();
   }

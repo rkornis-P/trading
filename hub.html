@@ -1,84 +1,207 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Kornis Command</title>
+<title>Kornis Protocol — Command</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:18px 12px 90px;max-width:620px;margin:0 auto}
-.crest{text-align:center;margin-bottom:4px}
-.crest .k{display:inline-block;width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e8c968,#BF9000 60%,#8a6800);color:#0B1220;font-weight:900;font-size:24px;line-height:46px;font-family:Georgia,serif}
-h1{font-size:15px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin:6px 0 1px}
-.motto{text-align:center;font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:16px}
-.sec{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin:14px 0 7px}
-.mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-a.mod{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px 13px;text-decoration:none}
-a.mod:active{border-color:var(--gold)}
-a.mod .t{color:var(--gold-soft);font-weight:800;font-size:13px;letter-spacing:.04em}
-a.mod .d{color:var(--dim);font-size:10.5px;line-height:1.45;margin-top:4px}
-a.mod.hero{grid-column:span 2;background:linear-gradient(155deg,#182448,#121B2E);border:1.5px solid var(--gold)}
-a.mod.hero .t{font-size:15px}
-a.mod.hero .d{color:var(--text);font-size:11.5px}
-.seq{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px 13px;font-size:11px;line-height:1.7;color:var(--dim)}
-.seq b{color:var(--gold-soft)}
-.knav{position:fixed;bottom:0;left:0;right:0;background:#0a1120;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:18px 12px 92px;max-width:640px;margin:0 auto}
+
+/* masthead — engraved letterhead */
+#mast{text-align:center;padding:6px 0 14px}
+#mast .rule{height:0;border-top:2.5px solid var(--gold);border-bottom:1px solid var(--gold);padding-top:2px;margin:0 8px}
+#mast h1{font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;letter-spacing:.22em;color:var(--gold-soft);margin:14px 0 4px;text-transform:uppercase}
+#mast .sub{font-size:8.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase;margin-bottom:12px}
+#mast .live{font-size:11px;color:var(--dim)}
+#mast .live b{color:var(--gold-soft);font-weight:700}
+
+/* the desk — hero */
+#hero{display:block;text-decoration:none;color:inherit;background:linear-gradient(168deg,#16223E,var(--card));border:1.5px solid var(--gold);border-radius:16px;padding:18px 16px;margin:14px 0 6px}
+#hero .eyebrow{font-size:8.5px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+#hero .t{font-family:Georgia,serif;font-size:23px;font-weight:700;color:var(--gold-soft);letter-spacing:.06em;margin:5px 0 6px}
+#hero .d{font-size:11.5px;line-height:1.6;color:var(--ink)}
+#hero .d i{color:var(--dim);font-style:normal}
+#hero:active{background:linear-gradient(168deg,#1A2848,var(--card))}
+
+/* docket sections */
+.docket{margin-top:20px}
+.dhead{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding:0 2px}
+.dhead .num{font-family:Georgia,serif;font-size:15px;color:var(--gold);font-weight:700}
+.dhead .name{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);font-weight:700}
+.dhead .when{margin-left:auto;font-size:9px;color:var(--dim)}
+.dhead .now{margin-left:auto;font-size:8.5px;letter-spacing:.12em;color:#07120A;background:var(--gold-soft);border-radius:5px;padding:2px 8px;font-weight:800}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cards .wide{grid-column:span 2}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 13px;transition:border-color .15s}
+a.card:active{border-color:var(--gold)}
+a.card .ct{font-family:Georgia,serif;font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:3px}
+a.card .cd{font-size:10.5px;line-height:1.5;color:var(--dim)}
+a.card .ct .badge{font-size:8px;letter-spacing:.1em;color:var(--gold-soft);border:1px solid var(--gold);border-radius:4px;padding:1px 6px;vertical-align:2px;margin-left:6px}
+
+/* the law strip */
+#law{background:var(--card2);border-left:3px solid var(--gold);border-radius:0 10px 10px 0;padding:11px 14px;margin-top:8px;font-size:11px;line-height:1.7;color:var(--dim)}
+#law b{color:var(--gold-soft)}
+
+.foot{text-align:center;font-size:8.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:26px}
+.foot .r{width:60px;height:1px;background:var(--gold);margin:8px auto}
+
+.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+
+/* ===== KORNIS TAPE ===== */
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape::-webkit-scrollbar{display:none}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
 </style></head><body>
+<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div class="crest"><span class="k">K</span></div>
-<h1>Kornis Command</h1>
-<div class="motto">Contra Corruptionem Publicam · Process Over Prediction</div>
+<div id="mast">
+  <div class="rule"></div>
+  <h1>Kornis Protocol</h1>
+  <div class="sub">Trading Chambers · The Law Lives Here</div>
+  <div class="rule" style="transform:scaleY(-1)"></div>
+  <div class="live" style="margin-top:10px"><b id="clk">—</b> · <span id="phase">—</span></div>
+</div>
 
-<a class="mod hero" href="desk.html">
+<a id="hero" href="desk.html">
+  <div class="eyebrow">The One Screen</div>
   <div class="t">★ THE DESK</div>
-  <div class="d">The whole day on one screen: the world read → THE TRADE (trigger · stop · target · contract · size) in plain English → your live position → the clock. Open this, and only this, at 8:15.</div>
+  <div class="d">The whole day, top to bottom: the overnight read → today's definitive trade (trigger · stop · target · contract · size, each in plain English) → the top-5 bench → your live position → the clock. <i>Open this at 8:15 and read for ninety seconds.</i></div>
 </a>
 
-<div class="sec">Deep scan</div>
-<div class="mods">
-  <a class="mod" style="grid-column:span 2" href="watchlist.html"><div class="t">1 · ☀ AUTOPILOT / SCANNER</div><div class="d">The Desk's engine room — full board + 35-name street ranking, tap-any-score lessons.</div></a>
+<div class="docket" id="s1">
+  <div class="dhead"><span class="num">I</span><span class="name">Morning Call</span><span class="when" data-w="7:30–8:35">7:30–8:35</span></div>
+  <div class="cards">
+    <a class="card wide" href="watchlist.html">
+      <div class="ct">Autopilot &amp; Scanner</div>
+      <div class="cd">The Desk's engine room — full board detail, the 40-name street ranking, tap-any-score lessons, and the 🏇 scalp-vehicle screen that picks who deserves a seat on the board.</div>
+    </a>
+  </div>
 </div>
 
-<div class="sec">Hunt — before any order</div>
-<div class="mods">
-  <a class="mod" href="cockpit.html"><div class="t">2 · 🎛 COCKPIT</div><div class="d">Watch the 8:30–8:35 range build. Levels, lamps, walls, voice.</div></a>
-  <a class="mod" href="picker.html"><div class="t">3 · 🎯 PICKER</div><div class="d">Trigger fired? Get The Contract with the liquidity verdict.</div></a>
-  <a class="mod" href="pretrade.html"><div class="t">4 · ⛩ GATES</div><div class="d">The Eleven Gates. No pass, no trade — then bracket ON the ticket.</div></a>
+<div class="docket" id="s2">
+  <div class="dhead"><span class="num">II</span><span class="name">In Session</span><span class="when" data-w="8:35–2:45">8:35–2:45</span></div>
+  <div class="cards">
+    <a class="card" href="cockpit.html"><div class="ct">Cockpit</div><div class="cd">The live chart with walls, lamps, and spoken three-layer alerts.</div></a>
+    <a class="card" href="picker.html"><div class="ct">Picker</div><div class="cd">The exact contract — delta, spread, OI — gate-checked, with alternates.</div></a>
+    <a class="card" href="coach.html"><div class="ct">Coach</div><div class="cd">Fifteen-minute briefings: scouting or in-trade, with dollar-precise orders.</div></a>
+    <a class="card" href="gauges.html"><div class="ct">Gauges</div><div class="cd">Trend Force · Fuel · Theta War, measured against your trade.</div></a>
+  </div>
 </div>
 
-<div class="sec">In the trade — filled &amp; managed</div>
-<div class="mods">
-  <a class="mod" href="coach.html"><div class="t">5 · 🧭 COACH</div><div class="d">Auto 15-min check-ins with a lesson each time. Chain built in.</div></a>
-  <a class="mod" href="gauges.html"><div class="t">6 · 🧮 GAUGES</div><div class="d">Trend Force · Fuel · Theta War — is the position still earning rent?</div></a>
+<div class="docket" id="s3">
+  <div class="dhead"><span class="num">III</span><span class="name">Chambers Review</span><span class="when" data-w="after 3:00">after 3:00</span></div>
+  <div class="cards">
+    <a class="card" href="trades.html"><div class="ct">Trades</div><div class="cd">The day's journal — every fill in ink.</div></a>
+    <a class="card" href="ledger.html"><div class="ct">Ledger</div><div class="cd">Your personal backtest: expectancy, per-signal edge, the self-tuning pass line.</div></a>
+    <a class="card wide" href="library.html"><div class="ct">Library</div><div class="cd">Ask → archive → print. The 20 Questions for setup scrutiny, and every answer kept as precedent.</div></a>
+  </div>
 </div>
 
-<div class="sec">After the close — where the edge compounds</div>
-<div class="mods">
-  <a class="mod" href="trades.html"><div class="t">7 · 🗂 TRADES</div><div class="d">Journal the trade same day — the story, in ink.</div></a>
-  <a class="mod" href="ledger.html"><div class="t">8 · 📒 LEDGER</div><div class="d">Log the result — the machine recalibrates to YOUR wins.</div></a>
+<div class="docket" id="s4">
+  <div class="dhead"><span class="num">IV</span><span class="name">The Law</span></div>
+  <div class="cards">
+    <a class="card wide" href="playbook.html"><div class="ct">The Playbook</div><div class="cd">The constitution — eleven gates, the clock, the masterclasses. Read one chapter on any red day.</div></a>
+  </div>
+  <div id="law"><b>Standing orders:</b> deep ITM 0.65–0.75Δ · 5–10 DTE for scalps, out by 21 · bracket on the ticket, always · half at T1, stop to breakeven · no new risk 11:00–12:30 · last entry 2:00 · <b>flat by 2:45</b> · the volume veto outranks everything · never round-trip a double.</div>
 </div>
 
-<div class="sec">The Law — read anytime, obeyed always</div>
-<div class="mods">
-  <a class="mod" href="playbook.html"><div class="t">📜 PLAYBOOK</div><div class="d">Rules + masterclasses. One chapter per coffee.</div></a>
-  <a class="mod" href="library.html"><div class="t">📚 LIBRARY</div><div class="d">Ask → archived forever → print or save as PDF.</div></a>
+<div class="docket" id="s5">
+  <div class="dhead"><span class="num">V</span><span class="name">The Experiment</span><span class="when" data-w="runs itself">runs itself</span></div>
+  <div class="cards">
+    <a class="card wide" href="paperdesk.html">
+      <div class="ct">Paper Desk <span class="badge">AUTONOMOUS</span></div>
+      <div class="cd">The machine's own $100k paper account, trading under your law — journal, equity curve, kill switch. On probation: sixty trades before judgment.</div>
+    </a>
+  </div>
 </div>
 
-<div class="sec">The Daily Sequence</div>
-<div class="seq">
-<b>8:15</b> Autopilot brief (1) → <b>8:30</b> brackets in Fidelity → <b>8:35</b> range decides in Cockpit (2) → <b>trigger</b> Picker (3) → Gates (4) → order at MID, bracket on → Coach auto-15 (5) + Gauges (6) → <b>11:00–12:30</b> lunch, no new risk → <b>2:00</b> last entry → <b>2:45</b> FLAT → <b>evening</b> Trades journal (7) + Ledger log (8), win or lose.
-</div>
+<div style="text-align:center;margin-top:14px"><a href="health.html" style="font-size:10px;letter-spacing:.14em;color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:7px 14px">⚙ HEALTH CHECK — is everything current?</a></div>
+<div class="foot"><div class="r"></div>Discipline is the edge<div class="r"></div></div>
 
 <div class="knav">
   <a href="hub.html" class="on">COMMAND</a>
-  <a href="watchlist.html">SCAN</a>
+  <a href="desk.html">DESK</a>
   <a href="cockpit.html">COCKPIT</a>
-  <a href="picker.html">PICKER</a>
+  <a href="paperdesk.html">PAPER</a>
   <a href="coach.html">COACH</a>
   <a href="trades.html">TRADES</a>
   <a href="ledger.html">LEDGER</a>
 </div>
+
+<script>
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function tick(){
+  const n=ctNow(),m=n.getHours()*60+n.getMinutes();
+  document.getElementById('clk').textContent=n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  let ph='Market closed — chambers review',sec=null;
+  const wd=n.getDay()>=1&&n.getDay()<=5;
+  if(wd){
+    if(m>=7*60&&m<8*60+35){ph='Morning call — run the brief';sec='s1';}
+    else if(m>=8*60+35&&m<11*60){ph='In session — prime hunt';sec='s2';}
+    else if(m>=11*60&&m<12*60+30){ph='Lunch — no new risk';sec='s2';}
+    else if(m>=12*60+30&&m<14*60+45){ph='In session — afternoon';sec='s2';}
+    else if(m>=14*60+45&&m<15*60+30){ph='Flat — the law held';sec='s3';}
+    else if(m>=15*60+30&&m<21*60){ph='Chambers review — ink the day';sec='s3';}
+  }
+  document.getElementById('phase').textContent=ph;
+  ['s1','s2','s3'].forEach(id=>{
+    const h=document.querySelector('#'+id+' .dhead');const w=h.querySelector('.when,.now');
+    if(!w)return;
+    if(id===sec){w.className='now';w.textContent='NOW';}
+    else{w.className='when';w.textContent=w.getAttribute('data-w')||w.textContent;}
+  });
+}
+tick();setInterval(tick,30000);
+</script>
+
+<script>
+(function(){
+  var REL='https://kornis-ai-relay.rick-018.workers.dev';
+  var el=document.getElementById('ktape'); if(!el) return;
+  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+  function cell(tk,px,chg){
+    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
+    var sign=chg==null?'':(chg>=0?'+':'');
+    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+  }
+  function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
+  function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
+  function paint(data){ el.innerHTML=chip(data)+board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
+  function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
+  var DATA={};
+  function load(){
+    var tks=board(); var i=0;
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
+    paint(DATA);
+    function next(){
+      if(i>=tks.length)return;
+      var tk=tks[i++];
+      if(getC(tk)){setTimeout(next,80);return;}
+      var pre=phase()==='PRE'||phase()==='AFTER';
+      var p=pre?fetch(REL+'/?pm='+encodeURIComponent(tk)).then(function(r){return r.json();}).then(function(j){if(j&&j.last!=null){return {px:j.last,chg:j.gapPct,t:j.lastT,pm:true};}throw 0;}):Promise.reject(0);
+      p.catch(function(){return fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null,t=0;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];t=ts[k];break;} }
+        var pc=res.meta&&res.meta.chartPreviousClose;
+        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
+        return {px:px,chg:chg,t:t,pm:false};});})
+      .then(function(d){if(d&&d.px!=null){DATA[tk]=d;setC(tk,d.px,d.chg,d.t,d.pm);paint(DATA);}})
+      .catch(function(){}).finally(function(){setTimeout(next,350);});
+    }
+    next();
+  }
+  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
+})();
+</script>
+
 </body></html>

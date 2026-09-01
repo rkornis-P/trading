@@ -4,10 +4,10 @@
 <title>Library · Kornis Protocol</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#0B1220;--panel:#121B2E;--panel2:#0F1728;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:12px 9px 90px;max-width:640px;margin:0 auto}
-h1{font-size:13.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);text-align:center;margin-bottom:2px}
+h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
 .sub{text-align:center;font-size:9.5px;color:var(--dim);margin-bottom:10px;letter-spacing:.06em}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px}
 textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:10px;font-size:13px;min-height:64px;resize:vertical;font-family:inherit}
@@ -56,7 +56,26 @@ button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid va
   .entry .ph{display:block!important;font-size:9px;color:#777;letter-spacing:.08em;text-transform:uppercase;margin-bottom:2px}
 }
 .entry .ph{display:none}
+
+/* ===== KORNIS INTERIOR KIT — phase two facelift ===== */
+button{border-radius:9px!important;font-weight:800!important;letter-spacing:.05em!important}
+input,select,textarea{border-radius:8px!important;border-color:var(--line)!important}
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important}
+::placeholder{color:#5A6478!important}
+
+.qa{border-radius:12px!important}
+
+
+/* ===== KORNIS TAPE ===== */
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape::-webkit-scrollbar{display:none}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
 </style></head><body>
+<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
 <div id="printHead"><div class="k">KORNIS PROTOCOL — THE LIBRARY</div><div class="s">Setup Reviews &amp; Lessons · Printed <span id="pDate"></span></div></div>
 
@@ -64,6 +83,9 @@ button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid va
 <div class="sub">EVERY QUESTION AND ANSWER SAVED · SEARCHABLE · PRINTS AS A CLEAN DOCUMENT</div>
 
 <div class="panel">
+<select id="qbank" onchange="fillQ()" style="width:100%;background:var(--panel2);border:1px solid var(--gold);border-radius:8px;color:var(--gold-soft);padding:10px;font-size:12px;font-weight:700;margin-bottom:7px">
+  <option value="">📋 THE 20 QUESTIONS — pick one, it fills below, add your numbers…</option>
+</select>
   <textarea id="qq" placeholder="Ask a setup-review question… e.g. 'Review my SPCX entry: bought 130 calls at 8.79 avg with stock at 136, stop 135.85 — what did I do right and wrong?'"></textarea>
   <div class="row">
     <select id="topic">
@@ -100,6 +122,40 @@ button.ghost{background:var(--panel2);color:var(--gold-soft);border:1px solid va
 </div>
 
 <script>
+
+const QBANK=[
+['Entry quality','Review my entry: I bought [TICKER] [STRIKE] [CALLS/PUTS] at $[PRICE] when the stock was $[STOCK]. Was this an entry or a chase — and what should the entry have looked like?'],
+['Confluence check','At my entry on [TICKER], which of the 7 signals (VWAP, 9EMA, trend, RSI, MACD, volume, momentum) were actually aligned? Did I have 5 of 7, or did I count hope as a signal?'],
+['Stop placement','My stop on [TICKER] is $[STOP] with the stock at $[STOCK]. Is that structure or just a round number? Where does the trade actually become wrong?'],
+['Target logic','My target is $[TARGET]. What level is that based on — a real wall (PDH, whale level, round number) or wishful math? What is the honest risk-to-reward?'],
+['Vehicle check','I chose the [EXPIRY] $[STRIKE] at [DELTA] delta for a [scalp/day/swing]. Is this the right vehicle per the DTE and delta rules, or am I holding the wrong contract for my timeframe?'],
+['Liquidity gate','My contract shows spread $[SPREAD], OI [OI], volume [VOL]. Does it pass the gate (spread ≤$0.30 and ≤5% of mid, OI ≥500), and what does failing actually cost me per round trip?'],
+['Theta math','I paid $[PRICE] with [DTE] days left. How much does each flat day cost me, and how much movement per day do I need just to break even on decay?'],
+['Position size','I risked $[RISK] on [N] contracts with a stop [DIST] away. Was that sized from risk or from conviction? What size did the math actually allow?'],
+['Chasing check','[TICKER] had already moved [X]% today when I entered. Was I buying the move or buying the top? How do I tell the difference next time BEFORE the fill?'],
+['Volume verdict','Describe what volume was doing at my entry and what it should have been doing. Did volume confirm the break, or did I enter on a hollow move?'],
+['Countertrend honesty','Was my [TICKER] trade with the trend of the 15-minute and 1-hour charts, or against them? If countertrend, did I treat it with countertrend rules (smaller, faster, tighter)?'],
+['The exit review','I exited [TICKER] at $[EXIT] for [P/L]. Grade the exit separately from the result: did I follow the plan, panic, or freeze? What was the tape saying at that exact moment?'],
+['Round-trip autopsy','I was up $[PEAK] on [TICKER] and gave it back to [FINAL]. Walk me through every rule that would have banked it, and which one broke first.'],
+['Averaging down','I added to [TICKER] at $[PRICE2] after it went against me. Make the honest case for why this is almost always wrong — and the narrow case where scaling is legitimate.'],
+['Overnight risk','I am thinking of holding [TICKER] [CALLS/PUTS] overnight. Price the real risks: gap through my stop, IV change, and what my own rules say. Verdict?'],
+['Earnings/IV trap','[TICKER] has [EVENT] coming on [DATE]. How does IV crush work on my position, and what would a professional do with this position before the event?'],
+['Timing windows','My entry was at [TIME] CT. Was that inside a proper window (8:35–11:00, 12:30–2:00) or inside lunch chop / wind-down? How much of my result was just timing?'],
+['Market context','Was [TICKER] moving on its own catalyst, or just drifting with SPY/QQQ that day? How should relative strength have changed my confidence?'],
+['Tilt check','I have had [N] wins/losses in a row and I want this trade because [REASON]. Am I trading a setup or trading my emotions? Interrogate me.'],
+['The skip','I did NOT take [TICKER] today and it went [RESULT]. Was skipping correct by process? Teach me why a good skip and a good trade are graded the same.']
+];
+(function(){const s=document.getElementById('qbank');
+QBANK.forEach((q,i)=>{const o=document.createElement('option');o.value=i;o.textContent=(i+1)+' · '+q[0];s.appendChild(o);});})();
+function fillQ(){
+  const s=document.getElementById('qbank');if(s.value==='')return;
+  const q=QBANK[+s.value];
+  document.getElementById('qq').value=q[1];
+  document.getElementById('topic').value='Setup Review';
+  document.getElementById('askSt').textContent='Replace the [BRACKETS] with your real numbers — specifics in, specifics out.';
+  s.value='';
+}
+
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 function getL(){try{return JSON.parse(localStorage.getItem('kLibrary'))||[];}catch(e){return[];}}
 function setL(L){localStorage.setItem('kLibrary',JSON.stringify(L));}
@@ -196,4 +252,47 @@ function expJ(){
 }
 draw();
 </script>
+
+<script>
+(function(){
+  var REL='https://kornis-ai-relay.rick-018.workers.dev';
+  var el=document.getElementById('ktape'); if(!el) return;
+  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+  function cell(tk,px,chg){
+    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
+    var sign=chg==null?'':(chg>=0?'+':'');
+    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+  }
+  function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
+  function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
+  function paint(data){ el.innerHTML=chip(data)+board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
+  function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
+  var DATA={};
+  function load(){
+    var tks=board(); var i=0;
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
+    paint(DATA);
+    function next(){
+      if(i>=tks.length)return;
+      var tk=tks[i++];
+      if(getC(tk)){setTimeout(next,80);return;}
+      var pre=phase()==='PRE'||phase()==='AFTER';
+      var p=pre?fetch(REL+'/?pm='+encodeURIComponent(tk)).then(function(r){return r.json();}).then(function(j){if(j&&j.last!=null){return {px:j.last,chg:j.gapPct,t:j.lastT,pm:true};}throw 0;}):Promise.reject(0);
+      p.catch(function(){return fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null,t=0;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];t=ts[k];break;} }
+        var pc=res.meta&&res.meta.chartPreviousClose;
+        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
+        return {px:px,chg:chg,t:t,pm:false};});})
+      .then(function(d){if(d&&d.px!=null){DATA[tk]=d;setC(tk,d.px,d.chg,d.t,d.pm);paint(DATA);}})
+      .catch(function(){}).finally(function(){setTimeout(next,350);});
+    }
+    next();
+  }
+  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
+})();
+</script>
+
 </body></html>

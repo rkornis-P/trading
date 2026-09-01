@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Health · Kornis Protocol</title>
+<style>
+:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
+h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
+.sub{text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.08em;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.sec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
+.row{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #14203A;font-size:11.5px;align-items:start}
+.row:last-child{border:none}
+.row .k{font-weight:800;font-size:10px;letter-spacing:.04em;color:var(--dim);padding-top:1px}
+.ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}.warn{color:var(--amber);font-weight:800}.dim{color:var(--dim)}
+.btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+button{flex:1;min-width:110px;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:9px;padding:11px 4px;font-weight:800;font-size:10.5px;cursor:pointer;letter-spacing:.04em}
+button.gold{background:var(--gold);color:#000}
+button.red{border-color:var(--red);color:var(--red)}
+#verdict{font-family:Georgia,serif;font-size:16px;font-weight:700;text-align:center;padding:12px;border-radius:12px;border:1.5px solid var(--gold);margin-bottom:10px;line-height:1.4}
+#fixes{font-size:11.5px;line-height:1.6}
+#fixes li{margin:4px 0 4px 16px}
+#fixes b{color:var(--gold-soft)}
+pre{white-space:pre-wrap;font-size:10px;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:220px;overflow:auto}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+<h1>Health Check</h1>
+<div class="sub">THE PLATFORM AUDITS ITSELF · RUN, THEN COPY THE REPORT INTO CHAT</div>
+<div id="verdict">Running…</div>
+<div class="btns"><button class="gold" onclick="runAll()">↻ RUN AGAIN</button><button onclick="copyReport()">📋 COPY REPORT</button><button class="red" onclick="clearData()">🧹 CLEAR DATA CACHES</button></div>
+
+<div class="card"><div class="sec"><span>1 · Data feed (the relay)</span><span id="relayV" class="dim">—</span></div><div id="relayRows"></div></div>
+<div class="card"><div class="sec"><span>2 · Pages on the server (versions)</span><span id="pagesV" class="dim">—</span></div><div id="pageRows"></div></div>
+<div class="card"><div class="sec"><span>3 · The Paper Desk worker</span><span id="apV" class="dim">—</span></div><div id="apRows"></div></div>
+<div class="card"><div class="sec"><span>4 · Local caches (what your browser is holding)</span><span id="cacheV" class="dim">—</span></div><div id="cacheRows"></div></div>
+<div class="card"><div class="sec"><span>What to fix, in order</span></div><ol id="fixes"></ol></div>
+<div class="card"><div class="sec"><span>Raw report</span></div><pre id="raw"></pre></div>
+
+<div class="knav"><a href="hub.html">COMMAND</a><a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="paperdesk.html">PAPER</a><a href="coach.html">COACH</a><a href="health.html" class="on">HEALTH</a><a href="ledger.html">LEDGER</a></div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const REPORT={};const FIX=[];
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function phase(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();const wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WEEKEND';if(m<8*60+30)return 'PRE-MARKET';if(m<15*60)return 'MARKET OPEN';return 'AFTER HOURS';}
+function row(el,k,v,cls){document.getElementById(el).innerHTML+='<div class="row"><div class="k">'+k+'</div><div class="'+(cls||'')+'">'+v+'</div></div>';}
+async function jget(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||9000);try{const r=await fetch(url,{signal:c.signal,cache:'no-store'});const txt=await r.text();clearTimeout(t);let j=null;try{j=JSON.parse(txt);}catch(e){}return {ok:r.ok,status:r.status,txt,j};}catch(e){clearTimeout(t);return {ok:false,status:0,txt:String(e.message||e),j:null};}}
+function ago(ts){const s=Math.max(0,Date.now()/1000-ts);if(s<90)return Math.round(s)+'s ago';if(s<5400)return Math.round(s/60)+' min ago';return (s/3600).toFixed(1)+' h ago';}
+
+async function checkRelay(){
+  document.getElementById('relayRows').innerHTML='';
+  const base=await jget(RELAY+'/');
+  const v=(base.j&&base.j.relay)||(base.j&&base.j.routes?'v4 (old)':'unreachable');
+  REPORT.relay=v;document.getElementById('relayV').textContent=v;
+  row('relayRows','Version',v,(v.includes('v5')?'ok':'bad'));
+  if(!v.includes('v5'))FIX.push('<b>Deploy relay v5.1.</b> The relay is still the old version — no pre-market prices, no chain failover, no stale-serving. Cloudflare → kornis-ai-relay → Edit code → paste kornis-ai-relay-v5.js → Deploy.');
+  const h=await jget(RELAY+'/?hist=SPCX&i=5m&r=1d');
+  const res=h.j&&h.j.chart&&h.j.chart.result&&h.j.chart.result[0];
+  if(res){const ts=res.timestamp||[];const last=ts[ts.length-1];const d=new Date(last*1000).toLocaleString('en-US',{timeZone:'America/Chicago',weekday:'short',hour:'numeric',minute:'2-digit'});
+    const ph=phase();const stale=(ph==='MARKET OPEN'&&(Date.now()/1000-last)>900);
+    row('relayRows','Price history','OK · last bar '+d+' ('+ago(last)+') · '+ts.length+' bars',stale?'warn':'ok');
+    REPORT.histLast=d;REPORT.histAge=ago(last);
+    if(ph==='PRE-MARKET')row('relayRows','Note','It is PRE-MARKET: the last regular-hours bar is yesterday\'s — that is correct, not stale. Live pre-market prices come from the ?pm route below.','dim');
+    if(stale)FIX.push('<b>Price feed is stale during market hours</b> ('+ago(last)+'). Try CLEAR DATA CACHES; if it persists, the upstream is throttling — relay v5.1 serves the last good copy automatically.');
+  }else{row('relayRows','Price history','FAILED — '+(h.txt||'').slice(0,120),'bad');FIX.push('<b>Price history route is failing.</b> The relay is down or throttled. Redeploy relay v5.1 and re-run.');}
+  const pm=await jget(RELAY+'/?pm=SPCX');
+  if(pm.j&&pm.j.last!=null){row('relayRows','Pre-market quote','OK · SPCX $'+pm.j.last.toFixed(2)+' ('+(pm.j.gapPct>=0?'+':'')+(pm.j.gapPct||0).toFixed(2)+'% vs close) · '+ago(pm.j.lastT),'ok');REPORT.pm='ok';}
+  else{row('relayRows','Pre-market quote','MISSING — route not available on this relay','bad');REPORT.pm='missing';}
+  const ch=await jget(RELAY+'/?chain=SPCX',12000);
+  const opts=ch.j&&ch.j.data&&ch.j.data.options;
+  if(opts&&opts.length){row('relayRows','Options chain','OK · '+opts.length+' contracts'+(ch.j.source?' · via '+ch.j.source:''),'ok');REPORT.chain='ok '+opts.length;}
+  else{row('relayRows','Options chain','FAILED — '+(ch.txt||'').slice(0,100),'bad');REPORT.chain='fail';FIX.push('<b>Options chain is failing</b> (Greeks/contract picks blank). Relay v5.1 adds a second source + stale-serving; deploy it.');}
+  const ai=await jget(RELAY+'/',20000);
+  try{const r=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:8,messages:[{role:'user',content:'Reply with the single word OK.'}]})});
+    const j=await r.json();const t=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    if(t){row('relayRows','AI (brief/coach)','OK · "'+t.trim().slice(0,20)+'"','ok');REPORT.ai='ok';}
+    else{row('relayRows','AI (brief/coach)','FAILED — '+JSON.stringify(j).slice(0,140),'bad');REPORT.ai='fail';FIX.push('<b>AI route failing</b> — this is why the Brief and Coach don\'t write. Message: '+JSON.stringify(j).slice(0,100)+'. If it says missing key: relay Settings → Variables → the Anthropic key must be named ANTHROPIC_KEY.');}
+  }catch(e){row('relayRows','AI (brief/coach)','FAILED — '+e.message,'bad');REPORT.ai='fail';}
+}
+const PAGES=[['desk.html','v1.6','Desk'],['hub.html','Trading Chambers','Hub'],['cockpit.html','THE READ','Cockpit'],['watchlist.html','BEST SCALP VEHICLES','Scanner'],['picker.html','GREEKS LAB','Picker'],['coach.html','SCOUTING','Coach'],['gauges.html','LEARN','Gauges'],['library.html','THE 20 QUESTIONS','Library'],['paperdesk.html','v1.1','Paper Desk'],['ledger.html','kPassLine','Ledger'],['playbook.html','MASTERCLASS','Playbook']];
+async function checkPages(){
+  document.getElementById('pageRows').innerHTML='';let stale=0;REPORT.pages={};
+  for(const [f,marker,name] of PAGES){
+    const r=await jget(f+'?health='+Date.now(),9000);
+    if(!r.ok){row('pageRows',name,'MISSING on server (HTTP '+r.status+')','bad');REPORT.pages[f]='missing';stale++;continue;}
+    const cur=r.txt.includes(marker);const tape=r.txt.includes('id="ktape"');
+    row('pageRows',name,(cur?'current':'OLD VERSION — missing "'+marker+'"')+(tape?' · tape ✓':' · no tape'),cur?'ok':'bad');
+    REPORT.pages[f]=cur?'current':'old';if(!cur)stale++;
+  }
+  document.getElementById('pagesV').textContent=stale?stale+' stale':'all current';
+  if(stale)FIX.push('<b>'+stale+' page(s) on the server are old.</b> Upload the latest files for the ones marked OLD/MISSING (exact names, top level, commit), wait 2 minutes, re-run.');
+}
+async function checkAutopilot(){
+  document.getElementById('apRows').innerHTML='';
+  let s=null;try{s=JSON.parse(localStorage.getItem('kPaper'));}catch(e){}
+  if(!s){row('apRows','Connection','not connected on this browser (open PAPER and connect)','warn');REPORT.autopilot='not connected';document.getElementById('apV').textContent='—';return;}
+  const r=await jget(s.W+'/status?k='+encodeURIComponent(s.K),12000);
+  if(r.j&&r.j.equity!=null){row('apRows','Worker','OK · equity $'+r.j.equity.toLocaleString()+' · '+(r.j.paused?'PAUSED':'armed')+' · positions '+(r.j.positions||[]).length,'ok');REPORT.autopilot='ok $'+r.j.equity;document.getElementById('apV').textContent='alive';
+    const jr=await jget(s.W+'/journal?k='+encodeURIComponent(s.K),12000);const L=(jr.j&&jr.j.journal)||[];
+    row('apRows','Journal',L.length?(L.length+' entries · latest: '+L[0].a+' '+(L[0].ct||'')+' — '+(L[0].r||'').slice(0,90)):'empty','dim');}
+  else{row('apRows','Worker','FAILED — '+(r.txt||'').slice(0,100),'bad');REPORT.autopilot='fail';document.getElementById('apV').textContent='down';FIX.push('<b>Paper Desk worker not answering</b> — '+(r.txt||'').slice(0,80)+'. Check the PANEL_KEY on the PAPER page ("change connection").');}
+}
+function checkCaches(){
+  document.getElementById('cacheRows').innerHTML='';
+  const groups={'Desk scores':'kDeskS_','Scanner scores':'kScan4_','Option chains':'kChain_','Tape quotes':'kTape_','London read':'kDeskRead'};
+  let n=0;REPORT.caches={};
+  for(const [name,pre] of Object.entries(groups)){
+    let cnt=0,oldest=null;
+    for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith(pre)){cnt++;try{const v=JSON.parse(localStorage.getItem(k));const ts=v.ts||0;if(ts&&(!oldest||ts<oldest))oldest=ts;}catch(e){}}}
+    n+=cnt;
+    row('cacheRows',name,cnt?(cnt+' item'+(cnt>1?'s':'')+(oldest?' · oldest '+ago(oldest/1000):'')):'none','dim');
+    REPORT.caches[name]=cnt;
+  }
+  document.getElementById('cacheV').textContent=n+' cached items';
+  row('cacheRows','Board',(function(){try{return (JSON.parse(localStorage.getItem('kBoard'))||[]).join(' · ')||'default';}catch(e){return 'default';}})(),'dim');
+}
+function clearData(){
+  const keep=['kBoard','kCoach_pos','kPaper','kRisk','kLibrary','kLedger','kGaugeLog','kVoiceLog','kCoachLog','kPassLine','kDeskAuto','kAutoBrief','kAutoPrint'];
+  const del=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!keep.includes(k)&&/^k(DeskS_|Scan4_|Scan3_|Chain_|Tape_|DeskRead|DeskSPY|DeskFired_|GaugeLast)/.test(k))del.push(k);}
+  del.forEach(k=>localStorage.removeItem(k));
+  alert('Cleared '+del.length+' cached data items. Settings, logs, and your board were kept. Re-run the check.');runAll();
+}
+function verdictOut(){
+  const v=document.getElementById('verdict');
+  const bad=FIX.length;
+  v.innerHTML=bad?('<span class="bad">'+bad+' thing'+(bad>1?'s':'')+' to fix</span><br><span style="font-size:11px;color:var(--dim)">'+phase()+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT</span>'):('<span class="ok">ALL SYSTEMS CURRENT</span><br><span style="font-size:11px;color:var(--dim)">'+phase()+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · the data you see is the newest that exists</span>');
+  document.getElementById('fixes').innerHTML=FIX.length?FIX.map(f=>'<li>'+f+'</li>').join(''):'<li>Nothing. If a page still looks old, it is your browser cache: Chrome → Clear browsing data → Cached images and files.</li>';
+  document.getElementById('raw').textContent=JSON.stringify({time:ctNow().toString(),phase:phase(),...REPORT},null,1);
+}
+async function copyReport(){try{await navigator.clipboard.writeText(document.getElementById('raw').textContent);alert('Report copied — paste it into the chat.');}catch(e){alert('Select the raw report text and copy it manually.');}}
+async function runAll(){FIX.length=0;document.getElementById('verdict').textContent='Running…';checkCaches();await checkRelay();await checkPages();await checkAutopilot();verdictOut();}
+runAll();
+</script>
+</body></html>

@@ -170,7 +170,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.5.1</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.6</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The London Read — what world did we wake up in</span></div>
@@ -395,6 +395,13 @@ function drawRead(){
     cell('Tone',tone,cls)+cell('S&amp;P fut',f(es.chg),es.chg>=0?'up':'dn')+cell('Nasdaq fut',f(nq.chg),nq.chg>=0?'up':'dn')+
     cell('Crude',f(oil.chg),oil.chg>=0?'up':'dn')+cell('USDJPY',f(jpy.chg),jpy.chg>=0?'up':'dn')+cell('VIX',f(vix.chg),vix.chg<=0?'up':'dn');
 }
+/* ================= pre-market ================= */
+function preMarket(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();return n.getDay()>=1&&n.getDay()<=5&&m<8*60+30;}
+async function pmQuote(tk){
+  try{const r=await fetch(RELAY+'/?pm='+encodeURIComponent(tk));const j=await r.json();
+    if(j&&j.last!=null&&!j.error)return j;}catch(e){}
+  return null;
+}
 /* ================= II. the trade ================= */
 async function findTrade(force){
   const st=document.getElementById('st');
@@ -403,7 +410,7 @@ async function findTrade(force){
   let all=[];
   for(const tk of board()){
     st.textContent='Scoring '+tk+'…';
-    let d=force?null:cget('kDeskS_'+tk,5*60000);
+    let d=force?null:cget('kDeskS_'+tk,preMarket()?90000:5*60000);
     if(!d){
       try{const {B}=await pull(tk,'5d','5m');const A=analyze(B);
         const rs=(bench!=null&&A.chg!=null)?A.chg-bench:null;
@@ -411,7 +418,10 @@ async function findTrade(force){
       catch(e){d=null;}
       await sleep(900);
     }
-    if(d)all.push({tk,...d});
+    if(d){
+      if(preMarket()){const q=await pmQuote(tk);if(q){d.A.pm=q.last;d.A.pmGap=q.gapPct;d.A.pmPrev=q.prevClose;}await sleep(250);}
+      all.push({tk,...d});
+    }
   }
   if(!all.length){st.textContent='Board unreadable (rate-limited?) — tap REFRESH in 60s.';return;}
   all.sort((a,b)=>b.sc.score-a.sc.score);
@@ -445,11 +455,13 @@ function drawTrade(){
   const sEl=document.getElementById('tSide');sEl.textContent=b.sc.side;sEl.className=b.sc.cls;
   const PL=passLine();
   const verdict=b.sc.score>=PL?'PASSES':'below the line';
-  document.getElementById('tScore').innerHTML='Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · stock $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'');
+  const pmTxt=(preMarket()&&b.A.pm!=null)?(' · <span style="color:var(--gold-soft)">PRE-MKT $'+n2(b.A.pm)+' ('+(b.A.pmGap>=0?'+':'')+(b.A.pmGap||0).toFixed(1)+'% vs close)</span>'):'';
+  document.getElementById('tScore').innerHTML=(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt;
   const T=composeTrade();DESK.T=T;
+  const pmNote=(preMarket()&&b.A.pm!=null)?('<br><b style="color:var(--amber)">Pre-market check:</b> '+b.tk+' is at $'+n2(b.A.pm)+' now, '+(b.A.pm>T.trig?'ABOVE':'BELOW')+' this trigger — '+(T.L?(b.A.pm>T.trig?'a gap-up through it; do NOT buy the gap, wait for the 8:35 range and a hold above the ORH.':'below it; the trigger is intact for the open.'):(b.A.pm<T.trig?'a gap-down through it; do NOT sell the gap, wait for the 8:35 range and a failed bounce.':'above it; the trigger is intact for the open.'))):'';
   const rows=[
     ['TRIGGER — do nothing until this',n2(T.trig),T.L?'g':'r',
-     'A 5-minute candle must CLOSE '+(T.L?'above':'below')+' this ('+T.trigWhy+') with volume clearly bigger than recent bars. <i>In plain terms: wait for the '+(T.L?'buyers':'sellers')+' to prove it, then join — never guess first.</i>'],
+     'A 5-minute candle must CLOSE '+(T.L?'above':'below')+' this ('+T.trigWhy+') with volume clearly bigger than recent bars. <i>In plain terms: wait for the '+(T.L?'buyers':'sellers')+' to prove it, then join — never guess first.</i>'+pmNote],
     ['STOP — where the trade is wrong',n2(T.stop),'r',
      'Structure, not dollars: '+(T.L?'below':'above')+' the VWAP / 9-EMA shelf. <i>In plain terms: if price returns here, the reason for the trade is gone — the exit order rests in Fidelity from the moment you fill, no exceptions.</i>'],
     ['TARGET 1 — where you get paid',n2(T.t1),'g',
@@ -555,7 +567,7 @@ function drawBench(){
       '<span class="rk">'+(i+1)+'</span>'+
       '<span class="tk2">'+e.tk+'</span>'+
       '<span class="sd '+e.sc.cls+'">'+e.sc.side+'</span>'+
-      '<span class="px2 mono">$'+e.A.px.toFixed(2)+(e.A.chg!=null?(' '+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%'):'')+'</span>'+
+      '<span class="px2 mono">'+((preMarket()&&e.A.pm!=null)?('PM $'+e.A.pm.toFixed(2)+' '+(e.A.pmGap>=0?'+':'')+(e.A.pmGap||0).toFixed(1)+'%'):('$'+e.A.px.toFixed(2)+(e.A.chg!=null?(' '+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%'):'')))+'</span>'+
       '<span class="scb '+cls+'">'+e.sc.score+'</span>'+
     '</div>';}).join('');
 }
@@ -624,7 +636,7 @@ function drawClock(){
     bar.innerHTML+='<div id="nowMark" style="left:'+((m-t0)/(t1-t0)*100)+'%"></div>';
   }
   const mm=ctMin();let txt;
-  if(mm<8*60+30)txt='<b>Pre-market.</b> Plan only — the 8:30–8:35 range decides, not the futures.';
+  if(mm<8*60+30)txt='<b>Pre-market.</b> Structure below is yesterday\'s; prices are live pre-market. The 8:30–8:35 range decides, not the futures.';
   else if(mm<8*60+35)txt='<b>The range is printing.</b> Hands off — mark the high and low of this candle.';
   else if(mm<11*60)txt='<b>Prime hunt.</b> Triggers with volume are live. Bracket on every fill.';
   else if(mm<12*60+30)txt='<b>Lunch.</b> Half size, no new trades — the tape lies between 11 and 12:30.';
@@ -694,7 +706,7 @@ async function writeBrief(){
   st.textContent='Writing… (15–25 seconds)';
   const r=DESK.read||{};const note=document.getElementById('briefNote').value.trim();
   const ct=ctNow();const when=ct.toLocaleString('en-US',{weekday:'long',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  const rows=DESK.all.map(e=>{const A=e.A;return e.tk+': px '+n2(A.px)+' ('+(A.chg!=null?(A.chg>=0?'+':'')+A.chg.toFixed(1)+'%':'')+') · best side '+e.sc.side+' '+e.sc.score+'/100 · signals '+e.sc.det.map(d=>(d.ok?'+':'-')+d.lbl).join(' ')+' · VWAP '+n2(A.vw)+' 9EMA '+n2(A.e9)+' RSI '+A.rsi.toFixed(0)+' RVOL '+(A.rvol?A.rvol.toFixed(2):'?')+' ATR '+n2(A.atr)+' · PDH '+n2(A.pdh)+' PDL '+n2(A.pdl)+' PDC '+n2(A.pdc)+' · ORH '+n2(A.orH)+' ORL '+n2(A.orL)+' dayHi '+n2(A.dayHi)+' dayLo '+n2(A.dayLo);}).join('\n');
+  const rows=DESK.all.map(e=>{const A=e.A;return e.tk+': '+((preMarket()&&A.pm!=null)?('PRE-MARKET NOW $'+n2(A.pm)+' gap '+(A.pmGap>=0?'+':'')+(A.pmGap||0).toFixed(2)+'% vs close · last session close '):'px ')+n2(A.px)+' ('+(A.chg!=null?(A.chg>=0?'+':'')+A.chg.toFixed(1)+'%':'')+') · best side '+e.sc.side+' '+e.sc.score+'/100 · signals '+e.sc.det.map(d=>(d.ok?'+':'-')+d.lbl).join(' ')+' · VWAP '+n2(A.vw)+' 9EMA '+n2(A.e9)+' RSI '+A.rsi.toFixed(0)+' RVOL '+(A.rvol?A.rvol.toFixed(2):'?')+' ATR '+n2(A.atr)+' · PDH '+n2(A.pdh)+' PDL '+n2(A.pdl)+' PDC '+n2(A.pdc)+' · ORH '+n2(A.orH)+' ORL '+n2(A.orL)+' dayHi '+n2(A.dayHi)+' dayLo '+n2(A.dayLo);}).join('\n');
   const sys='You are the pre-market strategist for the Kornis Protocol, an options scalping rulebook: deep ITM 0.65-0.75 delta, 5-10 DTE, triggers are 5-minute candle CLOSES beyond structure (opening-range high/low, prior-day high/low) WITH volume >=1.2x prior bars, stops are structural (VWAP/9EMA shelf), half off at T1 then stop to breakeven, no new risk 11:00-12:30 CT, last entry 2:00, flat by 2:45, bracket (OTOCO) on every ticket, never buy a gap, one name per day. '+
    'Write a printable brief for a disciplined trader who wants to learn: rank the board for BOTH sides. Format exactly:\n'+
    'REGIME: one paragraph on the overnight/tape context and what kind of day it favors.\n'+
@@ -703,7 +715,7 @@ async function writeBrief(){
    'THE MORNING SCRIPT: 5-7 numbered steps from 8:15 to first trade, by the rulebook.\n'+
    'THE TRAP OF THE DAY: the single mistake this tape invites, in two sentences.\n'+
    'Be specific with the numbers given. Never invent a catalyst not in the data or the note. Plain text, no markdown symbols other than line breaks. Length discipline: at most 3 candidates per side, each candidate under 110 words; whole brief under 900 words; always finish every section.';
-  const user='Time: '+when+' CT. Overnight read: ES '+(r.es&&r.es.chg!=null?r.es.chg.toFixed(2)+'%':'?')+', NQ '+(r.nq&&r.nq.chg!=null?r.nq.chg.toFixed(2)+'%':'?')+(r.nq&&r.nq.pos!=null?', NQ at '+(r.nq.pos*100).toFixed(0)+'% of its overnight range':'')+'.\nTrader note: '+(note||'(none)')+'\nBoard (5m data, 5 days):\n'+rows;
+  const user='Time: '+when+' CT'+(preMarket()?' — PRE-MARKET: all board structure/scores are from YESTERDAY\'s session; the PRE-MARKET NOW prices and gaps are live. Frame every candidate as a plan for the 8:30 open: what the gap does to the trigger, and the gap rules (never buy/sell the gap; the 8:35 range decides).':'')+'. Overnight read: ES '+(r.es&&r.es.chg!=null?r.es.chg.toFixed(2)+'%':'?')+', NQ '+(r.nq&&r.nq.chg!=null?r.nq.chg.toFixed(2)+'%':'?')+(r.nq&&r.nq.pos!=null?', NQ at '+(r.nq.pos*100).toFixed(0)+'% of its overnight range':'')+'.\nTrader note: '+(note||'(none)')+'\nBoard (5m data, 5 days):\n'+rows;
   try{
     const ask=async(msgs)=>{const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:3000,system:sys,messages:msgs})});return resp.json();};
@@ -832,26 +844,31 @@ runDesk(false);
     var sign=chg==null?'':(chg>=0?'+':'');
     return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
-  function paint(data){ el.innerHTML=board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
+  function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
+  function paint(data){ el.innerHTML=chip(data)+board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
   function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
-  function setC(tk,px,chg){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg}));}catch(e){}}
+  function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
   var DATA={};
   function load(){
     var tks=board(); var i=0;
-    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg};}});
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
     paint(DATA);
     function next(){
       if(i>=tks.length)return;
       var tk=tks[i++];
       if(getC(tk)){setTimeout(next,80);return;}
-      fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+      var pre=phase()==='PRE'||phase()==='AFTER';
+      var p=pre?fetch(REL+'/?pm='+encodeURIComponent(tk)).then(function(r){return r.json();}).then(function(j){if(j&&j.last!=null){return {px:j.last,chg:j.gapPct,t:j.lastT,pm:true};}throw 0;}):Promise.reject(0);
+      p.catch(function(){return fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
         var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
-        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null;
-        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];break;} }
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null,t=0;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];t=ts[k];break;} }
         var pc=res.meta&&res.meta.chartPreviousClose;
         var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
-        if(px!=null){DATA[tk]={px:px,chg:chg};setC(tk,px,chg);paint(DATA);}
-      }).catch(function(){}).finally(function(){setTimeout(next,350);});
+        return {px:px,chg:chg,t:t,pm:false};});})
+      .then(function(d){if(d&&d.px!=null){DATA[tk]=d;setC(tk,d.px,d.chg,d.t,d.pm);paint(DATA);}})
+      .catch(function(){}).finally(function(){setTimeout(next,350);});
     }
     next();
   }
