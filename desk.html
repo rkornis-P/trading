@@ -67,7 +67,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .trow .k{display:flex;justify-content:space-between;align-items:baseline}
 .trow .k .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .trow .k .val{font-family:Georgia,serif;font-size:17px;font-weight:700}
-.trow .k .val.g{color:var(--green)}.trow .k .val.r{color:var(--red)}.trow .k .val.gold{color:var(--gold-soft)}
+.trow .k .val.g{color:var(--green)}.trow .k .val.r{color:var(--red)}.trow .k .val.gold{color:var(--gold-soft)}.trow .k .val.a{color:var(--amber);font-size:13px}
 .trow .plain{font-size:11px;color:var(--dim);line-height:1.5;margin-top:3px}
 .trow .plain i{color:var(--ink);font-style:normal}
 #tContract .cline{font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--gold-soft)}
@@ -486,10 +486,19 @@ function drawTrade(){
   const verdict=b.sc.score>=PL?'PASSES':'below the line';
   const pmTxt=(preMarket()&&b.A.pm!=null)?(' · <span style="color:var(--gold-soft)">PRE-MKT $'+n2(b.A.pm)+' ('+(b.A.pmGap>=0?'+':'')+(b.A.pmGap||0).toFixed(1)+'% vs close)</span>'):'';
   const NS=nightSheet();const nx=NS&&NS.names.find(x=>x.tk===b.tk&&!x.err);const nightTxt=nx?(' · last night\'s sheet: <b>'+nx.lean.lean+'</b> '+nx.lean.score+(((nx.lean.lean==='BULL'&&b.sc.dir>0)||(nx.lean.lean==='BEAR'&&b.sc.dir<0))?' — agrees':nx.lean.lean==='NEUTRAL'?' — no argument either way':' — <span style="color:var(--amber)">DISAGREES with the live score; the live score wins, size down</span>')):'';
-  document.getElementById('tScore').innerHTML=(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt+nightTxt;
+  const gapTxt=(preMarket()&&b.A.pm!=null&&DESK.T&&(DESK.T.L?b.A.pm>DESK.T.trig:b.A.pm<DESK.T.trig))?'<span style="color:var(--amber);font-weight:800">⚠ GAPPED THROUGH THE TRIGGER OVERNIGHT — trigger is dead; the 8:35 range decides.</span><br>':'';
+  document.getElementById('tScore').innerHTML=gapTxt+(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt+nightTxt;
   const T=composeTrade();DESK.T=T;
   const pmNote=(preMarket()&&b.A.pm!=null)?('<br><b style="color:var(--amber)">Pre-market check:</b> '+b.tk+' is at $'+n2(b.A.pm)+' now, '+(b.A.pm>T.trig?'ABOVE':'BELOW')+' this trigger — '+(T.L?(b.A.pm>T.trig?'a gap-up through it; do NOT buy the gap, wait for the 8:35 range and a hold above the ORH.':'below it; the trigger is intact for the open.'):(b.A.pm<T.trig?'a gap-down through it; do NOT sell the gap, wait for the 8:35 range and a failed bounce.':'above it; the trigger is intact for the open.'))):'';
-  const rows=[
+  const gapped=preMarket()&&b.A.pm!=null&&(T.L?b.A.pm>T.trig:b.A.pm<T.trig);
+  const rows=gapped?[
+    ['TRIGGER — DEAD, gapped through','was '+n2(T.trig),'a',
+     '<b style="color:var(--amber)">Pre-market is $'+n2(b.A.pm)+' — already '+(T.L?'above':'below')+' the '+n2(T.trig)+' trigger ('+T.trigWhy+'). The move you were waiting for happened overnight without you.</b> Do NOT '+(T.L?'buy':'sell')+' the gap. <i>In plain terms: the new trigger prints at 8:35 — a 5-minute CLOSE '+(T.L?'above the opening-range HIGH':'below the opening-range LOW')+' with volume. If instead it '+(T.L?'fails back below '+n2(T.trig)+', that is the trapped-buyer put':'reclaims '+n2(T.trig)+', that is the squeeze long')+' — the Desk re-scores at 8:35 either way.</i>'],
+    ['STOP — where the trade is wrong','8:35 range','r',
+     'The other side of the opening range: '+(T.L?'below the ORL':'above the ORH')+'. <i>In plain terms: the range you are waiting for is also your stop. Until it prints, there is no trade and no number.</i>'],
+    ['TARGET 1 — where you get paid',n2(T.t1),'g',
+     T.t1Why+' — still the level to sell HALF, if the range trigger fires. <i>Measure it from the actual fill, not from '+n2(T.trig)+'.</i>']
+  ]:[
     ['TRIGGER — do nothing until this',n2(T.trig),T.L?'g':'r',
      'A 5-minute candle must CLOSE '+(T.L?'above':'below')+' this ('+T.trigWhy+') with volume clearly bigger than recent bars. <i>In plain terms: wait for the '+(T.L?'buyers':'sellers')+' to prove it, then join — never guess first.</i>'+pmNote],
     ['STOP — where the trade is wrong',n2(T.stop),'r',

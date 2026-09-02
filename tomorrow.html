@@ -104,7 +104,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </div>
 <div id="auto">
   <label><input type="checkbox" id="autoBuild" checked> Auto-build at 3:10 CT after the close (this tab must be open)</label>
-  <label><input type="checkbox" id="autoLon" checked> Auto-refresh for London at 7:45 CT</label>
+  <label><input type="checkbox" id="autoLon" checked> Auto-refresh for London at 3:30 and 7:45 CT</label>
   <div id="autoSt">—</div>
 </div>
 <div id="st"></div>
@@ -385,7 +385,7 @@ function drawClock(){
   else t='<b>After the close.</b> '+(SHEET&&SHEET.for===fdKey(forDate())?'Tomorrow is planned. Read it, print it, close the laptop.':'Tap BUILD THE SHEET.');
   document.getElementById('phase').innerHTML=t;
 }
-const AUTO={did310:null,did745:null};
+const AUTO={did310:null,did330:null,did745:null};
 async function autoTick(){
   const n=ctNow();const m=ctMin();const wd=n.getDay()>=1&&n.getDay()<=5;const today=n.toDateString();
   const ab=document.getElementById('autoBuild').checked,al=document.getElementById('autoLon').checked;
@@ -393,8 +393,9 @@ async function autoTick(){
   const s=document.getElementById('autoSt');
   if(!wd){s.textContent='weekend · idle';return;}
   if(ab&&m>=15*60+10&&m<15*60+20&&AUTO.did310!==today&&!(SHEET&&SHEET.for===fdKey(forDate())&&SHEET.atDay===today)){AUTO.did310=today;s.textContent='3:10 — building…';try{await buildSheet(true);SHEET.atDay=today;localStorage.setItem(KEY,JSON.stringify(SHEET));}catch(e){}return;}
-  if(al&&m>=7*60+45&&m<7*60+55&&AUTO.did745!==today&&SHEET&&!SHEET.london){AUTO.did745=today;s.textContent='7:45 — London…';try{await londonRefresh(true);}catch(e){}return;}
-  s.textContent=m<7*60+45?'armed · London refresh 7:45':m<15*60+10?'armed · build at 3:10 after the close':'done for today';
+  if(al&&m>=3*60+30&&m<3*60+40&&AUTO.did330!==today&&SHEET){AUTO.did330=today;s.textContent='3:30 — early London…';try{await londonRefresh(true);}catch(e){}return;}
+  if(al&&m>=7*60+45&&m<7*60+55&&AUTO.did745!==today&&SHEET){AUTO.did745=today;s.textContent='7:45 — London…';try{await londonRefresh(true);}catch(e){}return;}
+  s.textContent=m<3*60+30?'armed · London passes 3:30 and 7:45':m<7*60+45?'armed · London refresh 7:45':m<15*60+10?'armed · build at 3:10 after the close':'done for today';
 }
 (function boot(){
   try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.names)SHEET=s;}catch(e){}
