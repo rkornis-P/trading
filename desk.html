@@ -32,15 +32,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .rc .v{font-size:13px;font-weight:800}
 .rc .v.up{color:var(--green)}.rc .v.dn{color:var(--red)}.rc .v.fl{color:var(--amber)}
 
-#nightCard{font-size:11.5px;line-height:1.55}
-.nrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
-.nrow:first-child{border-top:none;padding-top:0}
-.nrow .nt{font-family:Georgia,serif;font-size:15px;font-weight:700;min-width:58px}
-.nrow .nl{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:6px}
-.nrow .nl.B{color:var(--green);border:1px solid var(--green)}.nrow .nl.S{color:var(--red);border:1px solid var(--red)}.nrow .nl.N{color:var(--amber);border:1px solid var(--amber)}
-.nrow .nv{font-size:10.5px;color:var(--dim);text-align:right}.nrow .nv b{color:var(--ink)}
-.nrow .nv .dead{color:var(--amber)}
-#nightNote{font-size:10.5px;color:var(--dim);margin-top:8px}#nightNote b{color:var(--gold-soft)}
 /* the trade */
 #sentinel{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--dim)}
 #sentinel label{display:flex;gap:8px;align-items:center;color:var(--ink);cursor:pointer}
@@ -67,7 +58,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .trow .k{display:flex;justify-content:space-between;align-items:baseline}
 .trow .k .lbl{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .trow .k .val{font-family:Georgia,serif;font-size:17px;font-weight:700}
-.trow .k .val.g{color:var(--green)}.trow .k .val.r{color:var(--red)}.trow .k .val.gold{color:var(--gold-soft)}.trow .k .val.a{color:var(--amber);font-size:13px}
+.trow .k .val.g{color:var(--green)}.trow .k .val.r{color:var(--red)}.trow .k .val.gold{color:var(--gold-soft)}
 .trow .plain{font-size:11px;color:var(--dim);line-height:1.5;margin-top:3px}
 .trow .plain i{color:var(--ink);font-style:normal}
 #tContract .cline{font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--gold-soft)}
@@ -188,11 +179,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div id="readCells"></div>
 </div>
 
-<div id="nightSec" style="display:none">
-<div class="sec"><span class="n">I½ · Last Night's Sheet — the argument</span><span class="x" onclick="location.href='tomorrow.html'">open →</span></div>
-<div class="card" id="nightCard"></div>
-</div>
-
 <div class="sec"><span class="n">II · The Trade — today's definitive setup</span><span class="x" onclick="runDesk(true)">↻ REFRESH</span></div>
 <div id="sentinel">
   <label><input type="checkbox" id="autoW" checked> 🔔 SENTINEL — recompose at 8:35, watch every 5-min close, speak when the trigger fires</label>
@@ -264,7 +250,6 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
-  <a href="tomorrow.html">TOMORROW</a>
   <a href="desk.html" class="on">DESK</a>
   <a href="cockpit.html">COCKPIT</a>
   <a href="picker.html">PICKER</a>
@@ -329,10 +314,7 @@ function analyze(B5){
   const orDone=B.length>=2||(nowS-B[0].t>=300);
   return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atr,atrP:atr/px*100,up15,up60,pdh,pdl,pdc,gapP,orH,orL,dayHi,dayLo,cClose,cVol,avgVol,prevHi,prevLo,orDone,bars:B.length};
 }
-const ENERGY=['XOM','CVX','OXY','COP','SLB','HAL','DVN','EOG','MPC','VLO','PSX','XLE','USO','APA','HES'];
-function score(A,rs,tk){
-  const oil=(DESK.read&&DESK.read.oil&&DESK.read.oil.chg!=null)?DESK.read.oil.chg:null;
-  const energy=ENERGY.indexOf(tk)>-1;
+function score(A,rs){
   function side(dir){
     const L=dir>0;let s=0;const det=[];
     const add=(ok,pts,lbl,plain)=>{if(ok)s+=pts;det.push({ok,pts:ok?pts:0,max:pts,lbl,plain});};
@@ -346,7 +328,6 @@ function score(A,rs,tk){
     add(A.rvol!=null&&A.rvol>=1.2,12,'RVOL ×'+(A.rvol?A.rvol.toFixed(1):'—'),'Volume vs the same time of day: above 1.2 means real participants are here and moves stick.');
     add(A.atrP>=0.12,8,'Movement','Candles are travelling '+A.atrP.toFixed(2)+'% per bar — enough motion to outrun option decay.');
     if(A.pdh!=null)add(L?A.px>A.pdh:A.px<A.pdl,10,'PD break','Beyond yesterday\'s '+(L?'high':'low')+' — trapped traders from yesterday fuel the move.');
-    if(energy&&oil!=null)add(L?oil>0.5:oil<-0.5,8,'Crude '+(oil>=0?'+':'')+oil.toFixed(1)+'%',tk+' is an oil proxy: crude '+(oil>=0?'+':'')+oil.toFixed(1)+'% overnight is the driver. On an oil-shock day the index can be red while '+tk+' is the strongest name on the screen — read crude, not the S&P.');
     if(rs!=null)add(L?rs>0.15:rs<-0.15,5,'RS vs SPY','This name is '+(rs>=0?'+':'')+rs.toFixed(1)+'% vs the market — trading the strongest horse.');
     return {s:Math.min(100,s),det};
   }
@@ -421,20 +402,6 @@ async function pmQuote(tk){
     if(j&&j.last!=null&&!j.error)return j;}catch(e){}
   return null;
 }
-
-/* ================= I½. last night's sheet (tomorrow.html) ================= */
-function nightSheet(){try{const s=JSON.parse(localStorage.getItem('kTomorrow'));if(s&&s.names&&s.for===ctNow().toDateString())return s;}catch(e){}return null;}
-function drawNight(){
-  const sec=document.getElementById('nightSec');const S=nightSheet();
-  if(!S){sec.style.display='none';return;}
-  sec.style.display='block';
-  const rows=S.names.filter(x=>!x.err).map(x=>{
-    const A=x.A;let live='';
-    if(x.pm){const p=x.pm.last;if(p>x.call.trig)live='<span class="dead">gapped above call trigger — 8:35 range decides</span>';else if(p<x.put.trig)live='<span class="dead">gapped below put trigger — 8:35 range decides</span>';else live='triggers intact';}
-    return '<div class="nrow"><span class="nt">'+x.tk+'</span><span class="nl '+x.lean.cls+'">'+x.lean.lean+' '+x.lean.score+'</span><span class="nv">call &gt; <b>'+n2(x.call.trig)+'</b> · put &lt; <b>'+n2(x.put.trig)+'</b> · ATR $'+A.atr.toFixed(2)+(live?'<br>'+live:'')+'</span></div>';
-  }).join('');
-  document.getElementById('nightCard').innerHTML=rows+'<div id="nightNote">Built '+S.at+' CT'+(S.london?' · repriced for London '+S.london.at:' · <b>not yet repriced for London</b> — tap open → LONDON REFRESH')+'. <b>The sheet is the argument; the 8:35 score below is the verdict.</b> When they disagree, the live score wins.</div>';
-}
 /* ================= II. the trade ================= */
 async function findTrade(force){
   const st=document.getElementById('st');
@@ -447,7 +414,7 @@ async function findTrade(force){
     if(!d){
       try{const {B}=await pull(tk,'5d','5m');const A=analyze(B);
         const rs=(bench!=null&&A.chg!=null)?A.chg-bench:null;
-        const sc=score(A,rs,tk);d={A,sc};cset('kDeskS_'+tk,d);}
+        const sc=score(A,rs);d={A,sc};cset('kDeskS_'+tk,d);}
       catch(e){d=null;}
       await sleep(900);
     }
@@ -489,20 +456,10 @@ function drawTrade(){
   const PL=passLine();
   const verdict=b.sc.score>=PL?'PASSES':'below the line';
   const pmTxt=(preMarket()&&b.A.pm!=null)?(' · <span style="color:var(--gold-soft)">PRE-MKT $'+n2(b.A.pm)+' ('+(b.A.pmGap>=0?'+':'')+(b.A.pmGap||0).toFixed(1)+'% vs close)</span>'):'';
-  const NS=nightSheet();const nx=NS&&NS.names.find(x=>x.tk===b.tk&&!x.err);const nightTxt=nx?(' · last night\'s sheet: <b>'+nx.lean.lean+'</b> '+nx.lean.score+(((nx.lean.lean==='BULL'&&b.sc.dir>0)||(nx.lean.lean==='BEAR'&&b.sc.dir<0))?' — agrees':nx.lean.lean==='NEUTRAL'?' — no argument either way':' — <span style="color:var(--amber)">DISAGREES with the live score; the live score wins, size down</span>')):'';
-  const gapTxt=(preMarket()&&b.A.pm!=null&&DESK.T&&(DESK.T.L?b.A.pm>DESK.T.trig:b.A.pm<DESK.T.trig))?'<span style="color:var(--amber);font-weight:800">⚠ GAPPED THROUGH THE TRIGGER OVERNIGHT — trigger is dead; the 8:35 range decides.</span><br>':'';
-  document.getElementById('tScore').innerHTML=gapTxt+(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt+nightTxt;
+  document.getElementById('tScore').innerHTML=(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt;
   const T=composeTrade();DESK.T=T;
   const pmNote=(preMarket()&&b.A.pm!=null)?('<br><b style="color:var(--amber)">Pre-market check:</b> '+b.tk+' is at $'+n2(b.A.pm)+' now, '+(b.A.pm>T.trig?'ABOVE':'BELOW')+' this trigger — '+(T.L?(b.A.pm>T.trig?'a gap-up through it; do NOT buy the gap, wait for the 8:35 range and a hold above the ORH.':'below it; the trigger is intact for the open.'):(b.A.pm<T.trig?'a gap-down through it; do NOT sell the gap, wait for the 8:35 range and a failed bounce.':'above it; the trigger is intact for the open.'))):'';
-  const gapped=preMarket()&&b.A.pm!=null&&(T.L?b.A.pm>T.trig:b.A.pm<T.trig);
-  const rows=gapped?[
-    ['TRIGGER — DEAD, gapped through','was '+n2(T.trig),'a',
-     '<b style="color:var(--amber)">Pre-market is $'+n2(b.A.pm)+' — already '+(T.L?'above':'below')+' the '+n2(T.trig)+' trigger ('+T.trigWhy+'). The move you were waiting for happened overnight without you.</b> Do NOT '+(T.L?'buy':'sell')+' the gap. <i>In plain terms: the new trigger prints at 8:35 — a 5-minute CLOSE '+(T.L?'above the opening-range HIGH':'below the opening-range LOW')+' with volume. If instead it '+(T.L?'fails back below '+n2(T.trig)+', that is the trapped-buyer put':'reclaims '+n2(T.trig)+', that is the squeeze long')+' — the Desk re-scores at 8:35 either way.</i>'],
-    ['STOP — where the trade is wrong','8:35 range','r',
-     'The other side of the opening range: '+(T.L?'below the ORL':'above the ORH')+'. <i>In plain terms: the range you are waiting for is also your stop. Until it prints, there is no trade and no number.</i>'],
-    ['TARGET 1 — where you get paid',n2(T.t1),'g',
-     T.t1Why+' — still the level to sell HALF, if the range trigger fires. <i>Measure it from the actual fill, not from '+n2(T.trig)+'.</i>']
-  ]:[
+  const rows=[
     ['TRIGGER — do nothing until this',n2(T.trig),T.L?'g':'r',
      'A 5-minute candle must CLOSE '+(T.L?'above':'below')+' this ('+T.trigWhy+') with volume clearly bigger than recent bars. <i>In plain terms: wait for the '+(T.L?'buyers':'sellers')+' to prove it, then join — never guess first.</i>'+pmNote],
     ['STOP — where the trade is wrong',n2(T.stop),'r',
@@ -864,7 +821,7 @@ setInterval(sentinelTick,5000);
 
 /* ================= boot ================= */
 async function runDesk(force){
-  drawClock();drawNight();
+  drawClock();
   document.getElementById('riskIn').value=localStorage.getItem('kRisk')||400;
   await readWorld();
   await findTrade(force);
