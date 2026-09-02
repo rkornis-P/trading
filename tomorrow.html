@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tomorrow · Kornis Protocol</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
+.mono{font-variant-numeric:tabular-nums}
+#hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+#hdr .t{font-size:15px;font-weight:800;letter-spacing:.16em;color:var(--gold-soft)}
+#hdr .c{font-size:11px;color:var(--dim)}
+#phase{font-size:10px;letter-spacing:.1em;text-transform:uppercase;text-align:center;padding:6px;border-radius:8px;background:var(--card2);border:1px solid var(--line);color:var(--dim);margin-bottom:10px}
+#phase b{color:var(--gold-soft)}
+.sec{margin:16px 0 8px;display:flex;justify-content:space-between;align-items:baseline}
+.sec .n{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.sec .x{font-size:10px;color:var(--gold-soft);cursor:pointer}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.plain{font-size:11.5px;line-height:1.55;color:var(--dim)}
+.plain b,.plain i{color:var(--ink)}
+#ctl{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+#ctl button{flex:1;min-width:30%;background:var(--gold);color:#000;border:none;border-radius:9px;padding:10px 6px;font-weight:800;font-size:10.5px;letter-spacing:.06em;cursor:pointer}
+#ctl button.sec2{background:var(--card2);color:var(--gold-soft);border:1px solid var(--line)}
+#auto{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--dim)}
+#auto label{display:flex;gap:8px;align-items:center;color:var(--ink);cursor:pointer;margin-bottom:3px}
+#auto input{accent-color:#BF9000}
+#st{font-size:10.5px;color:var(--amber);min-height:14px;margin:4px 0 8px}
+/* read cells */
+#readLine{font-size:12.5px;line-height:1.6}#readLine b{color:var(--gold-soft)}
+#readCells{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.rc{flex:1;min-width:28%;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:7px 4px}
+.rc .l{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.rc .v{font-size:13px;font-weight:800}
+.rc .v.up{color:var(--green)}.rc .v.dn{color:var(--red)}.rc .v.fl{color:var(--amber)}
+/* name cards */
+.nm{border:1px solid var(--line)}
+.nm.feat{border:1.5px solid var(--gold);background:linear-gradient(165deg,#152039,var(--card))}
+.nt{display:flex;justify-content:space-between;align-items:center}
+.nt .tk{font-family:Georgia,serif;font-size:24px;font-weight:700}
+.nt .tk small{font-size:11px;color:var(--dim);font-family:-apple-system,sans-serif;font-weight:400;margin-left:6px}
+.lean{font-size:11px;font-weight:800;letter-spacing:.1em;padding:4px 10px;border-radius:7px}
+.lean.B{color:var(--green);border:1.5px solid var(--green);background:rgba(47,182,115,.08)}
+.lean.S{color:var(--red);border:1.5px solid var(--red);background:rgba(224,91,68,.08)}
+.lean.N{color:var(--amber);border:1.5px solid var(--amber);background:rgba(224,169,63,.08)}
+.sub{font-size:10.5px;color:var(--dim);margin:4px 0 10px}.sub b{color:var(--gold-soft)}
+.lv{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px}
+.lv div{background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:6px 4px;text-align:center}
+.lv .l{font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.lv .v{font-family:Georgia,serif;font-size:14px;font-weight:700}
+.side{border-top:1px solid var(--line);padding:9px 0}
+.side .h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.side .h .s{font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+.side .h .s.C{color:var(--green)}.side .h .s.P{color:var(--red)}
+.side .h .n{font-size:10px;color:var(--dim)}
+.side .row{display:flex;gap:6px;font-size:11px;margin:2px 0}
+.side .row span{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:5px 4px;text-align:center}
+.side .row span b{display:block;font-size:8px;letter-spacing:.08em;color:var(--dim);font-weight:600}
+.side .row span i{font-style:normal;font-family:Georgia,serif;font-size:13px;font-weight:700}
+.side .row span i.g{color:var(--green)}.side .row span i.r{color:var(--red)}.side .row span i.gold{color:var(--gold-soft)}
+.side .ctr{font-size:10.5px;margin-top:5px;color:var(--ink)}
+.side .ctr .mono{color:var(--dim)}
+.gap{margin-top:8px;padding:8px 10px;border-radius:9px;background:var(--card2);border:1px solid var(--line);font-size:11px;line-height:1.5}
+.gap b{color:var(--gold-soft)}
+.gap.warn{border-color:var(--amber)}.gap.warn b{color:var(--amber)}
+.why{font-size:10px;color:var(--gold-soft);cursor:pointer;margin-top:6px;display:inline-block}
+/* modal */
+#mWrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:50;padding:18px 10px;overflow:auto}
+#mWrap.open{display:block}
+#mBox{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:16px;max-width:560px;margin:20px auto}
+#mBox h3{font-family:Georgia,serif;font-size:15px;color:var(--gold-soft);margin-bottom:8px}
+.wr{padding:7px 0;border-top:1px solid var(--line)}.wh{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700}
+.wh .p.g{color:var(--green)}.wh .p.r{color:var(--red)}.wh .p.a{color:var(--amber)}
+.wb{font-size:11px;color:var(--dim);line-height:1.5;margin-top:2px}
+#mClose{margin-top:12px;width:100%;background:var(--gold);color:#000;border:none;border-radius:9px;padding:10px;font-weight:800;cursor:pointer}
+/* nav */
+.knav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#0D1526;border-top:1px solid var(--line);padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:40}
+.knav a{flex:1;text-align:center;font-size:9px;letter-spacing:.06em;color:var(--dim);text-decoration:none;padding:6px 0}
+.knav a.on{color:var(--gold-soft);font-weight:800}
+/* print */
+#printHead{display:none}
+@media print{
+  body{background:#fff;color:#000;padding:0;max-width:none;font-size:11px}
+  #ctl,#auto,.knav,.sec .x,.why,#phase,#st{display:none!important}
+  #printHead{display:block;margin-bottom:8px;border-bottom:2px solid #000;padding-bottom:4px}
+  #printHead .k{font-size:14px;font-weight:800;letter-spacing:.12em}#printHead .s{font-size:10px}
+  .card,.nm,.rc,.lv div,.side .row span,.gap,#auto{background:#fff!important;border:1px solid #999!important;color:#000!important;box-shadow:none}
+  .nm{page-break-inside:avoid;margin-bottom:8px}
+  .plain,.sub,.lv .l,.side .h .n,.side .ctr .mono,.wb,.rc .l,.side .row span b{color:#333!important}
+  .lean.B,.side .h .s.C,.rc .v.up,.side .row span i.g{color:#1a7a48!important}
+  .lean.S,.side .h .s.P,.rc .v.dn,.side .row span i.r{color:#b03a25!important}
+  .lean.N,.rc .v.fl,.side .row span i.gold,#readLine b,.gap b,.sub b{color:#8a6a00!important}
+  .nt .tk{font-size:18px}
+}
+</style></head><body>
+
+<div id="hdr"><div class="t">TOMORROW</div><div class="c"><span id="clk">—</span></div></div>
+<div id="phase">—</div>
+
+<div id="ctl">
+  <button onclick="buildSheet(true)">BUILD THE SHEET</button>
+  <button class="sec2" onclick="londonRefresh(true)">LONDON REFRESH</button>
+  <button class="sec2" onclick="window.print()">PRINT</button>
+</div>
+<div id="auto">
+  <label><input type="checkbox" id="autoBuild" checked> Auto-build at 3:10 CT after the close (this tab must be open)</label>
+  <label><input type="checkbox" id="autoLon" checked> Auto-refresh for London at 7:45 CT</label>
+  <div id="autoSt">—</div>
+</div>
+<div id="st"></div>
+
+<div id="printHead"><div class="k">KORNIS PROTOCOL — TOMORROW SHEET</div><div class="s" id="pdDate"></div></div>
+
+<div class="sec"><span class="n">I · The close &amp; the night</span><span class="x" onclick="readWorld(true).then(drawRead)">refresh</span></div>
+<div class="card">
+  <div id="readLine">Build the sheet after the 3:00 close. It reads the day, then writes tomorrow's plan for every name on the board.</div>
+  <div id="readCells"></div>
+</div>
+
+<div class="sec"><span class="n">II · Tomorrow's plan — every name, both sides</span><span class="x" id="forLbl"></span></div>
+<div id="names"></div>
+
+<div class="sec"><span class="n">III · The morning script</span></div>
+<div class="card plain" id="script">
+  <b>The night before (after this sheet builds):</b> read the lean and the two triggers for each name. Decide nothing. Print it.<br>
+  <b>7:45 CT — London refresh:</b> the sheet repriced. Names whose pre-market print has already gapped <i>through</i> a trigger are flagged — those triggers are dead; the 8:35 range replaces them.<br>
+  <b>8:15 — the Desk:</b> open it. The Desk carries this sheet's lean and levels; the live score is the verdict, the sheet is the argument.<br>
+  <b>8:30–8:35 — hands off.</b> The range prints. Then: 5-minute CLOSE beyond the trigger WITH volume. Bracket on the fill. Half at T1, stop to breakeven. Flat by 2:45. One name a day.
+</div>
+
+<div id="mWrap" onclick="if(event.target===this)this.classList.remove('open')">
+  <div id="mBox"><h3 id="mTitle">—</h3><div id="mBody"></div><button id="mClose" onclick="document.getElementById('mWrap').classList.remove('open')">GOT IT</button></div>
+</div>
+
+<div class="knav">
+  <a href="hub.html">COMMAND</a>
+  <a href="tomorrow.html" class="on">TOMORROW</a>
+  <a href="desk.html">DESK</a>
+  <a href="watchlist.html">AUTOPILOT</a>
+  <a href="picker.html">PICKER</a>
+  <a href="trades.html">TRADES</a>
+  <a href="ledger.html">LEDGER</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const n2=x=>x!=null?x.toFixed(2):'—';
+const KEY='kTomorrow';
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function ctMin(){const n=ctNow();return n.getHours()*60+n.getMinutes();}
+function board(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+function riskAmt(){return parseFloat(localStorage.getItem('kRisk'))||400;}
+function st(t){document.getElementById('st').textContent=t||'';}
+/* the trading day this sheet is FOR: after 3:00 CT (or weekend) → next weekday; else today */
+function forDate(){const n=ctNow();const d=new Date(n);if(ctMin()>=15*60||n.getDay()===0||n.getDay()===6){do{d.setDate(d.getDate()+1);}while(d.getDay()===0||d.getDay()===6);}return d;}
+function fdKey(d){return d.toDateString();}
+
+/* ================= feed ================= */
+async function pull(tk,rng,iv){
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i='+(iv||'1d')+'&r='+rng);
+  const txt=await r.text();let j;
+  try{j=JSON.parse(txt);}catch(e){throw new Error(txt.indexOf('1015')>-1?'rate-limited':'feed busy');}
+  if(j.chart&&j.chart.error)throw new Error('feed error');
+  const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
+  const q=res.indicators.quote[0];const ts=res.timestamp||[];const B=[];
+  for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;B.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+  if(!B.length)throw new Error('empty');
+  return {B,meta:res.meta||{}};
+}
+async function pmQuote(tk){try{const r=await fetch(RELAY+'/?pm='+encodeURIComponent(tk));const j=await r.json();if(j&&j.last!=null&&!j.error)return j;}catch(e){}return null;}
+function ema(a,p){const k=2/(p+1);let e=a[0];const o=[e];for(let i=1;i<a.length;i++){e=a[i]*k+e*(1-k);o.push(e);}return o;}
+function sma(a,p){const s=a.slice(-p);return s.reduce((x,y)=>x+y,0)/s.length;}
+
+/* ================= I. the read (same feeds as the Desk) ================= */
+let SHEET=null;
+async function readWorld(){
+  const out={};
+  const feeds=[['ES=F','es'],['NQ=F','nq'],['CL=F','oil'],['JPY=X','jpy'],['^VIX','vix']];
+  for(const [tk,key] of feeds){
+    try{const {B,meta}=await pull(tk,'2d','15m');
+      const prevC=meta.chartPreviousClose||null;const last=B[B.length-1].c;const nowS=B[B.length-1].t;
+      const ON=B.filter(b=>b.t>=nowS-16*3600);
+      const hourAgo=B.filter(b=>b.t<=nowS-3600);const hc=hourAgo.length?hourAgo[hourAgo.length-1].c:null;
+      const o={chg:prevC?(last-prevC)/prevC*100:null,last};
+      if(ON.length){const hi=Math.max(...ON.map(b=>b.h)),lo=Math.min(...ON.map(b=>b.l));o.pos=(last-lo)/((hi-lo)||1);}
+      if(hc)o.h1=(last-hc)/hc*100;
+      out[key]=o;await sleep(700);
+    }catch(e){out[key]={err:e.message};}
+  }
+  return out;
+}
+function drawRead(r,label){
+  r=r||(SHEET&&(SHEET.london&&SHEET.london.read||SHEET.read))||{};
+  const es=r.es||{},nq=r.nq||{},oil=r.oil||{},jpy=r.jpy||{},vix=r.vix||{};
+  const f=x=>x==null?'—':((x>=0?'+':'')+x.toFixed(2)+'%');
+  const avg=((es.chg||0)+(nq.chg||0))/2;
+  let tone='FLAT',cls='fl',plain='No edge in the futures — tomorrow\'s opening range decides everything.';
+  if(avg>0.25){tone='RISK ON';cls='up';plain='Futures green: tailwind for the call side — but green overnights often fade the first 15 minutes, so let the range confirm.';}
+  else if(avg<-0.25){tone='RISK OFF';cls='dn';plain='Futures red: headwind — favor the put side, or demand a reclaim before any long.';}
+  const mods=[];
+  if(vix.chg>6)mods.push('<b>Fear rising</b> (VIX '+f(vix.chg)+') — wider ranges, failed bounces; size down.');
+  if(vix.chg<-6)mods.push('<b>Fear draining</b> (VIX '+f(vix.chg)+') — dips get bought; puts need real breaks.');
+  if(Math.abs(oil.chg||0)>1.5)mods.push('<b>Energy '+(oil.chg>0?'bid':'offered')+'</b> (crude '+f(oil.chg)+') — XOM gaps with it; trade the range, not the gap.');
+  if(jpy.chg<-0.6)mods.push('<b>Yen surging</b> (USDJPY '+f(jpy.chg)+') — carry-unwind tell; high-beta tech is first to bleed.');
+  const when=label||(SHEET?(SHEET.london?'London refresh '+SHEET.london.at:'Close read '+SHEET.at):'');
+  document.getElementById('readLine').innerHTML='<b>'+tone+'.</b> '+plain+(nq.pos!=null?(' NQ sits in the '+(nq.pos>0.7?'upper third of the overnight range — buyers hold the night.':nq.pos<0.3?'lower third — sellers hold the night.':'middle — nobody has won the night.')):'')+(mods.length?'<br>'+mods.join(' '):'')+(when?'<br><span style="color:var(--dim);font-size:10.5px">'+when+' CT</span>':'');
+  const cell=(l,v,c)=>'<div class="rc"><div class="l">'+l+'</div><div class="v '+c+'">'+v+'</div></div>';
+  document.getElementById('readCells').innerHTML=cell('Tone',tone,cls)+cell('S&amp;P fut',f(es.chg),es.chg>=0?'up':'dn')+cell('Nasdaq fut',f(nq.chg),nq.chg>=0?'up':'dn')+cell('Crude',f(oil.chg),oil.chg>=0?'up':'dn')+cell('USDJPY',f(jpy.chg),jpy.chg>=0?'up':'dn')+cell('VIX',f(vix.chg),vix.chg<=0?'up':'dn');
+  return tone;
+}
+
+/* ================= II. daily structure → tomorrow's plan ================= */
+function dailyAnalyze(B){
+  /* B = daily bars, last bar = the session just closed (or last completed) */
+  const n=B.length-1;const D=B[n];const P=B[n-1];
+  const C=B.map(b=>b.c);
+  let trs=[];for(let i=1;i<=n;i++)trs.push(Math.max(B[i].h-B[i].l,Math.abs(B[i].h-B[i-1].c),Math.abs(B[i].l-B[i-1].c)));
+  const atr=trs.slice(-14).reduce((a,b)=>a+b,0)/Math.min(14,trs.length);
+  const s20=sma(C,20),s50=sma(C,Math.min(50,C.length));const e9=ema(C,9)[n];
+  let g=0,l=0;for(let i=n-13;i<=n;i++){const d=C[i]-C[i-1];if(d>0)g+=d;else l-=d;}const rsi=l===0?100:100-100/(1+g/l);
+  const vAvg=sma(B.map(b=>b.v),20);const rvol=vAvg?D.v/vAvg:null;
+  const rng=D.h-D.l;const cloc=rng?(D.c-D.l)/rng:0.5;          /* where it closed inside its day: 1 = at high */
+  const slope5=(C[n]-C[n-5])/C[n-5]*100;
+  const wk=B.slice(-5);const wkH=Math.max(...wk.map(b=>b.h)),wkL=Math.min(...wk.map(b=>b.l));
+  const chg=(D.c-P.c)/P.c*100;
+  const inside=D.h<=P.h&&D.l>=P.l;
+  const trend=D.c>s20&&s20>s50?'UP':D.c<s20&&s20<s50?'DOWN':'MIXED';
+  return {px:D.c,chg,pdh:D.h,pdl:D.l,pdc:D.c,pph:P.h,ppl:P.l,atr,atrP:atr/D.c*100,s20,s50,e9,rsi,rvol,cloc,slope5,wkH,wkL,inside,trend,dayRange:rng,date:D.t};
+}
+function leanScore(A,mktTone){
+  function side(L){
+    let s=0;const det=[];const add=(ok,pts,lbl,plain)=>{if(ok)s+=pts;det.push({ok,pts:ok?pts:0,max:pts,lbl,plain});};
+    add(L?A.px>A.s20:A.px<A.s20,14,'20-day','Close is '+(A.px>A.s20?'above':'below')+' the 20-day average ('+n2(A.s20)+') — the month-long crowd is '+((L?A.px>A.s20:A.px<A.s20)?'with':'against')+' this side.');
+    add(L?A.s20>A.s50:A.s20<A.s50,10,'20 vs 50','The month leads the quarter ('+n2(A.s20)+' vs '+n2(A.s50)+') — the bigger tide agrees.');
+    add(L?A.px>A.e9:A.px<A.e9,10,'9-day EMA','On the right side of the fast daily average ('+n2(A.e9)+') — momentum is current.');
+    add(L?A.cloc>=0.65:A.cloc<=0.35,14,'Close location','Closed in the '+(A.cloc>=0.65?'top':A.cloc<=0.35?'bottom':'middle')+' of its range ('+Math.round(A.cloc*100)+'%). Closing near the extreme means the '+(A.cloc>=0.65?'buyers':'sellers')+' owned the last hour — that tends to carry into the next open.');
+    add(L?A.slope5>0.8:A.slope5<-0.8,10,'5-day slope','Five-day drift '+(A.slope5>=0?'+':'')+A.slope5.toFixed(1)+'% — the short trend votes.');
+    add(L?(A.rsi>=48&&A.rsi<=70):(A.rsi>=30&&A.rsi<=52),10,'RSI '+A.rsi.toFixed(0),'Daily momentum with room left. Over 70 / under 30 is stretched — chase risk, not entry.');
+    add(A.rvol!=null&&A.rvol>=1.2&&(L?A.chg>0:A.chg<0),12,'Volume ×'+(A.rvol?A.rvol.toFixed(1):'—'),'Today\'s move came on '+(A.rvol||0).toFixed(1)+'× normal volume — real hands, so it tends to follow through.');
+    add(L?A.px>A.pph:A.px<A.ppl,10,'Prior-day break','Closed beyond yesterday\'s '+(L?'high':'low')+' — trapped traders fuel the next leg.');
+    add(mktTone==='FLAT'||(L?mktTone==='RISK ON':mktTone==='RISK OFF'),10,'Futures','Overnight futures '+(mktTone==='FLAT'?'are neutral — no headwind.':(L?mktTone==='RISK ON':mktTone==='RISK OFF')?'agree with this side.':'lean against this side — demand more proof.'));
+    return {s:Math.min(100,s),det};
+  }
+  const b=side(true),r=side(false);
+  const gap=b.s-r.s;
+  if(Math.abs(gap)<12)return {lean:'NEUTRAL',cls:'N',score:Math.max(b.s,r.s),det:gap>=0?b.det:r.det,bull:b.s,bear:r.s};
+  return gap>0?{lean:'BULL',cls:'B',score:b.s,det:b.det,bull:b.s,bear:r.s}:{lean:'BEAR',cls:'S',score:r.s,det:r.det,bull:b.s,bear:r.s};
+}
+function planSide(A,L){
+  /* night-before triggers are the day's extremes; stops are structure-sized by daily ATR; T1 is the next level or 1 ATR */
+  const trig=L?A.pdh:A.pdl;
+  const stop=L?trig-0.35*A.atr:trig+0.35*A.atr;
+  let t1,t1Why;
+  if(L){t1=(A.wkH>trig+0.4*A.atr)?A.wkH:trig+1.0*A.atr;t1Why=(t1===A.wkH)?'the 5-day high — the most-watched line above':'one average day of travel';}
+  else{t1=(A.wkL<trig-0.4*A.atr)?A.wkL:trig-1.0*A.atr;t1Why=(t1===A.wkL)?'the 5-day low — the most-watched line below':'one average day of travel';}
+  return {L,trig,stop,t1,t1Why,trigWhy:L?'today\'s high':'today\'s low'};
+}
+/* contract pre-pick — same maths as the Desk, both sides, one chain call */
+function nCDF(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.sqrt(2);const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
+function bsP(S,K,Tt,sg,c){const s=Math.sqrt(Tt);const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*Tt)/(sg*s);const d2=d1-sg*s;return c?S*nCDF(d1)-K*Math.exp(-0.05*Tt)*nCDF(d2):K*Math.exp(-0.05*Tt)*nCDF(-d2)-S*nCDF(-d1);}
+function ivS(S,K,Tt,mid,c){if(!mid||mid<=0.03)return null;let lo=0.05,hi=3;for(let i=0;i<40;i++){const m=(lo+hi)/2;if(bsP(S,K,Tt,m,c)>mid)hi=m;else lo=m;}return(lo+hi)/2;}
+function dl(S,K,Tt,sg,c){const s=Math.sqrt(Tt);const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*Tt)/(sg*s);return c?nCDF(d1):nCDF(d1)-1;}
+function pickFrom(raw,spot,isC){
+  const now=new Date();const bands=[[5,10],[4,14],[3,21]];
+  for(const [lo0,hi0] of bands){
+    let c=[];
+    for(const o of raw){
+      const m=(o.option||o.symbol||'').match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==(isC?'C':'P'))continue;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.ceil((exp-now)/86400000);if(dte<lo0||dte>hi0)continue;
+      const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;const mid=(bid+ask)/2;if(mid<=0)continue;
+      const Tt=dte/365;const v=ivS(spot,K,Tt,mid,isC);const d=v?Math.abs(dl(spot,K,Tt,v,isC)):null;if(d==null)continue;
+      c.push({K,exp:exp.getTime(),dte,mid,spread:ask-bid,oi:+o.open_interest||+o.oi||0,d,fit:Math.abs(d-0.70)});
+    }
+    if(c.length){c.sort((a,b)=>a.fit-b.fit);return c[0];}
+  }
+  return null;
+}
+async function contracts(tk,spot){
+  let cj=null;
+  try{const c=JSON.parse(localStorage.getItem('kChain_'+tk));if(c&&Date.now()-c.ts<45*60000)cj=c.cj;}catch(e){}
+  if(!cj){try{const r=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));cj=JSON.parse(await r.text());localStorage.setItem('kChain_'+tk,JSON.stringify({ts:Date.now(),cj}));}catch(e){return {err:'chain rate-limited — get the contract in PICKER at 8:15'};}}
+  const raw=(cj&&cj.data&&cj.data.options)||[];const S=(cj&&cj.data&&(cj.data.current_price!=null?cj.data.current_price:cj.data.close))||spot;
+  return {C:pickFrom(raw,S,true),P:pickFrom(raw,S,false)};
+}
+
+async function buildSheet(force){
+  const fd=forDate();
+  st('Reading the close…');
+  const read=await readWorld();const tone=drawRead(read,'Close read '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  let benchChg=null;try{const {B}=await pull('SPY','3mo','1d');const a=dailyAnalyze(B);benchChg=a.chg;}catch(e){}await sleep(800);
+  const names=[];
+  for(const tk of board()){
+    st('Planning '+tk+'…');
+    try{const {B}=await pull(tk,'3mo','1d');const A=dailyAnalyze(B);
+      const rs=benchChg!=null?A.chg-benchChg:null;
+      const lean=leanScore(A,tone);
+      const call=planSide(A,true),put=planSide(A,false);
+      await sleep(900);
+      const k=await contracts(tk,A.px);
+      names.push({tk,A,rs,lean,call,put,k});
+      await sleep(900);
+    }catch(e){names.push({tk,err:e.message});await sleep(1200);}
+  }
+  names.sort((a,b)=>(b.lean?Math.max(b.lean.bull,b.lean.bear):0)-(a.lean?Math.max(a.lean.bull,a.lean.bear):0));
+  SHEET={for:fdKey(fd),forLabel:fd.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'}),at:ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tone,read,names,london:null,risk:riskAmt()};
+  localStorage.setItem(KEY,JSON.stringify(SHEET));
+  drawNames();st('Sheet built '+SHEET.at+' CT for '+SHEET.forLabel+'. It is saved — the Desk will carry it in the morning. Print it.');
+  try{if(localStorage.getItem('kTmrwVoice')!=='0'){const top=names.find(x=>!x.err);if(top){const u=new SpeechSynthesisUtterance('Tomorrow sheet built. Top name '+top.tk+', leaning '+top.lean.lean.toLowerCase()+'. Call trigger '+n2(top.call.trig)+'. Put trigger '+n2(top.put.trig)+'.');u.rate=0.7;speechSynthesis.speak(u);}}}catch(e){}
+}
+
+/* ================= III. London refresh (7:45 CT) ================= */
+async function londonRefresh(force){
+  if(!SHEET){st('No sheet to refresh — build it first.');return;}
+  st('Reading London…');
+  const read=await readWorld();const tone=drawRead(read,'London refresh '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
+  const pm={};
+  for(const x of SHEET.names){if(x.err)continue;st('Pre-market '+x.tk+'…');const q=await pmQuote(x.tk);if(q)pm[x.tk]={last:q.last,gapPct:q.gapPct,prev:q.prevClose};await sleep(400);}
+  /* re-lean with the live futures tone (the daily structure is unchanged; only the futures vote moves) */
+  for(const x of SHEET.names){if(x.err)continue;x.lean=leanScore(x.A,tone);x.pm=pm[x.tk]||null;}
+  SHEET.london={at:ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tone,read};
+  SHEET.names.sort((a,b)=>(b.lean?Math.max(b.lean.bull,b.lean.bear):0)-(a.lean?Math.max(a.lean.bull,a.lean.bear):0));
+  localStorage.setItem(KEY,JSON.stringify(SHEET));
+  drawNames();st('London refresh done '+SHEET.london.at+' CT. Gapped-through triggers are flagged. Open the Desk at 8:15.');
+  try{if(localStorage.getItem('kTmrwVoice')!=='0'){const u=new SpeechSynthesisUtterance('London refresh. Tone '+tone.toLowerCase()+'. '+SHEET.names.filter(x=>x.pm&&x.gapFlag).map(x=>x.tk+' has gapped through its trigger.').join(' ')+' The sheet is repriced.');u.rate=0.7;speechSynthesis.speak(u);}}catch(e){}
+}
+
+/* ================= draw ================= */
+function gapNote(x){
+  if(!x.pm)return '';
+  const A=x.A,p=x.pm.last;const gA=(p-A.pdc)/A.atr;const dir=p>A.pdc?'up':'down';
+  let txt,warn=false;x.gapFlag=false;
+  if(p>x.call.trig){txt='Pre-market $'+n2(p)+' is <b>already above the call trigger</b> ('+n2(x.call.trig)+'). That trigger is dead: do not buy the gap. New plan — wait for the 8:35 range; a hold above the ORH is the long, a failure back below '+n2(A.pdh)+' is the trapped-buyer put.';warn=true;x.gapFlag=true;}
+  else if(p<x.put.trig){txt='Pre-market $'+n2(p)+' is <b>already below the put trigger</b> ('+n2(x.put.trig)+'). That trigger is dead: do not sell the gap. New plan — wait for the 8:35 range; a failed bounce under the ORL is the put, a reclaim of '+n2(A.pdl)+' is the squeeze long.';warn=true;x.gapFlag=true;}
+  else if(Math.abs(gA)>=0.5){txt='Pre-market $'+n2(p)+' — gapping '+dir+' <b>'+Math.abs(gA).toFixed(1)+' ATR</b> but still inside yesterday\'s range. Both triggers are intact; a gap this size usually tests the '+(dir==='up'?'high':'low')+' early — let it close through, not touch.';}
+  else{txt='Pre-market $'+n2(p)+' ('+(x.pm.gapPct>=0?'+':'')+(x.pm.gapPct||0).toFixed(1)+'%) — quiet open. <b>Both triggers intact.</b>';}
+  return '<div class="gap'+(warn?' warn':'')+'">'+txt+'</div>';
+}
+function sideBlock(x,L){
+  const P=L?x.call:x.put;const A=x.A;const k=x.k&&(L?x.k.C:x.k.P);
+  const dlt=k?k.d:0.70;const stopD=Math.abs(P.trig-P.stop);const per=stopD*dlt*100;const nC=Math.max(1,Math.floor((SHEET?SHEET.risk:riskAmt())/per));
+  const fmt=t=>new Date(t).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const primary=(x.lean.lean==='BULL'&&L)||(x.lean.lean==='BEAR'&&!L);
+  return '<div class="side"><div class="h"><span class="s '+(L?'C':'P')+'">'+(L?'CALL SIDE':'PUT SIDE')+(primary?' · the lean':'')+'</span><span class="n">5-min close '+(L?'above':'below')+' '+P.trigWhy+' + volume</span></div>'+
+    '<div class="row"><span><b>TRIGGER</b><i class="'+(L?'g':'r')+'">'+n2(P.trig)+'</i></span><span><b>STOP</b><i class="r">'+n2(P.stop)+'</i></span><span><b>T1</b><i class="g">'+n2(P.t1)+'</i></span><span><b>SIZE</b><i class="gold">'+nC+'</i></span></div>'+
+    '<div class="ctr">'+(k?('<b>'+x.tk+' '+fmt(k.exp)+' $'+k.K+' '+(L?'CALL':'PUT')+'</b> <span class="mono">Δ'+k.d.toFixed(2)+' · ~$'+k.mid.toFixed(2)+' · OI '+k.oi.toLocaleString()+' · '+k.dte+' DTE'+((k.spread<=0.30||k.spread<=k.mid*0.05)&&k.oi>=500?' · ✓ liquid':' · ✗ thin — PICKER alternate')+'</span>'):(x.k&&x.k.err?'<span class="mono">'+x.k.err+'</span>':'<span class="mono">no contract in window — PICKER</span>'))+
+    '<div class="plain" style="margin-top:3px">Stop is 0.35 daily-ATR beyond the trigger ($'+stopD.toFixed(2)+'); T1 is '+P.t1Why+'. ≈ $'+per.toFixed(0)+' risk per contract at Δ'+dlt.toFixed(2)+'. Mid will move by morning — the strike and expiry are the plan, the price is not.</div></div></div>';
+}
+function drawNames(){
+  const w=document.getElementById('names');
+  document.getElementById('forLbl').textContent=SHEET?('for '+SHEET.forLabel):'';
+  document.getElementById('pdDate').textContent=SHEET?('For '+SHEET.forLabel+' · built '+SHEET.at+' CT'+(SHEET.london?' · London '+SHEET.london.at:'')):'';
+  if(!SHEET){w.innerHTML='<div class="card plain">Nothing built yet. Tap <b>BUILD THE SHEET</b> after the close, or leave this tab open and it runs at 3:10.</div>';return;}
+  let i=0;
+  w.innerHTML=SHEET.names.map(x=>{
+    if(x.err)return '<div class="card nm"><div class="nt"><span class="tk">'+x.tk+'</span></div><div class="plain">Unreadable ('+x.err+') — tap BUILD again in a minute.</div></div>';
+    const A=x.A;const feat=i++===0;
+    const gapH=gapNote(x);
+    return '<div class="card nm'+(feat?' feat':'')+'"><div class="nt"><span class="tk">'+x.tk+'<small>$'+n2(A.px)+' '+(A.chg>=0?'+':'')+A.chg.toFixed(1)+'%</small></span><span class="lean '+x.lean.cls+'">'+x.lean.lean+' '+x.lean.score+'</span></div>'+
+      '<div class="sub">Daily trend <b>'+A.trend+'</b> · ATR $'+A.atr.toFixed(2)+' ('+A.atrP.toFixed(1)+'%) · closed at '+Math.round(A.cloc*100)+'% of its range'+(A.inside?' · <b>inside day</b> — coiled':'')+(x.rs!=null?' · RS '+(x.rs>=0?'+':'')+x.rs.toFixed(1)+'% vs SPY':'')+' · bull '+x.lean.bull+' / bear '+x.lean.bear+'</div>'+
+      '<div class="lv"><div><div class="l">Today high</div><div class="v">'+n2(A.pdh)+'</div></div><div><div class="l">Today low</div><div class="v">'+n2(A.pdl)+'</div></div><div><div class="l">Close</div><div class="v">'+n2(A.pdc)+'</div></div>'+
+      '<div><div class="l">5-day high</div><div class="v">'+n2(A.wkH)+'</div></div><div><div class="l">5-day low</div><div class="v">'+n2(A.wkL)+'</div></div><div><div class="l">20-day avg</div><div class="v">'+n2(A.s20)+'</div></div></div>'+
+      gapH+
+      sideBlock(x,x.lean.lean!=='BEAR')+sideBlock(x,x.lean.lean==='BEAR')+
+      '<span class="why" onclick="openWhy(\''+x.tk+'\')">why this lean, signal by signal →</span></div>';
+  }).join('');
+}
+function openWhy(tk){
+  const x=SHEET.names.find(n=>n.tk===tk);if(!x||x.err)return;
+  document.getElementById('mTitle').textContent=tk+' — why '+x.lean.lean+' ('+x.lean.score+'/100)';
+  document.getElementById('mBody').innerHTML=x.lean.det.map(d=>{const cls=d.ok?(d.pts>=d.max?'g':'a'):'r';return '<div class="wr"><div class="wh"><span>'+d.lbl+'</span><span class="p '+cls+'">'+d.pts+'/'+d.max+'</span></div><div class="wb">'+d.plain+'</div></div>';}).join('')+
+    '<div class="wb" style="margin-top:8px">This is the <i>daily</i> structure — the argument for tomorrow. The Desk\'s 8:35 score on the 5-minute chart is the verdict; when they disagree, the live score wins and the sheet tells you why you were tempted.</div>';
+  document.getElementById('mWrap').classList.add('open');
+}
+
+/* ================= clock / automation ================= */
+function drawClock(){
+  const n=ctNow();document.getElementById('clk').textContent=n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  const m=ctMin();const wd=n.getDay()>=1&&n.getDay()<=5;let t;
+  if(!wd)t='<b>Weekend.</b> Build the sheet Sunday night — it plans Monday.';
+  else if(m<7*60+45)t='<b>Night.</b> Sheet '+(SHEET&&SHEET.for===fdKey(forDate())?'is built for today':'not built — tap BUILD')+'. London refresh at 7:45.';
+  else if(m<8*60+30)t='<b>Pre-market.</b> '+(SHEET&&SHEET.london?'Repriced for London. Open the Desk at 8:15.':'Tap LONDON REFRESH, then the Desk at 8:15.');
+  else if(m<15*60)t='<b>In session.</b> The Desk owns the day. This sheet rebuilds at 3:10.';
+  else if(m<15*60+10)t='<b>Closed.</b> Sheet builds at 3:10 — or tap BUILD now.';
+  else t='<b>After the close.</b> '+(SHEET&&SHEET.for===fdKey(forDate())?'Tomorrow is planned. Read it, print it, close the laptop.':'Tap BUILD THE SHEET.');
+  document.getElementById('phase').innerHTML=t;
+}
+const AUTO={did310:null,did745:null};
+async function autoTick(){
+  const n=ctNow();const m=ctMin();const wd=n.getDay()>=1&&n.getDay()<=5;const today=n.toDateString();
+  const ab=document.getElementById('autoBuild').checked,al=document.getElementById('autoLon').checked;
+  localStorage.setItem('kTmrwAuto',JSON.stringify({ab,al}));
+  const s=document.getElementById('autoSt');
+  if(!wd){s.textContent='weekend · idle';return;}
+  if(ab&&m>=15*60+10&&m<15*60+20&&AUTO.did310!==today&&!(SHEET&&SHEET.for===fdKey(forDate())&&SHEET.atDay===today)){AUTO.did310=today;s.textContent='3:10 — building…';try{await buildSheet(true);SHEET.atDay=today;localStorage.setItem(KEY,JSON.stringify(SHEET));}catch(e){}return;}
+  if(al&&m>=7*60+45&&m<7*60+55&&AUTO.did745!==today&&SHEET&&!SHEET.london){AUTO.did745=today;s.textContent='7:45 — London…';try{await londonRefresh(true);}catch(e){}return;}
+  s.textContent=m<7*60+45?'armed · London refresh 7:45':m<15*60+10?'armed · build at 3:10 after the close':'done for today';
+}
+(function boot(){
+  try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.names)SHEET=s;}catch(e){}
+  try{const a=JSON.parse(localStorage.getItem('kTmrwAuto'));if(a){document.getElementById('autoBuild').checked=!!a.ab;document.getElementById('autoLon').checked=!!a.al;}}catch(e){}
+  /* a sheet from a previous day is stale — show it greyed but say so */
+  if(SHEET&&SHEET.for!==fdKey(forDate())){st('This sheet is for '+SHEET.forLabel+' — stale. Build a new one.');}
+  drawRead();drawNames();drawClock();
+  setInterval(drawClock,20000);setInterval(autoTick,15000);autoTick();
+})();
+</script>
+</body></html>

@@ -32,6 +32,15 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .rc .v{font-size:13px;font-weight:800}
 .rc .v.up{color:var(--green)}.rc .v.dn{color:var(--red)}.rc .v.fl{color:var(--amber)}
 
+#nightCard{font-size:11.5px;line-height:1.55}
+.nrow{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.nrow:first-child{border-top:none;padding-top:0}
+.nrow .nt{font-family:Georgia,serif;font-size:15px;font-weight:700;min-width:58px}
+.nrow .nl{font-size:9.5px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:6px}
+.nrow .nl.B{color:var(--green);border:1px solid var(--green)}.nrow .nl.S{color:var(--red);border:1px solid var(--red)}.nrow .nl.N{color:var(--amber);border:1px solid var(--amber)}
+.nrow .nv{font-size:10.5px;color:var(--dim);text-align:right}.nrow .nv b{color:var(--ink)}
+.nrow .nv .dead{color:var(--amber)}
+#nightNote{font-size:10.5px;color:var(--dim);margin-top:8px}#nightNote b{color:var(--gold-soft)}
 /* the trade */
 #sentinel{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:10.5px;color:var(--dim)}
 #sentinel label{display:flex;gap:8px;align-items:center;color:var(--ink);cursor:pointer}
@@ -179,6 +188,11 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div id="readCells"></div>
 </div>
 
+<div id="nightSec" style="display:none">
+<div class="sec"><span class="n">I½ · Last Night's Sheet — the argument</span><span class="x" onclick="location.href='tomorrow.html'">open →</span></div>
+<div class="card" id="nightCard"></div>
+</div>
+
 <div class="sec"><span class="n">II · The Trade — today's definitive setup</span><span class="x" onclick="runDesk(true)">↻ REFRESH</span></div>
 <div id="sentinel">
   <label><input type="checkbox" id="autoW" checked> 🔔 SENTINEL — recompose at 8:35, watch every 5-min close, speak when the trigger fires</label>
@@ -250,6 +264,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 
 <div class="knav">
   <a href="hub.html">COMMAND</a>
+  <a href="tomorrow.html">TOMORROW</a>
   <a href="desk.html" class="on">DESK</a>
   <a href="cockpit.html">COCKPIT</a>
   <a href="picker.html">PICKER</a>
@@ -402,6 +417,20 @@ async function pmQuote(tk){
     if(j&&j.last!=null&&!j.error)return j;}catch(e){}
   return null;
 }
+
+/* ================= I½. last night's sheet (tomorrow.html) ================= */
+function nightSheet(){try{const s=JSON.parse(localStorage.getItem('kTomorrow'));if(s&&s.names&&s.for===ctNow().toDateString())return s;}catch(e){}return null;}
+function drawNight(){
+  const sec=document.getElementById('nightSec');const S=nightSheet();
+  if(!S){sec.style.display='none';return;}
+  sec.style.display='block';
+  const rows=S.names.filter(x=>!x.err).map(x=>{
+    const A=x.A;let live='';
+    if(x.pm){const p=x.pm.last;if(p>x.call.trig)live='<span class="dead">gapped above call trigger — 8:35 range decides</span>';else if(p<x.put.trig)live='<span class="dead">gapped below put trigger — 8:35 range decides</span>';else live='triggers intact';}
+    return '<div class="nrow"><span class="nt">'+x.tk+'</span><span class="nl '+x.lean.cls+'">'+x.lean.lean+' '+x.lean.score+'</span><span class="nv">call &gt; <b>'+n2(x.call.trig)+'</b> · put &lt; <b>'+n2(x.put.trig)+'</b> · ATR $'+A.atr.toFixed(2)+(live?'<br>'+live:'')+'</span></div>';
+  }).join('');
+  document.getElementById('nightCard').innerHTML=rows+'<div id="nightNote">Built '+S.at+' CT'+(S.london?' · repriced for London '+S.london.at:' · <b>not yet repriced for London</b> — tap open → LONDON REFRESH')+'. <b>The sheet is the argument; the 8:35 score below is the verdict.</b> When they disagree, the live score wins.</div>';
+}
 /* ================= II. the trade ================= */
 async function findTrade(force){
   const st=document.getElementById('st');
@@ -456,7 +485,8 @@ function drawTrade(){
   const PL=passLine();
   const verdict=b.sc.score>=PL?'PASSES':'below the line';
   const pmTxt=(preMarket()&&b.A.pm!=null)?(' · <span style="color:var(--gold-soft)">PRE-MKT $'+n2(b.A.pm)+' ('+(b.A.pmGap>=0?'+':'')+(b.A.pmGap||0).toFixed(1)+'% vs close)</span>'):'';
-  document.getElementById('tScore').innerHTML=(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt;
+  const NS=nightSheet();const nx=NS&&NS.names.find(x=>x.tk===b.tk&&!x.err);const nightTxt=nx?(' · last night\'s sheet: <b>'+nx.lean.lean+'</b> '+nx.lean.score+(((nx.lean.lean==='BULL'&&b.sc.dir>0)||(nx.lean.lean==='BEAR'&&b.sc.dir<0))?' — agrees':nx.lean.lean==='NEUTRAL'?' — no argument either way':' — <span style="color:var(--amber)">DISAGREES with the live score; the live score wins, size down</span>')):'';
+  document.getElementById('tScore').innerHTML=(preMarket()?'<span style="color:var(--amber)">PRE-MARKET — structure and score are YESTERDAY\'s session; prices below are live pre-market.</span><br>':'')+'Score <b>'+b.sc.score+'/100</b> — '+verdict+' (your PASS line: '+PL+') · last session $'+n2(b.A.px)+(b.A.chg!=null?(' ('+(b.A.chg>=0?'+':'')+b.A.chg.toFixed(1)+'%)'):'')+pmTxt+nightTxt;
   const T=composeTrade();DESK.T=T;
   const pmNote=(preMarket()&&b.A.pm!=null)?('<br><b style="color:var(--amber)">Pre-market check:</b> '+b.tk+' is at $'+n2(b.A.pm)+' now, '+(b.A.pm>T.trig?'ABOVE':'BELOW')+' this trigger — '+(T.L?(b.A.pm>T.trig?'a gap-up through it; do NOT buy the gap, wait for the 8:35 range and a hold above the ORH.':'below it; the trigger is intact for the open.'):(b.A.pm<T.trig?'a gap-down through it; do NOT sell the gap, wait for the 8:35 range and a failed bounce.':'above it; the trigger is intact for the open.'))):'';
   const rows=[
@@ -821,7 +851,7 @@ setInterval(sentinelTick,5000);
 
 /* ================= boot ================= */
 async function runDesk(force){
-  drawClock();
+  drawClock();drawNight();
   document.getElementById('riskIn').value=localStorage.getItem('kRisk')||400;
   await readWorld();
   await findTrade(force);
