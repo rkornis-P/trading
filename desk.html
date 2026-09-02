@@ -329,7 +329,10 @@ function analyze(B5){
   const orDone=B.length>=2||(nowS-B[0].t>=300);
   return {px,chg,e9,s20,vw,rsi,h2,h1,rvol,atr,atrP:atr/px*100,up15,up60,pdh,pdl,pdc,gapP,orH,orL,dayHi,dayLo,cClose,cVol,avgVol,prevHi,prevLo,orDone,bars:B.length};
 }
-function score(A,rs){
+const ENERGY=['XOM','CVX','OXY','COP','SLB','HAL','DVN','EOG','MPC','VLO','PSX','XLE','USO','APA','HES'];
+function score(A,rs,tk){
+  const oil=(DESK.read&&DESK.read.oil&&DESK.read.oil.chg!=null)?DESK.read.oil.chg:null;
+  const energy=ENERGY.indexOf(tk)>-1;
   function side(dir){
     const L=dir>0;let s=0;const det=[];
     const add=(ok,pts,lbl,plain)=>{if(ok)s+=pts;det.push({ok,pts:ok?pts:0,max:pts,lbl,plain});};
@@ -343,6 +346,7 @@ function score(A,rs){
     add(A.rvol!=null&&A.rvol>=1.2,12,'RVOL ×'+(A.rvol?A.rvol.toFixed(1):'—'),'Volume vs the same time of day: above 1.2 means real participants are here and moves stick.');
     add(A.atrP>=0.12,8,'Movement','Candles are travelling '+A.atrP.toFixed(2)+'% per bar — enough motion to outrun option decay.');
     if(A.pdh!=null)add(L?A.px>A.pdh:A.px<A.pdl,10,'PD break','Beyond yesterday\'s '+(L?'high':'low')+' — trapped traders from yesterday fuel the move.');
+    if(energy&&oil!=null)add(L?oil>0.5:oil<-0.5,8,'Crude '+(oil>=0?'+':'')+oil.toFixed(1)+'%',tk+' is an oil proxy: crude '+(oil>=0?'+':'')+oil.toFixed(1)+'% overnight is the driver. On an oil-shock day the index can be red while '+tk+' is the strongest name on the screen — read crude, not the S&P.');
     if(rs!=null)add(L?rs>0.15:rs<-0.15,5,'RS vs SPY','This name is '+(rs>=0?'+':'')+rs.toFixed(1)+'% vs the market — trading the strongest horse.');
     return {s:Math.min(100,s),det};
   }
@@ -443,7 +447,7 @@ async function findTrade(force){
     if(!d){
       try{const {B}=await pull(tk,'5d','5m');const A=analyze(B);
         const rs=(bench!=null&&A.chg!=null)?A.chg-bench:null;
-        const sc=score(A,rs);d={A,sc};cset('kDeskS_'+tk,d);}
+        const sc=score(A,rs,tk);d={A,sc};cset('kDeskS_'+tk,d);}
       catch(e){d=null;}
       await sleep(900);
     }

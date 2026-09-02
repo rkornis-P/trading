@@ -228,7 +228,11 @@ function dailyAnalyze(B){
   const trend=D.c>s20&&s20>s50?'UP':D.c<s20&&s20<s50?'DOWN':'MIXED';
   return {px:D.c,chg,pdh:D.h,pdl:D.l,pdc:D.c,pph:P.h,ppl:P.l,atr,atrP:atr/D.c*100,s20,s50,e9,rsi,rvol,cloc,slope5,wkH,wkL,inside,trend,dayRange:rng,date:D.t};
 }
-function leanScore(A,mktTone){
+const ENERGY=['XOM','CVX','OXY','COP','SLB','HAL','DVN','EOG','MPC','VLO','PSX','XLE','USO','APA','HES'];
+function isEnergy(tk){return ENERGY.indexOf(tk)>-1;}
+function leanScore(A,mktTone,tk,read){
+  const oil=read&&read.oil&&read.oil.chg!=null?read.oil.chg:null;
+  const nq=read&&read.nq&&read.nq.chg!=null?read.nq.chg:null;
   function side(L){
     let s=0;const det=[];const add=(ok,pts,lbl,plain)=>{if(ok)s+=pts;det.push({ok,pts:ok?pts:0,max:pts,lbl,plain});};
     add(L?A.px>A.s20:A.px<A.s20,14,'20-day','Close is '+(A.px>A.s20?'above':'below')+' the 20-day average ('+n2(A.s20)+') — the month-long crowd is '+((L?A.px>A.s20:A.px<A.s20)?'with':'against')+' this side.');
@@ -239,7 +243,8 @@ function leanScore(A,mktTone){
     add(L?(A.rsi>=48&&A.rsi<=70):(A.rsi>=30&&A.rsi<=52),10,'RSI '+A.rsi.toFixed(0),'Daily momentum with room left. Over 70 / under 30 is stretched — chase risk, not entry.');
     add(A.rvol!=null&&A.rvol>=1.2&&(L?A.chg>0:A.chg<0),12,'Volume ×'+(A.rvol?A.rvol.toFixed(1):'—'),'Today\'s move came on '+(A.rvol||0).toFixed(1)+'× normal volume — real hands, so it tends to follow through.');
     add(L?A.px>A.pph:A.px<A.ppl,10,'Prior-day break','Closed beyond yesterday\'s '+(L?'high':'low')+' — trapped traders fuel the next leg.');
-    add(mktTone==='FLAT'||(L?mktTone==='RISK ON':mktTone==='RISK OFF'),10,'Futures','Overnight futures '+(mktTone==='FLAT'?'are neutral — no headwind.':(L?mktTone==='RISK ON':mktTone==='RISK OFF')?'agree with this side.':'lean against this side — demand more proof.'));
+    if(isEnergy(tk)&&oil!=null){add(L?oil>0.5:oil<-0.5,10,'Crude '+(oil>=0?'+':'')+oil.toFixed(1)+'%',tk+' trades with crude, not the index. Crude '+(oil>=0?'+':'')+oil.toFixed(1)+'% overnight is a '+((L?oil>0.5:oil<-0.5)?'tailwind for this side':(Math.abs(oil)<=0.5?'non-event — no vote either way':'headwind — the driver is against this side'))+', whatever the S&P futures say.');}
+    else add(mktTone==='FLAT'||(L?mktTone==='RISK ON':mktTone==='RISK OFF'),10,'Futures','Overnight futures '+(mktTone==='FLAT'?'are neutral — no headwind.':(L?mktTone==='RISK ON':mktTone==='RISK OFF')?'agree with this side.':'lean against this side — demand more proof.')+(oil!=null&&Math.abs(oil)>1.5?' Note: the tape is being driven by crude ('+(oil>=0?'+':'')+oil.toFixed(1)+'%), so risk-off here means oil-shock, not growth scare.':''));
     return {s:Math.min(100,s),det};
   }
   const b=side(true),r=side(false);
@@ -294,7 +299,7 @@ async function buildSheet(force){
     st('Planning '+tk+'…');
     try{const {B}=await pull(tk,'3mo','1d');const A=dailyAnalyze(B);
       const rs=benchChg!=null?A.chg-benchChg:null;
-      const lean=leanScore(A,tone);
+      const lean=leanScore(A,tone,tk,read);
       const call=planSide(A,true),put=planSide(A,false);
       await sleep(900);
       const k=await contracts(tk,A.px);
@@ -317,7 +322,7 @@ async function londonRefresh(force){
   const pm={};
   for(const x of SHEET.names){if(x.err)continue;st('Pre-market '+x.tk+'…');const q=await pmQuote(x.tk);if(q)pm[x.tk]={last:q.last,gapPct:q.gapPct,prev:q.prevClose};await sleep(400);}
   /* re-lean with the live futures tone (the daily structure is unchanged; only the futures vote moves) */
-  for(const x of SHEET.names){if(x.err)continue;x.lean=leanScore(x.A,tone);x.pm=pm[x.tk]||null;}
+  for(const x of SHEET.names){if(x.err)continue;x.lean=leanScore(x.A,tone,x.tk,read);x.pm=pm[x.tk]||null;}
   SHEET.london={at:ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),tone,read};
   SHEET.names.sort((a,b)=>(b.lean?Math.max(b.lean.bull,b.lean.bear):0)-(a.lean?Math.max(a.lean.bull,a.lean.bear):0));
   localStorage.setItem(KEY,JSON.stringify(SHEET));
