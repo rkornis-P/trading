@@ -108,6 +108,10 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 .ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
 .ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+
+/* ===== field labels (kLabels) ===== */
+.flab{display:block;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin:2px 0 3px 2px;font-weight:800}
+.fwrap{display:flex;flex-direction:column}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
 
@@ -635,6 +639,21 @@ F.forEach(k=>document.getElementById(k).addEventListener('change',()=>updatePL(n
     next();
   }
   load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
+})();
+</script>
+
+
+<script>
+/* kLabels — permanent labels above every input (placeholders vanish once filled) */
+(function(){
+  var L={tk:'TICKER',side:'CALL / PUT',strike:'STRIKE $',qty:'CONTRACTS',exp:'EXPIRATION',oentry:'YOUR OPTION ENTRY $',stop:'STOCK STOP LEVEL',target:'STOCK TARGET (T1)',fills:'YOUR FILLS (qty@price, computes average)'};
+  Object.keys(L).forEach(function(id){
+    var el=document.getElementById(id);if(!el)return;
+    var w=document.createElement('div');w.className='fwrap';
+    if(el.classList.contains('w2'))w.classList.add('w2'),el.classList.remove('w2');
+    var lab=document.createElement('span');lab.className='flab';lab.textContent=L[id];
+    el.parentNode.insertBefore(w,el);w.appendChild(lab);w.appendChild(el);
+  });
 })();
 </script>
 
