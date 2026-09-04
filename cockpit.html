@@ -661,19 +661,26 @@ function closeInfo(){document.getElementById('imWrap').classList.remove('open');
   var REL='https://kornis-ai-relay.rick-018.workers.dev';
   var el=document.getElementById('ktape'); if(!el) return;
   function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
-  function cell(tk,px,chg){
+  function cell(tk,px,chg,act){
     var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
     var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" href="cockpit.html?tk='+tk+'"><b>'+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#16223E"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+  }
+  function activeTk(){
+    try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}
+    var el=document.getElementById('tk');
+    if(el&&el.value&&/^[A-Za-z.\-]{1,7}$/.test(el.value.trim())){var v=el.value.trim().toUpperCase();localStorage.setItem('kActive',v);return v;}
+    return localStorage.getItem('kActive')||null;
   }
   function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
   function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
-  function paint(data){ el.innerHTML=chip(data)+board().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg);}).join(''); }
+  function tickList(){var a=activeTk();var b=board();return a?[a].concat(b.filter(function(t){return t!==a;})):b;}
+  function paint(data){ var a=activeTk(); el.innerHTML=chip(data)+tickList().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg,tk===a);}).join(''); }
   function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
   function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
   var DATA={};
   function load(){
-    var tks=board(); var i=0;
+    var tks=tickList(); var i=0;
     tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
     paint(DATA);
     function next(){
