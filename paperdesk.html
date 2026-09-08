@@ -131,7 +131,7 @@ async function refresh(){
     document.getElementById('journal').innerHTML=(jj.journal||[]).map(e=>
       '<div class="ji"><span class="ja '+(e.a||'')+'">'+(e.a||'?')+'</span><span class="jt">'+(e.ct||'')+'</span><div>'+(e.r||'')+'</div></div>'
     ).join('')||'<div style="color:var(--dim)">No entries yet — first cron cycle writes here.</div>';
-    st.textContent='updated '+new Date().toLocaleTimeString();
+    st.textContent='updated '+new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
   }catch(e){
     if(String(e.message).toLowerCase().includes('bad key')){
       localStorage.removeItem('kPaper');W=null;K=null;

@@ -261,7 +261,7 @@ async function loadAll(){
   for(const[i,r] of plan){try{b=await fetchHist(tk,i,r);if(b){used=i;break;}}catch(e){}}
   if(!b){st.innerHTML='<b>No history at any interval.</b> The worker needs the v4.2 ?hist route — repaste worker code + API key in Cloudflare.';return;}
   BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12),adx:adxAll(b.H,b.L,b.C,14)};
-  st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString();
+  st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
   loadChain(tk);draw();health();drawRead();
   if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();}},45000);
 }
