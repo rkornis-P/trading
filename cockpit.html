@@ -3,7 +3,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cockpit · Kornis Protocol</title>
 <style>
-:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B0E13;--panel:#121B2E;--panel2:#0E1117;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:10px 8px 84px;max-width:640px;margin:0 auto}
 h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
@@ -72,24 +72,24 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 
 
 /* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0E1117;border:1px solid #242B36;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #242B36;text-decoration:none;background:#12161D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#E9ECF2;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
 
 /* ===== THE READ ===== */
-#readPanel{background:var(--panel,#111A2D);border:1px solid var(--line,#1E2A45);border-radius:12px;padding:10px 12px;margin:8px 0}
-.rp-h{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#7E8AA0;margin-bottom:6px}
+#readPanel{background:var(--panel,#12161D);border:1px solid var(--line,#242B36);border-radius:12px;padding:10px 12px;margin:8px 0}
+.rp-h{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A93A3;margin-bottom:6px}
 .rp-h span:last-child{color:var(--gold-soft)}
-.rpr{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #14203A;align-items:start}
+.rpr{display:grid;grid-template-columns:62px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #1C222C;align-items:start}
 .rpr:last-child{border-bottom:none}
 .rpr .nm{font-size:10px;font-weight:800;letter-spacing:.06em;padding-top:1px}
-.rpr .nm.g{color:#2FB673}.rpr .nm.r{color:#E05B44}.rpr .nm.a{color:#E0A93F}.rpr .nm.n{color:#7E8AA0}
-.rpr .rel{font-size:11px;color:#EBEFF6;font-variant-numeric:tabular-nums}
-.rpr .why{font-size:10.5px;color:#7E8AA0;line-height:1.45;margin-top:2px}
+.rpr .nm.g{color:#2FB673}.rpr .nm.r{color:#E05B44}.rpr .nm.a{color:#E0A93F}.rpr .nm.n{color:#8A93A3}
+.rpr .rel{font-size:11px;color:#E9ECF2;font-variant-numeric:tabular-nums}
+.rpr .why{font-size:10.5px;color:#8A93A3;line-height:1.45;margin-top:2px}
 
 /* ===== PRINT THE READ ===== */
 #printHead,#printDigest,#prChart{display:none}
@@ -107,8 +107,25 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   .prr .w{color:#444;font-size:10.5px;margin-top:2px}
   .prf{margin-top:14px;font-size:9.5px;color:#666;border-top:1px solid #BF9000;padding-top:8px}
 }
+
+/* ===== THE EXIT OFFICER ===== */
+#officer{display:none;border-radius:14px;padding:12px 13px;margin:8px 0;border:2px solid var(--line);background:var(--panel,#12161D)}
+#officer.hold{border-color:var(--green)}
+#officer.tighten{border-color:var(--amber);animation:ofp 1.4s ease-in-out infinite alternate}
+#officer.exit{border-color:var(--red);animation:ofp 0.9s ease-in-out infinite alternate}
+@keyframes ofp{from{box-shadow:0 0 0 rgba(224,91,68,0)}to{box-shadow:0 0 16px rgba(224,91,68,.45)}}
+#officer .oh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+#officer .ov{font-family:Georgia,serif;font-size:19px;font-weight:700;letter-spacing:.06em}
+#officer.hold .ov{color:var(--green)}#officer.tighten .ov{color:var(--amber)}#officer.exit .ov{color:var(--red)}
+#officer .oacc{font-size:9px;font-weight:800;letter-spacing:.12em;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
+#officer .oacc.b{color:var(--green);border-color:var(--green)}
+#officer .oacc.p{color:var(--gold-soft);border-color:var(--gold)}
+#officer .oacc.f{color:var(--red);border-color:var(--red)}
+#officer .ow{font-size:11.5px;line-height:1.55;color:var(--ink)}
+#officer .ow b{color:var(--gold-soft)}
+#officer .oi{font-size:9.5px;color:var(--dim);margin-top:6px;cursor:pointer;text-decoration:underline}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
+<div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
 <h1>Cockpit — Only What You Need</h1>
 <div id="alertBanner"></div>
@@ -127,6 +144,12 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <canvas id="cv" height="404"></canvas>
 <div id="status">Enter ticker → PULL. Auto-refreshes every 45s.</div>
 
+<div id="officer">
+  <div class="oh"><span class="ov" id="ofV">—</span><span class="oacc" id="ofA">—</span></div>
+  <div class="ow" id="ofW">—</div>
+  <div class="oi" onclick="info('officer')">ⓘ the five permits, and why structure outranks momentum</div>
+</div>
+
 <div id="readPanel" style="display:none">
   <div class="rp-h"><span>THE READ — where price stands, and what each line means</span><span id="rpSide"></span></div>
   <div style="display:flex;gap:6px;margin:4px 0 8px"><button onclick="printRead()" style="flex:1;background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px;font-weight:800;font-size:10.5px;cursor:pointer">🖨 PRINT THE READ (chart + every signal)</button></div>
@@ -143,7 +166,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 </div>
 
 <div class="pos">
-  <select id="dir" onchange="draw();drawRead();"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
+  <select id="dir" onchange="draw();drawRead();officerRun();"><option value="long">LONG ▲</option><option value="short">SHORT ▼</option></select>
   <input id="entry" type="number" step="0.01" placeholder="Entry">
   <input id="stop" type="number" step="0.01" placeholder="Stop">
   <input id="target" type="number" step="0.01" placeholder="Target">
@@ -185,15 +208,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <img id="prChart" alt="">
 <div id="printDigest"></div>
 
-<div class="knav">
-  <a href="hub.html">COMMAND</a>
-  <a href="watchlist.html">SCAN</a>
-  <a href="cockpit.html" class="on">COCKPIT</a>
-  <a href="picker.html">PICKER</a>
-  <a href="coach.html">COACH</a>
-  <a href="trades.html">TRADES</a>
-  <a href="ledger.html">LEDGER</a>
-</div>
+<div class="knav"><a href="desk.html">DESK</a><a href="cockpit.html" class="on">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html">MORE</a></div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
@@ -267,8 +282,8 @@ async function loadAll(){
   const openNow=ctn.getDay()>=1&&ctn.getDay()<=5&&mm>=8*60+30&&mm<15*60;
   const stale=openNow&&ageS>12*60;
   st.innerHTML=tk+' · '+b.C.length+' bars · $'+n2(b.C[b.C.length-1])+' · newest candle <b>'+barTm+' CT</b> ('+(ageS<90?Math.round(ageS)+'s':Math.round(ageS/60)+' min')+' ago)'+(stale?' — <span style="color:var(--red);font-weight:800">STALE FEED: pull again; relay may be serving its last good copy</span>':'');}
-  loadChain(tk);draw();health();drawRead();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();}},45000);
+  loadChain(tk);draw();health();drawRead();officerRun();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();officerRun();}},45000);
 }
 let CHAIN_RETRY=null;
 function loadChain(tk){
@@ -472,6 +487,62 @@ function printRead(){
   window.print();
 }
 
+
+/* ================= THE EXIT OFFICER ================= */
+let OF={verdict:null,ci:null};
+function accelState(){
+  if(!BARS||!BARS.macd)return null;
+  const n=BARS.C.length-1;const nowS=Date.now()/1000;
+  const ci=(BARS.T&&nowS-BARS.T[n]<90&&n>0)?n-1:n;
+  const L=document.getElementById('dir').value==='long';
+  const H=BARS.macd.hist;if(H[ci]==null||H[ci-2]==null)return null;
+  const d0=L?H[ci]:-H[ci], d1=L?H[ci-1]:-H[ci-1], d2=L?H[ci-2]:-H[ci-2];
+  const adxUp=BARS.adx&&BARS.adx.adx[ci]!=null&&BARS.adx.adx[ci-3]!=null?BARS.adx.adx[ci]>BARS.adx.adx[ci-3]:false;
+  let st='PAUSING';
+  if(d0>0&&(d0>d1&&d1>=d2||d0>d1*1.15))st='BUILDING';
+  else if(d0<0&&d0<d1&&d1<=d2)st='FADING';
+  else if(d0<0&&d0<d1*1.3&&!adxUp)st='FADING';
+  return {st,ci,L};
+}
+function officerRun(){
+  const box=document.getElementById('officer');
+  if(!BARS){box.style.display='none';return;}
+  const E=parseFloat(document.getElementById('entry').value);
+  if(!E){box.style.display='none';OF.verdict=null;return;} /* officer takes the bench only when you hold a position */
+  const a=accelState();if(!a){box.style.display='none';return;}
+  const {st,ci,L}=a;
+  const px=BARS.C[BARS.C.length-1],cC=BARS.C[ci],cV=BARS.V?BARS.V[ci]:null;
+  let av=0,ac=0;for(let k=Math.max(0,ci-5);k<ci;k++){if(BARS.V&&BARS.V[k]!=null){av+=BARS.V[k];ac++;}}
+  const avgV=ac?av/ac:null;
+  const e9v=BARS.e9[ci],vwv=BARS.vw[ci];
+  const stopIn=parseFloat(document.getElementById('stop').value),tgtIn=parseFloat(document.getElementById('target').value);
+  const ctn=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));const mm=ctn.getHours()*60+ctn.getMinutes();
+  const lunch=mm>=11*60&&mm<12*60+30;
+  /* shelf for tighten: last 3 closed candles' extreme */
+  let shelf=null;if(ci>=3){const seg=[];for(let k=ci-2;k<=ci;k++)seg.push(L?BARS.L[k]:BARS.H[k]);shelf=L?Math.min(...seg):Math.max(...seg);}
+  const brk=(L?cC<e9v:cC>e9v)&&(avgV?cV>=1.1*avgV:true);
+  let cls,verdict,why;
+  if(mm>=14*60+40&&mm<15*60){cls='exit';verdict='EXIT — PERMIT #5';why='<b>2:45 flat law.</b> Close it by hand, cancel resting orders as you go. The day is over; tomorrow is a fresh docket.';}
+  else if(stopIn&&(L?px<=stopIn:px>=stopIn)){cls='exit';verdict='EXIT — PERMIT #1';why='<b>Your stop level traded.</b> If the resting stop hasn\'t filled you, exit at market now — a stop that\'s been hit and ignored is how Wednesdays happen.';}
+  else if(brk){cls='exit';verdict='EXIT — PERMIT #3';why='<b>Structure broke:</b> a 5-minute candle CLOSED '+(L?'below':'above')+' the 9 EMA ($'+n2(e9v)+') on '+(avgV?(cV/avgV).toFixed(1)+'× volume':'volume')+'. This is the trend saying it\'s done — leave into the next bounce, not the flush.';}
+  else if(tgtIn&&(L?cC>=tgtIn:cC<=tgtIn)){cls='tighten';verdict='BANK HALF — PERMIT #2';why='<b>Target reached on a closed candle.</b> Sell HALF, move the stop on the rest to breakeven ($'+n2(E)+'). The win is banked; the runner rides free'+(shelf?' — trail behind $'+n2(shelf):'')+'.';}
+  else if(st==='FADING'){cls='tighten';verdict='TIGHTEN';why='<b>Thrust is turning against you</b> (histogram fading'+(shelf?') — raise the stop to just '+(L?'under':'over')+' the shelf at <b>$'+n2(shelf)+'</b>':')')+'. No selling yet: fading momentum is a warning; only permit #3 — a closed candle through the 9 EMA on volume — is an order.';}
+  else if(st==='PAUSING'){cls='hold';verdict='HOLD';why='<b>Pausing, structure intact</b> — price is '+(L?'above':'below')+' the 9 EMA ($'+n2(e9v)+') and the momentum rows are red only because a pause has no thrust. <b>This is a flag, not a top.</b> Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.'+(lunch?' Lunch tape: if this drags past 12:30 with no progress, permit #4 (time-stop) opens.':'');}
+  else{cls='hold';verdict='HOLD';why='<b>Building</b> — thrust is growing with you. Do nothing. Winners accelerate; your only job is not interrupting it. Trail behind higher lows if you must touch something.';}
+  box.style.display='block';box.className=cls;
+  document.getElementById('ofV').textContent=verdict;
+  document.getElementById('ofW').innerHTML=why;
+  const oa=document.getElementById('ofA');oa.textContent=st;oa.className='oacc '+(st==='BUILDING'?'b':st==='PAUSING'?'p':'f');
+  /* speak only when the verdict changes or a new candle closes with an EXIT verdict */
+  const key=verdict+'|'+ci;
+  if(OF.verdict!==verdict||(cls==='exit'&&OF.ci!==ci)){
+    try{if(document.getElementById('voiceOn').checked&&'speechSynthesis' in window){
+      const u=new SpeechSynthesisUtterance('Exit officer. '+verdict.replace('—',',').replace('#','number ')+'. '+why.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. '));
+      u.rate=0.68;speechSynthesis.speak(u);}}catch(e){}
+  }
+  OF.verdict=verdict;OF.ci=ci;
+}
+
 function drawRead(){
   const P=document.getElementById('readPanel');if(!BARS){P.style.display='none';return;}
   P.style.display='block';
@@ -533,7 +604,7 @@ function drawRead(){
 
 window.addEventListener('resize',draw);
 document.getElementById('dir').addEventListener('change',()=>{if(BARS){loadChain(BARS.tk);health();}});
-['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();}));
+['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();officerRun();}));
 
 /* ---------- health + alerts ---------- */
 function lamp(id,state){const el=document.getElementById('h_'+id);el.className='lp '+(state===1?'ok':state===0?'bad':'warn');return state===1?1:0;}
@@ -645,6 +716,7 @@ if('Notification' in window&&Notification.permission==='default')Notification.re
 
 /* ---------- info ---------- */
 const INFO={
+officer:{t:'THE EXIT OFFICER — no exit without a permit',b:'While you hold a position, the Officer renders ONE verdict per closed 5-minute candle, so a screen of mixed lamps can never talk you out of a winner again.<br><br><b>THE LAW: STRUCTURE OUTRANKS MOMENTUM.</b> Momentum rows (MOM, MACD, RSI) measure THRUST — and every healthy pause has none, so they flash red in the middle of flags that precede the next leg. Only broken STRUCTURE (a closed candle through the 9 EMA on real volume) ends a trend.<br><br><b>The five exit permits — sell on these and nothing else:</b><br>1 · Your stop hits (it rests at the broker, not in your head)<br>2 · Target hits → bank HALF, stop to breakeven<br>3 · 5-min CLOSE through the 9 EMA against you on expanding volume<br>4 · Time-stop: lunch chop, thesis stalled, theta winning<br>5 · 2:45 — flat, always<br><br><b>The acceleration chip:</b> BUILDING = thrust growing with you — do nothing, winners accelerate. PAUSING = thrust resting, structure intact — a flag, not a top; sideways above the 9 EMA is a position, not a problem. FADING = thrust turning against you — tighten to the shelf and let permit #3 decide.<br><br><b>Do:</b> if the Officer says HOLD, the discomfort you feel is a position working. Name the permit out loud before your hand moves — no number, no sale.'},
 vwap:{t:'VWAP',b:'Average price everyone paid today, volume-weighted — the session\'s line in the sand (pink line on the chart).<br><br><span class="gg">GREEN:</span> price on your side; your crowd controls the day.<br><span class="rr">RED:</span> the session average has flipped against you.<br><br><b>Do:</b> on red, tighten to the 9 EMA. Two closes on the wrong side of VWAP = exit, don\'t negotiate.'},
 ema:{t:'9 EMA — Ride Line',b:'Gold line on the chart. Strong scalps ride it like a rail.<br><br><span class="gg">GREEN:</span> closing on your side — the move is breathing normally.<br><span class="rr">RED:</span> a candle CLOSED across it against you. That IS the scalp exit, not a warning about one.<br><br><b>Do:</b> exit or cut to half. Re-enter only after price reclaims it and holds two candles.'},
 align:{t:'Trend — 9EMA vs 20SMA',b:'Gold (9 EMA) vs blue (20 SMA): the argument between the PRESENT and the recent past. Four states:<br><br><b>1 RIDE</b> <span class="gg">9 over 20, both rising, price on the 9</span> — the only fully open state. Enter the pullback that kisses the 9 and holds.<br><b>2 STRETCHED</b> — price 3–4 ATRs above the 9: a chase, not an entry. The 9 is an anchor; snapbacks feed on late buyers.<br><b>3 BRAID</b> <span class="rr">lines flat &amp; twisted, price whipping through</span> — chop. Every cross in a braid is a lie. NO TRADE.<br><b>4 CROSS</b> — 9 under 20 after a trend: no-new-longs gate; first structural short sign.<br><br><b>The 20 is the first wall:</b> first touch usually REJECTS (buy it, stop below) — second/third touch usually BREAKS (the resting orders are eaten).<br><br><b>Gap = health:</b> new price high on a NARROWER 9-to-20 gap = the move is dying while the chart still looks fine.<br><br><b>Do:</b> 60 seconds before every trigger — which state, which touch, expanding or narrowing. Full masterclass in PLAYBOOK 4a.'},
@@ -669,7 +741,7 @@ function closeInfo(){document.getElementById('imWrap').classList.remove('open');
   function cell(tk,px,chg,act){
     var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
     var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#16223E"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#1B222D"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
   function activeTk(){
     try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}

@@ -4,7 +4,7 @@
 <title>Kornis Protocol — Command</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B0E13;--card:#12161D;--card2:#0E1117;--line:#242B36;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#E9ECF2;--dim:#8A93A3;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:18px 12px 92px;max-width:640px;margin:0 auto}
 
@@ -17,7 +17,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #mast .live b{color:var(--gold-soft);font-weight:700}
 
 /* the desk — hero */
-#hero{display:block;text-decoration:none;color:inherit;background:linear-gradient(168deg,#16223E,var(--card));border:1.5px solid var(--gold);border-radius:16px;padding:18px 16px;margin:14px 0 6px}
+#hero{display:block;text-decoration:none;color:inherit;background:linear-gradient(168deg,#1B222D,var(--card));border:1.5px solid var(--gold);border-radius:16px;padding:18px 16px;margin:14px 0 6px}
 #hero .eyebrow{font-size:8.5px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
 #hero .t{font-family:Georgia,serif;font-size:23px;font-weight:700;color:var(--gold-soft);letter-spacing:.06em;margin:5px 0 6px}
 #hero .d{font-size:11.5px;line-height:1.6;color:var(--ink)}
@@ -46,21 +46,21 @@ a.card .ct .badge{font-size:8px;letter-spacing:.1em;color:var(--gold-soft);borde
 .foot{text-align:center;font-size:8.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;margin-top:26px}
 .foot .r{width:60px;height:1px;background:var(--gold);margin:8px auto}
 
-.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#07090D;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 
 /* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0E1117;border:1px solid #242B36;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #242B36;text-decoration:none;background:#12161D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#E9ECF2;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
+<div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
 <div id="mast">
   <div class="rule"></div>
@@ -73,26 +73,26 @@ a.card .ct .badge{font-size:8px;letter-spacing:.1em;color:var(--gold-soft);borde
 <a id="hero" href="desk.html">
   <div class="eyebrow">The One Screen</div>
   <div class="t">★ THE DESK</div>
-  <div class="d">The whole day, top to bottom: the overnight read → today's definitive trade (trigger · stop · target · contract · size, each in plain English) → the top-5 bench → your live position → the clock. <i>Open this at 8:15 and read for ninety seconds.</i></div>
+  <div class="d">Open at 8:00. The London read → today's trade (trigger · stop · target · ticket) → the bench → your position under the Exit Officer. <i>The whole morning is this one screen.</i></div>
 </a>
 
 <div class="docket" id="s1">
-  <div class="dhead"><span class="num">I</span><span class="name">Morning Call</span><span class="when" data-w="7:30–8:35">7:30–8:35</span></div>
+  <div class="dhead"><span class="num">I</span><span class="name">Morning Call</span><span class="when" data-w="7:45–8:15">7:45–8:15</span></div>
   <div class="cards">
     <a class="card wide" href="watchlist.html">
       <div class="ct">Autopilot &amp; Scanner</div>
-      <div class="cd">The Desk's engine room — full board detail, the 40-name street ranking, tap-any-score lessons, and the 🏇 scalp-vehicle screen that picks who deserves a seat on the board.</div>
+      <div class="cd">Run the 40-name street ranking at 7:45 — before the rush — and the 🏇 vehicle screen that staffs the board.</div>
     </a>
   </div>
 </div>
 
 <div class="docket" id="s2">
-  <div class="dhead"><span class="num">II</span><span class="name">In Session</span><span class="when" data-w="8:35–2:45">8:35–2:45</span></div>
+  <div class="dhead"><span class="num">II</span><span class="name">In The Trade</span><span class="when" data-w="8:35–2:45">8:35–2:45</span></div>
   <div class="cards">
-    <a class="card" href="cockpit.html"><div class="ct">Cockpit</div><div class="cd">The live chart with walls, lamps, and spoken three-layer alerts.</div></a>
-    <a class="card" href="picker.html"><div class="ct">Picker</div><div class="cd">The exact contract — delta, spread, OI — gate-checked, with alternates.</div></a>
-    <a class="card" href="coach.html"><div class="ct">Coach</div><div class="cd">Fifteen-minute briefings: scouting or in-trade, with dollar-precise orders.</div></a>
-    <a class="card" href="gauges.html"><div class="ct">Gauges</div><div class="cd">Trend Force · Fuel · Theta War, measured against your trade.</div></a>
+    <a class="card" href="cockpit.html"><div class="ct">Cockpit</div><div class="cd">The chart, the walls, THE READ — and the Exit Officer ruling every candle.</div></a>
+    <a class="card" href="coach.html"><div class="ct">Coach</div><div class="cd">Fifteen-minute briefings with dollar-exact orders.</div></a>
+    <a class="card" href="picker.html"><div class="ct">Picker</div><div class="cd">The exact contract + the Greeks Lab.</div></a>
+    <a class="card" href="gauges.html"><div class="ct">Gauges</div><div class="cd">Trend Force · Fuel · Theta War.</div></a>
   </div>
 </div>
 
@@ -126,15 +126,7 @@ a.card .ct .badge{font-size:8px;letter-spacing:.1em;color:var(--gold-soft);borde
 <div style="text-align:center;margin-top:14px"><a href="health.html" style="font-size:10px;letter-spacing:.14em;color:var(--dim);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:7px 14px">⚙ HEALTH CHECK — is everything current?</a></div>
 <div class="foot"><div class="r"></div>Discipline is the edge<div class="r"></div></div>
 
-<div class="knav">
-  <a href="hub.html" class="on">COMMAND</a>
-  <a href="desk.html">DESK</a>
-  <a href="cockpit.html">COCKPIT</a>
-  <a href="paperdesk.html">PAPER</a>
-  <a href="coach.html">COACH</a>
-  <a href="trades.html">TRADES</a>
-  <a href="ledger.html">LEDGER</a>
-</div>
+<div class="knav"><a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html" class="on">MORE</a></div>
 
 <script>
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
@@ -170,7 +162,7 @@ tick();setInterval(tick,30000);
   function cell(tk,px,chg,act){
     var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
     var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#16223E"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#1B222D"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
   function activeTk(){
     try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}

@@ -4,7 +4,7 @@
 <title>The Desk · Kornis Protocol</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
-:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B0E13;--card:#12161D;--card2:#0E1117;--line:#242B36;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#E9ECF2;--dim:#8A93A3;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
 .mono{font-variant-numeric:tabular-nums}
@@ -37,7 +37,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #sentinel label{display:flex;gap:8px;align-items:center;color:var(--ink);cursor:pointer}
 #sentinel input{accent-color:#BF9000}
 #sentSt{margin-top:4px;font-size:10px}
-#fireBanner{display:none;background:linear-gradient(160deg,#2a2208,#16223E);border:2px solid var(--gold-soft);border-radius:14px;padding:12px;margin-bottom:8px;animation:fbp 1.2s ease-in-out infinite alternate}
+#fireBanner{display:none;background:linear-gradient(160deg,#241E0B,#1B222D);border:2px solid var(--gold-soft);border-radius:14px;padding:12px;margin-bottom:8px;animation:fbp 1.2s ease-in-out infinite alternate}
 #fireBanner.on{display:block}
 @keyframes fbp{from{box-shadow:0 0 0 rgba(217,180,74,0)}to{box-shadow:0 0 18px rgba(217,180,74,.55)}}
 #fireBanner .fb-t{font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--gold-soft);letter-spacing:.08em}
@@ -154,23 +154,23 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   #printDigest{display:block;font-size:12px;line-height:1.65;white-space:pre-wrap}
 }
 
-.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#07090D;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}
 .knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 
 /* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0E1117;border:1px solid #242B36;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #242B36;text-decoration:none;background:#12161D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#E9ECF2;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
+<div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
-<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.6</span></span><span class="c mono" id="clk">—</span></div>
+<div id="hdr"><span class="t">THE DESK <span style="font-size:8px;color:var(--dim);letter-spacing:.05em">v1.7</span></span><span class="c mono" id="clk">—</span></div>
 <div id="phase">—</div>
 
 <div class="sec"><span class="n">I · The London Read — what world did we wake up in</span></div>
@@ -226,6 +226,13 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </div>
 
 <div class="sec"><span class="n">III · Your Position — live</span></div>
+<div id="ofDesk" style="display:none;border-radius:12px;padding:10px 12px;margin-bottom:8px;border:2px solid var(--line);background:var(--card)">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <span id="ofDv" style="font-family:Georgia,serif;font-size:16px;font-weight:700">—</span>
+    <span style="font-size:8.5px;color:var(--dim);letter-spacing:.1em">EXIT OFFICER · full read in the COCKPIT</span>
+  </div>
+  <div id="ofDw" style="font-size:11px;line-height:1.5;margin-top:3px;color:var(--dim)"></div>
+</div>
 <div class="card" id="posCard">
   <div id="pTop"><span id="pName">—</span><span id="pPL" class="n">—</span></div>
   <div id="pCells"></div>
@@ -248,15 +255,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 <div id="printHead"><div class="k">KORNIS PROTOCOL — THE DESK</div><div class="s">Daily Setup Sheet · <span id="pdDate"></span></div></div>
 <div id="printDigest"></div>
 
-<div class="knav">
-  <a href="hub.html">COMMAND</a>
-  <a href="desk.html" class="on">DESK</a>
-  <a href="cockpit.html">COCKPIT</a>
-  <a href="picker.html">PICKER</a>
-  <a href="coach.html">COACH</a>
-  <a href="trades.html">TRADES</a>
-  <a href="ledger.html">LEDGER</a>
-</div>
+<div class="knav"><a href="desk.html" class="on">DESK</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html">MORE</a></div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
@@ -554,6 +553,7 @@ function sizeIt(){
   const nC=Math.max(1,Math.floor(risk/per));
   out.innerHTML='≈ $'+per.toFixed(0)+' at risk per contract → <b>'+nC+' contract'+(nC>1?'s':'')+'</b><br>trigger-to-stop '+stopDist.toFixed(2)+' × Δ'+dlt.toFixed(2)+' — <i style="color:var(--dim)">size from risk, never from conviction</i>';
   try{buildTicket();}catch(e){}
+  try{officerDesk();}catch(e){}
 }
 function drawBench(){
   const all=DESK.all||[];const w=document.getElementById('bench');
@@ -757,8 +757,31 @@ function speakBrief(){
   parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}});
 }
 
+
+/* Officer-lite: permits + structure from the cached board analysis for your position */
+function officerDesk(){
+  const box=document.getElementById('ofDesk');
+  let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
+  if(!pos||!pos.tk||!pos.E){box.style.display='none';return null;}
+  const e=(DESK.all||[]).find(x=>x.tk===pos.tk.toUpperCase());
+  if(!e){box.style.display='none';return null;}
+  const A=e.A,L=(pos.side||'CALL').toUpperCase().startsWith('C');
+  const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();
+  let v,w,col;
+  const brk=(L?A.cClose<A.e9:A.cClose>A.e9)&&A.cVol>=1.1*A.avgVol;
+  if(mm>=14*60+40&&mm<15*60){v='EXIT — PERMIT #5';col='var(--red)';w='2:45 flat law. Close it by hand.';}
+  else if(pos.stop&&(L?A.px<=pos.stop:A.px>=pos.stop)){v='EXIT — PERMIT #1';col='var(--red)';w='Stop level traded ($'+n2(pos.stop)+'). If the resting stop hasn\'t filled, exit at market.';}
+  else if(brk){v='EXIT — PERMIT #3';col='var(--red)';w='5-min close through the 9 EMA ($'+n2(A.e9)+') on volume — structure broke.';}
+  else if(pos.t1&&(L?A.cClose>=pos.t1:A.cClose<=pos.t1)){v='BANK HALF — PERMIT #2';col='var(--amber)';w='Target reached: half off, stop to breakeven.';}
+  else{v='HOLD';col='var(--green)';w='Structure intact — '+(L?'above':'below')+' the 9 EMA. Momentum rows may rest red in a pause; that is a flag, not a top. Only permits sell.';}
+  box.style.display='block';box.style.borderColor=col;
+  const el=document.getElementById('ofDv');el.textContent=pos.tk.toUpperCase()+' · '+v;el.style.color=col;
+  document.getElementById('ofDw').innerHTML=w;
+  return v;
+}
+
 /* ================= SENTINEL — 8:35 recompose + 5-min close watch ================= */
-const SENT={lastSlot:null,did835:null,did800:null};
+const SENT={lastSlot:null,did835:null,did800:null,ofLast:null};
 function sSay(t,r){try{if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=r||0.7;speechSynthesis.speak(u);}catch(e){}}
 function sStatus(t){const e=document.getElementById('sentSt');if(e)e.textContent=t;}
 function firedKey(){return 'kDeskFired_'+ctNow().toDateString();}
@@ -800,6 +823,7 @@ async function sentinelTick(){
     const entries=(m<11*60)||(m>=12*60+30&&m<14*60);
     sStatus((entries?'watching · ':'lunch/wind-down · ')+'5-min close at '+n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
     try{await findTrade(true);}catch(e){}
+    try{const pv=SENT.ofLast,nv=officerDesk();if(nv&&nv!==pv&&nv!=='HOLD'){sSay('Exit officer. '+nv.replace('—',',').replace('#','number '),0.68);}SENT.ofLast=nv;}catch(e){}
     const b=DESK.best,T=DESK.T;if(!b||!T)return;
     if(!entries)return;
     if(T.fired&&localStorage.getItem(firedKey())!==b.tk){
@@ -842,7 +866,7 @@ runDesk(false);
   function cell(tk,px,chg,act){
     var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
     var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#16223E"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#1B222D"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
   function activeTk(){
     try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}

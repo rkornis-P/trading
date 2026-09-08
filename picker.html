@@ -3,7 +3,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Contract Picker · Kornis Protocol</title>
 <style>
-:root{--bg:#0A101E;--panel:#121B2E;--panel2:#0D1526;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B0E13;--panel:#121B2E;--panel2:#0E1117;--line:#233150;--gold:#BF9000;--gold-soft:#D9B44A;--text:#E8ECF4;--dim:#8A93A6;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;padding:14px 12px 90px;max-width:600px;margin:0 auto}
 h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;margin-bottom:2px;text-transform:uppercase;font-weight:700}
@@ -36,7 +36,7 @@ button.go{background:var(--gold);color:#000;border:none;border-radius:8px;paddin
 .alt:active{border-color:var(--gold)}
 .alt .mk{flex:none;font-size:9px;color:var(--gold-soft);border:1px solid var(--gold);border-radius:5px;padding:2px 6px}
 .go2{display:flex;gap:6px;margin-top:9px}
-.go2 a{flex:1;text-align:center;background:#0D1526;color:var(--gold-soft);border:1px solid var(--gold);border-radius:7px;padding:9px 0;font-weight:800;font-size:11px;text-decoration:none;cursor:pointer}
+.go2 a{flex:1;text-align:center;background:#0E1117;color:var(--gold-soft);border:1px solid var(--gold);border-radius:7px;padding:9px 0;font-weight:800;font-size:11px;text-decoration:none;cursor:pointer}
 .alt .nm{font-weight:800;width:120px;flex:none;color:#fff}
 .alt .dt{color:var(--dim);font-size:11px;flex:1}
 .alt .dl{font-weight:800;color:var(--gold-soft);flex:none}
@@ -59,36 +59,36 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 
 
 /* ===== KORNIS TAPE ===== */
-#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0D1526;border:1px solid #1E2A45;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0E1117;border:1px solid #242B36;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 #ktape::-webkit-scrollbar{display:none}
-.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #1E2A45;text-decoration:none;background:#111A2D}
-.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#EBEFF6;letter-spacing:.02em}
-.ktc .p{font-size:10px;color:#7E8AA0;font-variant-numeric:tabular-nums}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #242B36;text-decoration:none;background:#12161D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#E9ECF2;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
-.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#7E8AA0}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
 
 /* ===== GREEKS LAB ===== */
-#glab{background:var(--panel,#111A2D);border:1.5px solid var(--gold);border-radius:14px;padding:13px;margin:12px 0}
+#glab{background:var(--panel,#12161D);border:1.5px solid var(--gold);border-radius:14px;padding:13px;margin:12px 0}
 #glab h3{font-family:Georgia,serif;font-size:14px;color:var(--gold-soft);letter-spacing:.08em;margin-bottom:8px}
-#glab select,#glab .gbtn{background:#0D1526;border:1px solid #1E2A45;border-radius:8px;color:#EBEFF6;padding:8px;font-size:11.5px}
+#glab select,#glab .gbtn{background:#0E1117;border:1px solid #242B36;border-radius:8px;color:#E9ECF2;padding:8px;font-size:11.5px}
 #glab select{width:100%;margin-bottom:8px;color:var(--gold-soft);font-weight:700}
 #glRow{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap}
 #glRow .gbtn{flex:1;min-width:60px;text-align:center;cursor:pointer;font-weight:700}
-#glRow .gbtn.on{border-color:var(--gold);color:var(--gold-soft);background:#16223E}
+#glRow .gbtn.on{border-color:var(--gold);color:var(--gold-soft);background:#1B222D}
 #glDef{font-size:11.5px;line-height:1.6;margin-bottom:9px}
 #glDef b{color:var(--gold-soft)}
-#glDef .tech{color:#7E8AA0;font-size:10.5px;display:block;margin-top:3px}
+#glDef .tech{color:#8A93A3;font-size:10.5px;display:block;margin-top:3px}
 #glGrid{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
-#glGrid th{font-size:8.5px;color:#7E8AA0;text-transform:uppercase;letter-spacing:.06em;padding:4px;border-bottom:1px solid #1E2A45}
-#glGrid td{padding:5px 4px;text-align:center;border-bottom:1px solid #14203A}
-#glGrid td:first-child{text-align:left;color:#7E8AA0;font-size:9.5px}
+#glGrid th{font-size:8.5px;color:#8A93A3;text-transform:uppercase;letter-spacing:.06em;padding:4px;border-bottom:1px solid #242B36}
+#glGrid td{padding:5px 4px;text-align:center;border-bottom:1px solid #1C222C}
+#glGrid td:first-child{text-align:left;color:#8A93A3;font-size:9.5px}
 #glGrid .gv{font-family:Georgia,serif;font-weight:700}
 #glGrid .up{color:#2FB673}.dn2{color:#E05B44}
-#glGrid .base{background:#16223E;border-radius:6px}
-#glNote{font-size:10.5px;color:#7E8AA0;line-height:1.55;margin-top:8px;border-top:1px solid #1E2A45;padding-top:8px}
+#glGrid .base{background:#1B222D;border-radius:6px}
+#glNote{font-size:10.5px;color:#8A93A3;line-height:1.55;margin-top:8px;border-top:1px solid #242B36;padding-top:8px}
 #glNote b{color:var(--gold-soft)}
 </style></head><body>
-<div id="ktape"><span style="font-size:10px;color:#7E8AA0;padding:2px 6px">tape…</span></div>
+<div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
 <h1>Contract Picker</h1>
 <div style="text-align:center;font-size:8.5px;color:#8A93A6;letter-spacing:.1em;margin:-4px 0 8px">PICKER v2.1 — tappable alternates</div>
@@ -138,15 +138,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div id="glNote"></div>
 </div>
 
-<div class="knav">
-  <a href="hub.html">COMMAND</a>
-  <a href="watchlist.html">SCAN</a>
-  <a href="cockpit.html">COCKPIT</a>
-  <a href="picker.html" class="on">PICKER</a>
-  <a href="coach.html">COACH</a>
-  <a href="trades.html">TRADES</a>
-  <a href="ledger.html">LEDGER</a>
-</div>
+<div class="knav"><a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html">MORE</a></div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
@@ -273,7 +265,7 @@ function sendToCoach(ix){
   function cell(tk,px,chg,act){
     var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
     var sign=chg==null?'':(chg>=0?'+':'');
-    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#16223E"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#1B222D"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
   }
   function activeTk(){
     try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}

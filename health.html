@@ -3,14 +3,14 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Health · Kornis Protocol</title>
 <style>
-:root{--bg:#0A101E;--card:#111A2D;--card2:#0D1526;--line:#1E2A45;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#EBEFF6;--dim:#7E8AA0;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+:root{--bg:#0B0E13;--card:#12161D;--card2:#0E1117;--line:#242B36;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#E9ECF2;--dim:#8A93A3;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
 h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;text-transform:uppercase;margin-bottom:2px}
 .sub{text-align:center;font-size:9.5px;color:var(--dim);letter-spacing:.08em;margin-bottom:12px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .sec{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
-.row{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #14203A;font-size:11.5px;align-items:start}
+.row{display:grid;grid-template-columns:110px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #1C222C;font-size:11.5px;align-items:start}
 .row:last-child{border:none}
 .row .k{font-weight:800;font-size:10px;letter-spacing:.04em;color:var(--dim);padding-top:1px}
 .ok{color:var(--green);font-weight:800}.bad{color:var(--red);font-weight:800}.warn{color:var(--amber);font-weight:800}.dim{color:var(--dim)}
@@ -23,7 +23,7 @@ button.red{border-color:var(--red);color:var(--red)}
 #fixes li{margin:4px 0 4px 16px}
 #fixes b{color:var(--gold-soft)}
 pre{white-space:pre-wrap;font-size:10px;color:var(--dim);background:var(--card2);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:220px;overflow:auto}
-.knav{position:fixed;bottom:0;left:0;right:0;background:#080e1b;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#07090D;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
 </style></head><body>
@@ -37,9 +37,10 @@ pre{white-space:pre-wrap;font-size:10px;color:var(--dim);background:var(--card2)
 <div class="card"><div class="sec"><span>3 · The Paper Desk worker</span><span id="apV" class="dim">—</span></div><div id="apRows"></div></div>
 <div class="card"><div class="sec"><span>4 · Local caches (what your browser is holding)</span><span id="cacheV" class="dim">—</span></div><div id="cacheRows"></div></div>
 <div class="card"><div class="sec"><span>What to fix, in order</span></div><ol id="fixes"></ol></div>
-<div class="card"><div class="sec"><span>Raw report</span></div><pre id="raw"></pre></div>
+<div class="card"><div class="sec"><span>The report, in English</span></div><div id="plain" style="font-size:11.5px;line-height:1.7"></div></div>
+<div class="card"><div class="sec"><span>Machine copy (this is what 📋 COPY sends to the chat)</span></div><pre id="raw"></pre></div>
 
-<div class="knav"><a href="hub.html">COMMAND</a><a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="paperdesk.html">PAPER</a><a href="coach.html">COACH</a><a href="health.html" class="on">HEALTH</a><a href="ledger.html">LEDGER</a></div>
+<div class="knav"><a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html">MORE</a></div>
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
@@ -80,7 +81,7 @@ async function checkRelay(){
     else{row('relayRows','AI (brief/coach)','FAILED — '+JSON.stringify(j).slice(0,140),'bad');REPORT.ai='fail';FIX.push('<b>AI route failing</b> — this is why the Brief and Coach don\'t write. Message: '+JSON.stringify(j).slice(0,100)+'. If it says missing key: relay Settings → Variables → the Anthropic key must be named ANTHROPIC_KEY.');}
   }catch(e){row('relayRows','AI (brief/coach)','FAILED — '+e.message,'bad');REPORT.ai='fail';}
 }
-const PAGES=[['desk.html','v1.6','Desk'],['hub.html','Trading Chambers','Hub'],['cockpit.html','THE READ','Cockpit'],['watchlist.html','BEST SCALP VEHICLES','Scanner'],['picker.html','GREEKS LAB','Picker'],['coach.html','SCOUTING','Coach'],['gauges.html','LEARN','Gauges'],['library.html','THE 20 QUESTIONS','Library'],['paperdesk.html','v1.1','Paper Desk'],['ledger.html','kPassLine','Ledger'],['playbook.html','MASTERCLASS','Playbook']];
+const PAGES=[['desk.html','v1.7','Desk'],['hub.html','Trading Chambers','Hub'],['cockpit.html','EXIT OFFICER','Cockpit'],['watchlist.html','BEST SCALP VEHICLES','Scanner'],['picker.html','GREEKS LAB','Picker'],['coach.html','SCOUTING','Coach'],['gauges.html','LEARN','Gauges'],['library.html','THE 20 QUESTIONS','Library'],['paperdesk.html','v1.1','Paper Desk'],['ledger.html','kPassLine','Ledger'],['playbook.html','MASTERCLASS','Playbook']];
 async function checkPages(){
   document.getElementById('pageRows').innerHTML='';let stale=0;REPORT.pages={};
   for(const [f,marker,name] of PAGES){
@@ -129,8 +130,25 @@ function verdictOut(){
   v.innerHTML=bad?('<span class="bad">'+bad+' thing'+(bad>1?'s':'')+' to fix</span><br><span style="font-size:11px;color:var(--dim)">'+phase()+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT</span>'):('<span class="ok">ALL SYSTEMS CURRENT</span><br><span style="font-size:11px;color:var(--dim)">'+phase()+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · the data you see is the newest that exists</span>');
   document.getElementById('fixes').innerHTML=FIX.length?FIX.map(f=>'<li>'+f+'</li>').join(''):'<li>Nothing. If a page still looks old, it is your browser cache: Chrome → Clear browsing data → Cached images and files.</li>';
   document.getElementById('raw').textContent=JSON.stringify({time:ctNow().toString(),phase:phase(),...REPORT},null,1);
+  document.getElementById('plain').innerHTML=plainReport();
 }
-async function copyReport(){try{await navigator.clipboard.writeText(document.getElementById('raw').textContent);alert('Report copied — paste it into the chat.');}catch(e){alert('Select the raw report text and copy it manually.');}}
+function plainReport(){
+  const P=[];const ok=s=>'<span class="ok">'+s+'</span>',bad=s=>'<span class="bad">'+s+'</span>';
+  P.push('<b>Checked '+ctNow().toLocaleString('en-US',{timeZone:'America/Chicago',weekday:'long',hour:'numeric',minute:'2-digit'})+' CT — '+phase().toLowerCase()+'.</b>');
+  P.push('<b>Data feed:</b> relay '+(String(REPORT.relay||'').includes('v5')?ok(REPORT.relay):bad(REPORT.relay||'unreachable'))+
+    '. Price history '+(REPORT.histLast?ok('working')+' — newest bar '+REPORT.histLast+' ('+REPORT.histAge+', normal outside market hours)':bad('failing'))+
+    '. Pre-market quotes '+(REPORT.pm==='ok'?ok('working'):bad('missing'))+
+    '. Options chain '+(String(REPORT.chain||'').startsWith('ok')?ok('working — '+String(REPORT.chain).slice(3)+' contracts'):bad('failing'))+
+    '. Brief/Coach AI '+(REPORT.ai==='ok'?ok('working'):bad('failing'))+'.');
+  const pg=REPORT.pages||{};const stale=Object.keys(pg).filter(k=>pg[k]!=='current');
+  P.push('<b>Pages on the server:</b> '+(stale.length?bad(stale.length+' out of date — '+stale.join(', ')):ok('all '+Object.keys(pg).length+' current'))+'.');
+  P.push('<b>Paper Desk:</b> '+(String(REPORT.autopilot||'').startsWith('ok')?ok('alive — equity $'+String(REPORT.autopilot).replace('ok $','')):(REPORT.autopilot==='not connected'?'not connected on this browser (open PAPER once)':bad('not answering')))+'.');
+  const c=REPORT.caches||{};const n=Object.values(c).reduce((a,b)=>a+b,0);
+  P.push('<b>Browser caches:</b> '+n+' items held locally — normal; 🧹 clears them if any page looks stale.');
+  P.push('<b>Bottom line:</b> '+(FIX.length?bad(FIX.length+' item(s) need attention — see the fix list above.'):ok('everything the platform depends on is working. If a page looks wrong, it is the browser cache, not the system.')));
+  return P.map(x=>'<div style="margin-bottom:6px">'+x+'</div>').join('');
+}
+async function copyReport(){try{const t=document.getElementById('plain').innerText+'\n\n--- machine copy ---\n'+document.getElementById('raw').textContent;await navigator.clipboard.writeText(t);alert('Report copied — paste it into the chat.');}catch(e){alert('Select the report text and copy it manually.');}}
 async function runAll(){FIX.length=0;document.getElementById('verdict').textContent='Running…';checkCaches();await checkRelay();await checkPages();await checkAutopilot();verdictOut();}
 runAll();
 </script>
