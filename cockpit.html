@@ -261,7 +261,12 @@ async function loadAll(){
   for(const[i,r] of plan){try{b=await fetchHist(tk,i,r);if(b){used=i;break;}}catch(e){}}
   if(!b){st.innerHTML='<b>No history at any interval.</b> The worker needs the v4.2 ?hist route — repaste worker code + API key in Cloudflare.';return;}
   BARS={tk,...b,e9:emaAll(b.C,9),s20:smaAll(b.C,20),bb:bbAll(b.C),vw:vwapAll(b.T,b.H,b.L,b.C,b.V),rsi:rsiAll(b.C,14),macd:macdAll(b.C),mom:momAll(b.C,12),adx:adxAll(b.H,b.L,b.C,14)};
-  st.textContent=tk+' · '+b.C.length+' bars ('+used+(used!==IV?' — '+IV+' unavailable, worker v4.2 needed':'')+') · $'+n2(b.C[b.C.length-1])+' · '+new Date().toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
+  {const lastT=b.T[b.T.length-1];const ageS=Math.max(0,Date.now()/1000-lastT);
+  const barTm=new Date(lastT*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
+  const ctn=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));const mm=ctn.getHours()*60+ctn.getMinutes();
+  const openNow=ctn.getDay()>=1&&ctn.getDay()<=5&&mm>=8*60+30&&mm<15*60;
+  const stale=openNow&&ageS>12*60;
+  st.innerHTML=tk+' · '+b.C.length+' bars · $'+n2(b.C[b.C.length-1])+' · newest candle <b>'+barTm+' CT</b> ('+(ageS<90?Math.round(ageS)+'s':Math.round(ageS/60)+' min')+' ago)'+(stale?' — <span style="color:var(--red);font-weight:800">STALE FEED: pull again; relay may be serving its last good copy</span>':'');}
   loadChain(tk);draw();health();drawRead();
   if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();}},45000);
 }
