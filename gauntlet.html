@@ -288,7 +288,7 @@ function arm(){
   $('wE').value=W.E||'';$('wStop').value=W.stop;$('wT1').value=W.t1;
   $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
   go(3);watchTick();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchTick,45000);
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchTick,20000);
   say('The watch is armed. '+W.tk+'. I will speak when a permit fires.');
 }
 function saveWatch(){
@@ -296,7 +296,7 @@ function saveWatch(){
     W.E=parseFloat($('wE').value)||W.E;W.stop=parseFloat($('wStop').value)||W.stop;W.t1=parseFloat($('wT1').value)||W.t1;
     localStorage.setItem('kGauntlet',JSON.stringify(W));watchTick();}catch(e){}
 }
-let OFLAST=null;
+let OFLAST=null,OFCI=null,OFAT=null;
 async function watchTick(){
   let W=null;try{W=JSON.parse(localStorage.getItem('kGauntlet'));}catch(e){}
   if(!W)return;
@@ -322,7 +322,11 @@ async function watchTick(){
   const box=$('ofc');box.style.display='block';box.className=cls;
   $('oV').textContent=v;$('oW').innerHTML=w;
   const oa=$('oAcc');oa.textContent=acc;oa.style.color=acc==='BUILDING'?'var(--green)':acc==='PAUSING'?'var(--gold-soft)':'var(--red)';
-  if(OFLAST!==v){say('Exit officer. '+v.replace('—',',').replace('#','number ')+'.');OFLAST=v;}
+  /* drumbeat: speak every closed candle, not only on change */
+  const plain=w.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. ');
+  if(OFCI!==A.ci||OFLAST!==v){say('Exit officer. '+v.replace('—',',').replace('#','number ')+'. '+plain);OFCI=A.ci;OFLAST=v;OFAT=new Date();}
+  const ts=OFAT?OFAT.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'—';
+  $('oW').innerHTML=w+'<div style="font-size:9px;color:var(--dim);margin-top:5px">spoken '+ts+' CT · next ruling at the next 5-minute close</div>';
 }
 function closeWatch(){
   if(TIMER)clearInterval(TIMER);TIMER=null;
@@ -339,7 +343,7 @@ function closeWatch(){
   if(W&&W.tk){
     $('wE').value=W.E||'';$('wStop').value=W.stop||'';$('wT1').value=W.t1||'';
     $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
-    go(3);watchTick();TIMER=setInterval(watchTick,45000);
+    go(3);watchTick();TIMER=setInterval(watchTick,20000);
   }else{loadBoard(false);}
 })();
 </script>

@@ -507,8 +507,7 @@ function accelState(){
 function officerRun(){
   const box=document.getElementById('officer');
   if(!BARS){box.style.display='none';return;}
-  const E=parseFloat(document.getElementById('entry').value);
-  if(!E){box.style.display='none';OF.verdict=null;return;} /* officer takes the bench only when you hold a position */
+  const E=parseFloat(document.getElementById('entry').value)||null; /* no entry = advisory mode: still rules every candle */
   const a=accelState();if(!a){box.style.display='none';return;}
   const {st,ci,L}=a;
   const px=BARS.C[BARS.C.length-1],cC=BARS.C[ci],cV=BARS.V?BARS.V[ci]:null;
@@ -525,7 +524,7 @@ function officerRun(){
   if(mm>=14*60+40&&mm<15*60){cls='exit';verdict='EXIT — PERMIT #5';why='<b>2:45 flat law.</b> Close it by hand, cancel resting orders as you go. The day is over; tomorrow is a fresh docket.';}
   else if(stopIn&&(L?px<=stopIn:px>=stopIn)){cls='exit';verdict='EXIT — PERMIT #1';why='<b>Your stop level traded.</b> If the resting stop hasn\'t filled you, exit at market now — a stop that\'s been hit and ignored is how Wednesdays happen.';}
   else if(brk){cls='exit';verdict='EXIT — PERMIT #3';why='<b>Structure broke:</b> a 5-minute candle CLOSED '+(L?'below':'above')+' the 9 EMA ($'+n2(e9v)+') on '+(avgV?(cV/avgV).toFixed(1)+'× volume':'volume')+'. This is the trend saying it\'s done — leave into the next bounce, not the flush.';}
-  else if(tgtIn&&(L?cC>=tgtIn:cC<=tgtIn)){cls='tighten';verdict='BANK HALF — PERMIT #2';why='<b>Target reached on a closed candle.</b> Sell HALF, move the stop on the rest to breakeven ($'+n2(E)+'). The win is banked; the runner rides free'+(shelf?' — trail behind $'+n2(shelf):'')+'.';}
+  else if(tgtIn&&(L?cC>=tgtIn:cC<=tgtIn)){cls='tighten';verdict='BANK HALF — PERMIT #2';why='<b>Target reached on a closed candle.</b> Sell HALF, move the stop on the rest to breakeven'+(E?' ($'+n2(E)+')':'')+'. The win is banked; the runner rides free'+(shelf?' — trail behind $'+n2(shelf):'')+'.';}
   else if(st==='FADING'){cls='tighten';verdict='TIGHTEN';why='<b>Thrust is turning against you</b> (histogram fading'+(shelf?') — raise the stop to just '+(L?'under':'over')+' the shelf at <b>$'+n2(shelf)+'</b>':')')+'. No selling yet: fading momentum is a warning; only permit #3 — a closed candle through the 9 EMA on volume — is an order.';}
   else if(st==='PAUSING'){cls='hold';verdict='HOLD';why='<b>Pausing, structure intact</b> — price is '+(L?'above':'below')+' the 9 EMA ($'+n2(e9v)+') and the momentum rows are red only because a pause has no thrust. <b>This is a flag, not a top.</b> Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.'+(lunch?' Lunch tape: if this drags past 12:30 with no progress, permit #4 (time-stop) opens.':'');}
   else{cls='hold';verdict='HOLD';why='<b>Building</b> — thrust is growing with you. Do nothing. Winners accelerate; your only job is not interrupting it. Trail behind higher lows if you must touch something.';}
@@ -533,14 +532,17 @@ function officerRun(){
   document.getElementById('ofV').textContent=verdict;
   document.getElementById('ofW').innerHTML=why;
   const oa=document.getElementById('ofA');oa.textContent=st;oa.className='oacc '+(st==='BUILDING'?'b':st==='PAUSING'?'p':'f');
-  /* speak only when the verdict changes or a new candle closes with an EXIT verdict */
-  const key=verdict+'|'+ci;
-  if(OF.verdict!==verdict||(cls==='exit'&&OF.ci!==ci)){
+  /* THE DRUMBEAT: speak every closed 5-minute candle — verdict + why — and instantly on any verdict change */
+  const plain=why.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. ');
+  if(OF.ci!==ci||OF.verdict!==verdict){
     try{if(document.getElementById('voiceOn').checked&&'speechSynthesis' in window){
-      const u=new SpeechSynthesisUtterance('Exit officer. '+verdict.replace('—',',').replace('#','number ')+'. '+why.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. '));
+      const u=new SpeechSynthesisUtterance('Exit officer. '+verdict.replace('—',',').replace('#','number ')+'. '+plain);
       u.rate=0.68;speechSynthesis.speak(u);}}catch(e){}
+    OF.spokeAt=new Date();
   }
   OF.verdict=verdict;OF.ci=ci;
+  const tstamp=OF.spokeAt?OF.spokeAt.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'—';
+  document.getElementById('ofW').innerHTML=why+'<div style="font-size:9px;color:var(--dim);margin-top:5px">spoken '+tstamp+' CT · next ruling at the next 5-minute close'+(E?'':' · ADVISORY (no entry typed — permits 1 and 2 offline)')+'</div>';
 }
 
 function drawRead(){
