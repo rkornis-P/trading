@@ -529,14 +529,15 @@ function officerRun(){
   else if(st==='PAUSING'){cls='hold';verdict='HOLD';why='<b>Pausing, structure intact</b> — price is '+(L?'above':'below')+' the 9 EMA ($'+n2(e9v)+') and the momentum rows are red only because a pause has no thrust. <b>This is a flag, not a top.</b> Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.'+(lunch?' Lunch tape: if this drags past 12:30 with no progress, permit #4 (time-stop) opens.':'');}
   else{cls='hold';verdict='HOLD';why='<b>Building</b> — thrust is growing with you. Do nothing. Winners accelerate; your only job is not interrupting it. Trail behind higher lows if you must touch something.';}
   box.style.display='block';box.className=cls;
-  document.getElementById('ofV').textContent=verdict;
+  const oflabel=(BARS.tk||'')+' '+(L?'CALLS':'PUTS');
+  document.getElementById('ofV').textContent=verdict+' — '+oflabel;
   document.getElementById('ofW').innerHTML=why;
   const oa=document.getElementById('ofA');oa.textContent=st;oa.className='oacc '+(st==='BUILDING'?'b':st==='PAUSING'?'p':'f');
   /* THE DRUMBEAT: speak every closed 5-minute candle — verdict + why — and instantly on any verdict change */
   const plain=why.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. ');
   if(OF.ci!==ci||OF.verdict!==verdict){
     try{if(document.getElementById('voiceOn').checked&&'speechSynthesis' in window){
-      const u=new SpeechSynthesisUtterance('Exit officer. '+verdict.replace('—',',').replace('#','number ')+'. '+plain);
+      const u=new SpeechSynthesisUtterance('Exit officer. '+oflabel+'. '+verdict.replace('—',',').replace('#','number ')+'. '+plain);
       u.rate=0.68;speechSynthesis.speak(u);}}catch(e){}
     OF.spokeAt=new Date();
   }

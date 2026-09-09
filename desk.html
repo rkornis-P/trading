@@ -775,7 +775,7 @@ function officerDesk(){
   else if(pos.t1&&(L?A.cClose>=pos.t1:A.cClose<=pos.t1)){v='BANK HALF — PERMIT #2';col='var(--amber)';w='Target reached: half off, stop to breakeven.';}
   else{v='HOLD';col='var(--green)';w='Structure intact — '+(L?'above':'below')+' the 9 EMA. Momentum rows may rest red in a pause; that is a flag, not a top. Only permits sell.';}
   box.style.display='block';box.style.borderColor=col;
-  const el=document.getElementById('ofDv');el.textContent=pos.tk.toUpperCase()+' · '+v;el.style.color=col;
+  const el=document.getElementById('ofDv');el.textContent=pos.tk.toUpperCase()+' '+((pos.side||'CALL').toUpperCase().startsWith('C')?'CALLS':'PUTS')+' · '+v;el.style.color=col;
   document.getElementById('ofDw').innerHTML=w;
   return v;
 }

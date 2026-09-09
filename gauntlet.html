@@ -61,10 +61,38 @@ input:focus{outline:none;border-color:var(--gold)}
 .knav{position:fixed;bottom:0;left:0;right:0;background:#07090D;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
 .knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
 .knav a:last-child{border-right:none}.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+
+/* ===== triple watch ===== */
+.slot{border-radius:13px;padding:11px 12px;margin-bottom:9px;border:2px solid var(--line);background:var(--card)}
+.slot.hold{border-color:var(--green)}.slot.tighten{border-color:var(--amber)}.slot.exit{border-color:var(--red);animation:op .9s ease-in-out infinite alternate}
+.slot.fired{border-color:var(--gold-soft);animation:op 1.1s ease-in-out infinite alternate}
+.slot .sh{display:flex;justify-content:space-between;align-items:baseline}
+.slot .stk{font-family:Georgia,serif;font-size:16px;font-weight:700}
+.slot .sx{color:var(--dim);cursor:pointer;font-size:13px;padding:2px 6px}
+.slot .sv{font-family:Georgia,serif;font-size:14.5px;font-weight:700;margin-top:3px}
+.slot.hold .sv{color:var(--green)}.slot.tighten .sv{color:var(--amber)}.slot.exit .sv{color:var(--red)}.slot.fired .sv{color:var(--gold-soft)}
+.slot .sw{font-size:10.5px;line-height:1.5;color:var(--dim);margin-top:2px}
+.slot .sw b{color:var(--ink)}
+.slot .srow{display:flex;gap:5px;margin-top:8px}
+.slot .srow div{flex:1}
+.slot .srow input{width:100%;padding:7px;font-size:12px}
+.slot .flab{margin-top:0}
+.slot .sm2{font-size:9px;color:var(--dim);margin-top:5px}
+
+/* ===== KORNIS TAPE ===== */
+#ktape{display:flex;gap:6px;overflow-x:auto;padding:7px 9px;background:#0E1117;border:1px solid #242B36;border-radius:10px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+#ktape::-webkit-scrollbar{display:none}
+.ktc{flex:none;display:flex;align-items:baseline;gap:5px;padding:3px 9px;border-radius:7px;border:1px solid #242B36;text-decoration:none;background:#12161D}
+.ktc b{font-family:Georgia,serif;font-size:11.5px;color:#E9ECF2;letter-spacing:.02em}
+.ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
+.ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
+.ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
+
 </style></head><body>
+<div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
 <h1>The Gauntlet</h1>
-<div class="sub">Choose · Prove · Watch — the whole trade on one page</div>
+<div class="sub">Choose · Prove · Watch — up to three on the board, one bullet</div>
 <div id="steps">
   <div class="stp on" id="sp1">1 · CHOOSE</div>
   <div class="stp" id="sp2">2 · THE GAUNTLET</div>
@@ -94,20 +122,9 @@ input:focus{outline:none;border-color:var(--gold)}
 
 <!-- STEP 3 -->
 <div id="step3" style="display:none">
-  <div id="ofc"><span class="oacc" id="oAcc">—</span><div class="ov" id="oV">—</div><div class="ow" id="oW">—</div></div>
-  <div id="plRow">
-    <div class="pc"><div class="l">Stock now</div><div class="v" id="wPx">—</div></div>
-    <div class="pc"><div class="l">Est. option P/L</div><div class="v" id="wPL">—</div></div>
-  </div>
-  <div class="card"><div class="sec"><span id="w1">Your position</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(2)">← plan</span></div>
-    <span class="flab">YOUR OPTION FILL $ (E)</span><input id="wE" type="number" step="0.01" style="width:130px" onchange="saveWatch()">
-    <div style="display:flex;gap:8px">
-      <div style="flex:1"><span class="flab">STOCK STOP</span><input id="wStop" type="number" step="0.01" style="width:100%" onchange="saveWatch()"></div>
-      <div style="flex:1"><span class="flab">STOCK TARGET (T1)</span><input id="wT1" type="number" step="0.01" style="width:100%" onchange="saveWatch()"></div>
-    </div>
-    <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;margin-top:9px;cursor:pointer"><input type="checkbox" id="wVoice" checked style="accent-color:#BF9000"> 🔊 speak the Officer's verdicts</label>
-  </div>
-  <button class="ghost" onclick="closeWatch()">✔ TRADE CLOSED — STAND DOWN</button>
+  <div class="card" style="padding:9px 12px"><div class="sec" style="margin:0"><span>THE WATCH — up to three, one bullet</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(1)">+ add from the board</span></div></div>
+  <div id="slots"></div>
+  <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;margin:2px 0 10px;cursor:pointer"><input type="checkbox" id="wVoice" checked style="accent-color:#BF9000"> 🔊 speak the rulings</label>
 </div>
 
 <div class="knav">
@@ -214,7 +231,7 @@ function go(n){
   ['step1','step2','step3'].forEach((s,i)=>$(s).style.display=(i===n-1?'block':'none'));
   [1,2,3].forEach(i=>{const el=$('sp'+i);el.className='stp'+(i===n?' on':(i<n?' done':''));});
 }
-function choose(i){PICK=ALL[i];buildGauntlet(true);go(2);}
+function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catch(e){}buildGauntlet(true);go(2);}
 
 /* ---------- step 2: the gauntlet ---------- */
 async function buildGauntlet(fresh){
@@ -279,72 +296,138 @@ async function buildGauntlet(fresh){
   $('st').textContent='Gauntlet built · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
 }
 
-/* ---------- step 3: the watch ---------- */
+/* ---------- step 3: THE TRIPLE WATCH ---------- */
+function slots(){try{const s=JSON.parse(localStorage.getItem('kGauntletSlots'));return Array.isArray(s)?s:[];}catch(e){return [];}}
+function saveSlots(s){localStorage.setItem('kGauntletSlots',JSON.stringify(s));}
 function arm(){
   if(!PICK||!PLAN)return;
-  const W={tk:PICK.tk,L:PICK.L,anchor:PICK.A.px,stop:+PLAN.stop.toFixed(2),t1:+PLAN.t1.toFixed(2),
-    E:CONTRACT?+CONTRACT.mid.toFixed(2):null,d:CONTRACT?CONTRACT.d:0.70,n:1,ts:Date.now()};
-  localStorage.setItem('kGauntlet',JSON.stringify(W));
-  $('wE').value=W.E||'';$('wStop').value=W.stop;$('wT1').value=W.t1;
-  $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
-  go(3);watchTick();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchTick,20000);
-  say('The watch is armed. '+W.tk+'. I will speak when a permit fires.');
+  let S=slots();
+  if(S.find(x=>x.tk===PICK.tk)){alert(PICK.tk+' is already on the watch.');go(3);renderSlots();return;}
+  if(S.length>=3){alert('Three is the table limit — release a slot (✕) first.');go(3);renderSlots();return;}
+  S.push({tk:PICK.tk,L:PICK.L,anchor:PICK.A.px,trig:+PLAN.trig.toFixed(2),stop:+PLAN.stop.toFixed(2),t1:+PLAN.t1.toFixed(2),
+    E:null,d:CONTRACT?CONTRACT.d:0.70,ts:Date.now(),lastV:null,lastCi:null});
+  saveSlots(S);go(3);renderSlots();watchAll();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchAll,30000);
+  say(PICK.tk+' is on the watch. I will call its trigger.');
 }
-function saveWatch(){
-  try{const W=JSON.parse(localStorage.getItem('kGauntlet'));if(!W)return;
-    W.E=parseFloat($('wE').value)||W.E;W.stop=parseFloat($('wStop').value)||W.stop;W.t1=parseFloat($('wT1').value)||W.t1;
-    localStorage.setItem('kGauntlet',JSON.stringify(W));watchTick();}catch(e){}
+function slotField(i,f,v){let S=slots();if(!S[i])return;S[i][f]=parseFloat(v)||null;saveSlots(S);watchAll();}
+function dropSlot(i){let S=slots();const t=S[i]&&S[i].tk;S.splice(i,1);saveSlots(S);renderSlots();if(t)say(t+' released.');if(!S.length){go(1);}}
+function renderSlots(){
+  const S=slots();const bullet=S.some(x=>x.E);
+  $('slots').innerHTML=S.length?S.map((w,i)=>{
+    return '<div class="slot" id="slot'+i+'"><div class="sh"><span class="stk">'+w.tk+' <span style="font-size:9px;letter-spacing:.08em;color:'+(w.L?'var(--green)':'var(--red)')+'">'+(w.L?'CALLS':'PUTS')+'</span></span><span class="sx" onclick="dropSlot('+i+')">✕</span></div>'+
+    '<div class="sv" id="sv'+i+'">—</div><div class="sw" id="sw'+i+'">—</div>'+
+    '<div class="srow">'+
+    '<div><span class="flab">TRIG</span><input value="'+(w.trig||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'trig\',this.value)"></div>'+
+    '<div><span class="flab">STOP</span><input value="'+(w.stop||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'stop\',this.value)"></div>'+
+    '<div><span class="flab">T1</span><input value="'+(w.t1||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'t1\',this.value)"></div>'+
+    '<div><span class="flab">E (fill)</span><input value="'+(w.E||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'E\',this.value)"></div>'+
+    '</div><div class="sm2" id="sm'+i+'">'+(bullet&&!w.E?'observation only — today\'s bullet is spent':'')+'</div></div>';
+  }).join(''):'<div style="color:var(--dim);font-size:11px">Nothing on the watch — add from the board.</div>';
 }
-let OFLAST=null,OFCI=null,OFAT=null;
-async function watchTick(){
-  let W=null;try{W=JSON.parse(localStorage.getItem('kGauntlet'));}catch(e){}
-  if(!W)return;
-  let A;try{const b=await pull(W.tk);A=analyze(b);}catch(e){return;}
-  const L=W.L;
-  $('wPx').textContent='$'+n2(A.px);
-  if(W.E){const pl=(A.px-W.anchor)*(L?1:-1)*W.d*100;$('wPL').textContent=(pl>=0?'+':'')+'$'+Math.abs(pl).toFixed(0)+'/ct';$('wPL').style.color=pl>=0?'var(--green)':'var(--red)';}
+async function watchAll(){
+  const S=slots();if(!S.length)return;
+  for(let i=0;i<S.length;i++){
+    try{await watchOne(i,S[i]);}catch(e){}
+    await sleep(250);
+  }
+}
+async function watchOne(i,w){
+  const b=await pull(w.tk);const A=analyze(b);const L=w.L;
+  const card=$('slot'+i);if(!card)return;
+  const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();
   /* acceleration */
   const mh=A.mh,ci=A.ci;
   const d0=(L?mh[ci]:-mh[ci])||0,d1=(L?mh[ci-1]:-mh[ci-1])||0,d2=(L?mh[ci-2]:-mh[ci-2])||0;
   let acc='PAUSING';
-  if(d0>0&&(d0>d1&&d1>=d2||d0>d1*1.15))acc='BUILDING';
-  else if(d0<0&&d0<d1&&d1<=d2)acc='FADING';
-  const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();
-  const brk=(L?A.cClose<A.e9c:A.cClose>A.e9c)&&A.cVol>=1.1*A.avgVol;
-  let cls,v,w;
-  if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — PERMIT #5';w='<b>2:45 flat law.</b> Close by hand; cancel resting orders as you go.';}
-  else if(W.stop&&(L?A.px<=W.stop:A.px>=W.stop)){cls='exit';v='EXIT — PERMIT #1';w='<b>Stop level traded</b> ($'+n2(W.stop)+'). If the resting stop hasn\'t filled you, exit at market now.';}
-  else if(brk){cls='exit';v='EXIT — PERMIT #3';w='<b>Structure broke:</b> 5-min CLOSE '+(L?'below':'above')+' the 9 EMA ($'+n2(A.e9c)+') on '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Leave into the next bounce, not the flush.';}
-  else if(W.t1&&(L?A.cClose>=W.t1:A.cClose<=W.t1)){cls='tighten';v='BANK HALF — PERMIT #2';w='<b>Target reached on a closed candle.</b> Half off, stop to breakeven'+(W.E?' ($'+n2(W.E)+' on the option)':'')+'. The runner rides free.';}
-  else if(acc==='FADING'){cls='tighten';v='TIGHTEN';w='<b>Thrust turning against you.</b> Raise the stop toward the shelf — but no selling: only a closed candle through the 9 EMA (permit #3) is an order.';}
-  else{cls='hold';v='HOLD';w=acc==='PAUSING'?'<b>Pausing, structure intact.</b> The momentum rows may run red — a pause has no thrust. <b>This is a flag, not a top.</b> Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.':'<b>Building.</b> Thrust is growing with you — do nothing; winners accelerate.';}
-  const box=$('ofc');box.style.display='block';box.className=cls;
-  $('oV').textContent=v;$('oW').innerHTML=w;
-  const oa=$('oAcc');oa.textContent=acc;oa.style.color=acc==='BUILDING'?'var(--green)':acc==='PAUSING'?'var(--gold-soft)':'var(--red)';
-  /* drumbeat: speak every closed candle, not only on change */
-  const plain=w.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. ');
-  if(OFCI!==A.ci||OFLAST!==v){say('Exit officer. '+v.replace('—',',').replace('#','number ')+'. '+plain);OFCI=A.ci;OFLAST=v;OFAT=new Date();}
-  const ts=OFAT?OFAT.toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'—';
-  $('oW').innerHTML=w+'<div style="font-size:9px;color:var(--dim);margin-top:5px">spoken '+ts+' CT · next ruling at the next 5-minute close</div>';
+  if(d0>0&&(d0>d1&&d1>=d2||d0>d1*1.15))acc='BUILDING';else if(d0<0&&d0<d1&&d1<=d2)acc='FADING';
+  let cls,v,why;
+  if(w.E){ /* ARMED: full officer */
+    const brk=(L?A.cClose<A.e9c:A.cClose>A.e9c)&&A.cVol>=1.1*A.avgVol;
+    if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — PERMIT #5';why='2:45 flat law. Close by hand; cancel resting orders.';}
+    else if(w.stop&&(L?A.px<=w.stop:A.px>=w.stop)){cls='exit';v='EXIT — PERMIT #1';why='Stop level traded ($'+n2(w.stop)+'). If the resting stop hasn\'t filled, exit at market.';}
+    else if(brk){cls='exit';v='EXIT — PERMIT #3';why='5-min CLOSE '+(L?'below':'above')+' the 9 EMA ($'+n2(A.e9c)+') on '+(A.cVol/A.avgVol).toFixed(1)+'× volume — structure broke.';}
+    else if(w.t1&&(L?A.cClose>=w.t1:A.cClose<=w.t1)){cls='tighten';v='BANK HALF — PERMIT #2';why='Target reached on a closed candle. Half off, stop to breakeven ($'+n2(w.E)+' on the option).';}
+    else if(acc==='FADING'){cls='tighten';v='TIGHTEN';why='Thrust turning against you — raise the stop toward the shelf. Only permit #3 sells.';}
+    else{cls='hold';v='HOLD';why=acc==='PAUSING'?'Pausing, structure intact — a flag, not a top. Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.':'Building — thrust growing with you. Do nothing; winners accelerate.';}
+  }else{ /* STALKING */
+    const fired=L?(A.cClose>w.trig&&A.cVol>=1.2*A.avgVol):(A.cClose<w.trig&&A.cVol>=1.2*A.avgVol);
+    const firedThin=L?(A.cClose>w.trig):(A.cClose<w.trig);
+    const dead=w.stop&&(L?A.cClose<w.stop:A.cClose>w.stop);
+    if(dead){cls='exit';v='SETUP DEAD';why='Closed through the stop side before triggering — the setup is invalidated. Release the slot or recompose.';}
+    else if(fired){cls='fired';v='⚡ TRIGGER FIRED';why='5-min CLOSE '+(L?'above':'below')+' $'+n2(w.trig)+' with '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Fill at the broker, then type E here — the Officer takes over.';}
+    else if(firedThin){cls='tighten';v='CLOSE BEYOND — VOLUME THIN';why='Price closed beyond $'+n2(w.trig)+' but volume was only '+(A.cVol/A.avgVol).toFixed(1)+'× — the veto holds. Wait for a real bar.';}
+    else{cls='hold';v='WAIT';why='$'+n2(Math.abs(A.px-w.trig))+' from the trigger ($'+n2(w.trig)+'). '+(acc==='BUILDING'?'Pressure building toward it.':acc==='FADING'?'Pressure fading from it.':'Coiling.');}
+  }
+  card.className='slot '+cls;
+  const label=w.tk+' '+(L?'CALLS':'PUTS');
+  $('sv'+i).textContent=v+' — '+label+(w.E?' (your position)':' (stalking)');$('sw'+i).innerHTML='<b>$'+n2(A.px)+'</b> · '+acc.toLowerCase()+' — '+why;
+  const stamp=ctn.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  $('sm'+i).textContent='ruled '+stamp+' CT · next at the 5-min close'+(slots().some(x=>x.E)&&!w.E?' · observation only — bullet spent':'');
+  /* speech: armed slots drum every candle; stalking slots speak fired/dead/changes */
+  let S=slots();
+  const speakIt=w.E?(S[i].lastCi!==ci||S[i].lastV!==v):(S[i].lastV!==v&&v!=='WAIT')||(v==='⚡ TRIGGER FIRED'&&S[i].lastCi!==ci);
+  if(speakIt){say(label+'. '+v.replace('—',',').replace('#','number ').replace('⚡','')+'. '+why.replace(/<[^>]+>/g,'').split('.')[0]+'.');}
+  S[i].lastV=v;S[i].lastCi=ci;saveSlots(S);
 }
-function closeWatch(){
-  if(TIMER)clearInterval(TIMER);TIMER=null;
-  localStorage.removeItem('kGauntlet');OFLAST=null;
-  say('Watch closed. Log it in the ledger while it\'s fresh.');
-  alert('Stand-down complete. Log the trade in the LEDGER — entry grade, exit permit used, and what a lawful exit paid.');
-  go(1);loadBoard(false);
-}
-
-/* resume an armed watch on load */
+function closeWatch(){}
+/* resume the watch on load (migrates the old single-slot format) */
 (function(){
-  let W=null;try{W=JSON.parse(localStorage.getItem('kGauntlet'));}catch(e){}
   const r=localStorage.getItem('kRisk');if(r)$('riskIn').value=r;
-  if(W&&W.tk){
-    $('wE').value=W.E||'';$('wStop').value=W.stop||'';$('wT1').value=W.t1||'';
-    $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
-    go(3);watchTick();TIMER=setInterval(watchTick,20000);
-  }else{loadBoard(false);}
+  try{const old=JSON.parse(localStorage.getItem('kGauntlet'));
+    if(old&&old.tk&&!localStorage.getItem('kGauntletSlots')){saveSlots([{tk:old.tk,L:old.L,anchor:old.anchor,trig:old.t1?null:null,stop:old.stop,t1:old.t1,E:old.E,d:old.d||0.7,ts:old.ts,trig:old.stop&&old.t1?((old.stop+old.t1)/2):null,lastV:null,lastCi:null}]);localStorage.removeItem('kGauntlet');}
+  }catch(e){}
+  const S=slots();
+  if(S.length){go(3);renderSlots();watchAll();TIMER=setInterval(watchAll,30000);}
+  else{loadBoard(false);}
+})();
+</script>
+<script>
+(function(){
+  var REL='https://kornis-ai-relay.rick-018.workers.dev';
+  var el=document.getElementById('ktape'); if(!el) return;
+  function board(){try{var b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+  function cell(tk,px,chg,act){
+    var cls=chg==null?'fl':(chg>=0.02?'up':(chg<=-0.02?'dn':'fl'));
+    var sign=chg==null?'':(chg>=0?'+':'');
+    return '<a class="ktc" '+(act?'style="border-color:#BF9000;background:#1B222D"':'')+' href="cockpit.html?tk='+tk+'"><b'+(act?' style="color:#D9B44A"':'')+'>'+(act?'★ ':'')+tk+'</b><span class="p">'+(px!=null?('$'+px.toFixed(2)):'—')+'</span><span class="c '+cls+'">'+(chg!=null?(sign+chg.toFixed(1)+'%'):'')+'</span></a>';
+  }
+  function activeTk(){
+    try{var u=new URLSearchParams(location.search).get('tk');if(u&&/^[A-Za-z.\-]{1,7}$/.test(u)){localStorage.setItem('kActive',u.toUpperCase());return u.toUpperCase();}}catch(e){}
+    var el=document.getElementById('tk');
+    if(el&&el.value&&/^[A-Za-z.\-]{1,7}$/.test(el.value.trim())){var v=el.value.trim().toUpperCase();localStorage.setItem('kActive',v);return v;}
+    return localStorage.getItem('kActive')||null;
+  }
+  function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
+  function chip(data){var t=0;Object.keys(data).forEach(function(k){if(data[k].t>t)t=data[k].t;});var ph=phase();var lab=ph==='PRE'?'PRE-MKT':ph==='OPEN'?'LIVE':ph==='WKND'?'CLOSED':'AFTER HRS';var when=t?new Date(t*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}):'';var pm=Object.keys(data).some(function(k){return data[k].pm;});return '<span class="ktc" style="border-color:#BF9000"><b style="color:#D9B44A;font-size:9px">'+lab+'</b><span class="p">'+(when?('data '+when):'…')+(pm?' pm':'')+'</span></span>';}
+  function tickList(){var a=activeTk();var b=board();return a?[a].concat(b.filter(function(t){return t!==a;})):b;}
+  function paint(data){ var a=activeTk(); el.innerHTML=chip(data)+tickList().map(function(tk){var d=data[tk]||{};return cell(tk,d.px,d.chg,tk===a);}).join(''); }
+  function getC(tk){try{var c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c&&Date.now()-c.ts<60000)return c;}catch(e){}return null;}
+  function setC(tk,px,chg,t,pm){try{localStorage.setItem('kTape_'+tk,JSON.stringify({ts:Date.now(),px:px,chg:chg,t:t||0,pm:!!pm}));}catch(e){}}
+  var DATA={};
+  function load(){
+    var tks=tickList(); var i=0;
+    tks.forEach(function(tk){var c=getC(tk);if(c){DATA[tk]={px:c.px,chg:c.chg,t:c.t||0,pm:!!c.pm};}});
+    paint(DATA);
+    function next(){
+      if(i>=tks.length)return;
+      var tk=tks[i++];
+      if(getC(tk)){setTimeout(next,80);return;}
+      var pre=phase()==='PRE'||phase()==='AFTER';
+      var p=pre?fetch(REL+'/?pm='+encodeURIComponent(tk)).then(function(r){return r.json();}).then(function(j){if(j&&j.last!=null){return {px:j.last,chg:j.gapPct,t:j.lastT,pm:true};}throw 0;}):Promise.reject(0);
+      p.catch(function(){return fetch(REL+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d').then(function(r){return r.json();}).then(function(j){
+        var res=j.chart&&j.chart.result&&j.chart.result[0]; if(!res)throw 0;
+        var q=res.indicators.quote[0], ts=res.timestamp||[], px=null,t=0;
+        for(var k=ts.length-1;k>=0;k--){ if(q.close[k]!=null){px=q.close[k];t=ts[k];break;} }
+        var pc=res.meta&&res.meta.chartPreviousClose;
+        var chg=(px!=null&&pc)?(px-pc)/pc*100:null;
+        return {px:px,chg:chg,t:t,pm:false};});})
+      .then(function(d){if(d&&d.px!=null){DATA[tk]=d;setC(tk,d.px,d.chg,d.t,d.pm);paint(DATA);}})
+      .catch(function(){}).finally(function(){setTimeout(next,350);});
+    }
+    next();
+  }
+  load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
 })();
 </script>
 </body></html>
