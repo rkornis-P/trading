@@ -81,7 +81,7 @@ async function checkRelay(){
     else{row('relayRows','AI (brief/coach)','FAILED — '+JSON.stringify(j).slice(0,140),'bad');REPORT.ai='fail';FIX.push('<b>AI route failing</b> — this is why the Brief and Coach don\'t write. Message: '+JSON.stringify(j).slice(0,100)+'. If it says missing key: relay Settings → Variables → the Anthropic key must be named ANTHROPIC_KEY.');}
   }catch(e){row('relayRows','AI (brief/coach)','FAILED — '+e.message,'bad');REPORT.ai='fail';}
 }
-const PAGES=[['desk.html','v1.7','Desk'],['hub.html','Trading Chambers','Hub'],['cockpit.html','EXIT OFFICER','Cockpit'],['watchlist.html','BEST SCALP VEHICLES','Scanner'],['picker.html','GREEKS LAB','Picker'],['coach.html','SCOUTING','Coach'],['gauges.html','LEARN','Gauges'],['library.html','THE 20 QUESTIONS','Library'],['paperdesk.html','v1.1','Paper Desk'],['ledger.html','kPassLine','Ledger'],['playbook.html','MASTERCLASS','Playbook']];
+const PAGES=[['gauntlet.html','THE GAUNTLET','Gauntlet'],['desk.html','v1.7','Desk'],['hub.html','Trading Chambers','Hub'],['cockpit.html','EXIT OFFICER','Cockpit'],['watchlist.html','BEST SCALP VEHICLES','Scanner'],['picker.html','GREEKS LAB','Picker'],['coach.html','SCOUTING','Coach'],['gauges.html','LEARN','Gauges'],['library.html','THE 20 QUESTIONS','Library'],['paperdesk.html','v1.1','Paper Desk'],['ledger.html','kPassLine','Ledger'],['playbook.html','MASTERCLASS','Playbook']];
 async function checkPages(){
   document.getElementById('pageRows').innerHTML='';let stale=0;REPORT.pages={};
   for(const [f,marker,name] of PAGES){

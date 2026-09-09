@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Gauntlet · Kornis Protocol</title>
+<style>
+:root{--bg:#0B0E13;--card:#12161D;--card2:#0E1117;--line:#242B36;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#E9ECF2;--dim:#8A93A3;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;padding:14px 10px 92px;max-width:640px;margin:0 auto}
+h1{font-family:Georgia,serif;font-size:15px;text-align:center;color:var(--gold-soft);letter-spacing:.2em;text-transform:uppercase;font-weight:700}
+.sub{text-align:center;font-size:9px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin:2px 0 10px}
+/* stepper */
+#steps{display:flex;gap:6px;margin-bottom:12px}
+.stp{flex:1;text-align:center;font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--dim);border:1px solid var(--line);border-radius:9px;padding:8px 2px;background:var(--card2)}
+.stp.on{color:#07120A;background:var(--gold-soft);border-color:var(--gold-soft)}
+.stp.done{color:var(--gold-soft);border-color:var(--gold)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.sec{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;display:flex;justify-content:space-between}
+button{background:var(--gold);color:#000;border:none;border-radius:9px;padding:12px;font-weight:800;font-size:11px;letter-spacing:.05em;cursor:pointer;width:100%}
+button.ghost{background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold)}
+button:disabled{opacity:.4}
+input,select{background:var(--card2);border:1px solid var(--line);border-radius:8px;color:#fff;padding:9px;font-size:13px}
+input:focus{outline:none;border-color:var(--gold)}
+.flab{display:block;font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);margin:6px 0 3px 2px;font-weight:800}
+#st{font-size:10px;color:var(--dim);text-align:center;min-height:14px;margin-bottom:6px}
+/* step 1 cards */
+.pick{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;color:var(--ink);cursor:pointer}
+.pick:active{border-color:var(--gold)}
+.pick .r1{display:flex;justify-content:space-between;align-items:baseline}
+.pick .tk{font-family:Georgia,serif;font-size:18px;font-weight:700}
+.pick .sd{font-size:9px;font-weight:800;letter-spacing:.1em;border-radius:5px;padding:2px 8px}
+.pick .sd.C{background:rgba(47,182,115,.15);color:var(--green);border:1px solid var(--green)}
+.pick .sd.P{background:rgba(224,91,68,.15);color:var(--red);border:1px solid var(--red)}
+.pick .r2{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:4px}
+.pick .sc{font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--gold-soft)}
+.pick .why{font-size:10px;color:var(--dim);margin-top:5px;line-height:1.45}
+/* gauntlet checklist */
+.gate{display:grid;grid-template-columns:26px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid #1C222C;align-items:start}
+.gate:last-child{border:none}
+.gate .gl{font-size:15px;line-height:1.1}
+.gate .gt{font-size:11.5px;line-height:1.5}
+.gate .gt b{color:var(--gold-soft)}
+.gate .gs{font-size:10px;color:var(--dim);margin-top:2px}
+.pass{color:var(--green)}.fail{color:var(--red)}.warn2{color:var(--amber)}
+.leg{display:grid;grid-template-columns:82px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #1C222C;align-items:baseline}
+.leg:last-child{border:none}
+.leg .ln{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--dim)}
+.leg .lv{font-family:Georgia,serif;font-size:13.5px;font-weight:700}
+.leg .ld{font-size:9.5px;color:var(--dim)}
+/* officer */
+#ofc{display:none;border-radius:14px;padding:12px;margin-bottom:10px;border:2px solid var(--line);background:var(--card)}
+#ofc.hold{border-color:var(--green)}#ofc.tighten{border-color:var(--amber)}#ofc.exit{border-color:var(--red);animation:op .9s ease-in-out infinite alternate}
+@keyframes op{from{box-shadow:0 0 0 rgba(224,91,68,0)}to{box-shadow:0 0 16px rgba(224,91,68,.45)}}
+#ofc .ov{font-family:Georgia,serif;font-size:19px;font-weight:700}
+#ofc.hold .ov{color:var(--green)}#ofc.tighten .ov{color:var(--amber)}#ofc.exit .ov{color:var(--red)}
+#ofc .oacc{float:right;font-size:9px;font-weight:800;letter-spacing:.1em;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--dim)}
+#ofc .ow{font-size:11.5px;line-height:1.55;margin-top:5px}
+#plRow{display:flex;gap:8px;margin-bottom:10px}
+#plRow .pc{flex:1;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+#plRow .l{font-size:8.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+#plRow .v{font-family:Georgia,serif;font-size:17px;font-weight:700;margin-top:3px}
+.knav{position:fixed;bottom:0;left:0;right:0;background:#07090D;border-top:1px solid var(--line);display:flex;z-index:90;padding-bottom:env(safe-area-inset-bottom)}
+.knav a{flex:1;text-align:center;padding:10px 0;color:var(--dim);text-decoration:none;font-size:8.5px;font-weight:700;border-right:1px solid var(--line)}
+.knav a:last-child{border-right:none}.knav a.on{color:var(--gold-soft);border-bottom:2px solid var(--gold)}
+</style></head><body>
+
+<h1>The Gauntlet</h1>
+<div class="sub">Choose · Prove · Watch — the whole trade on one page</div>
+<div id="steps">
+  <div class="stp on" id="sp1">1 · CHOOSE</div>
+  <div class="stp" id="sp2">2 · THE GAUNTLET</div>
+  <div class="stp" id="sp3">3 · THE WATCH</div>
+</div>
+<div id="st">—</div>
+
+<!-- STEP 1 -->
+<div id="step1">
+  <div class="card"><div class="sec"><span>The program's top choices — tap one</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="loadBoard(true)">↻</span></div>
+  <div id="picks">Loading the board…</div></div>
+</div>
+
+<!-- STEP 2 -->
+<div id="step2" style="display:none">
+  <div class="card"><div class="sec"><span id="g2title">THE GAUNTLET</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(1)">← back</span></div>
+    <div id="gates"></div>
+  </div>
+  <div class="card"><div class="sec"><span>The Ticket — OTOCO, ready to type</span></div>
+    <span class="flab">RISK $ PER TRADE</span><input id="riskIn" type="number" value="500" style="width:120px" onchange="buildGauntlet(false)">
+    <div id="legs" style="margin-top:6px"></div>
+  </div>
+  <button id="armBtn" onclick="arm()">⚔ I'M IN — ARM THE WATCH</button>
+  <div style="height:6px"></div>
+  <button class="ghost" onclick="window.print()">🖨 PRINT THE GAUNTLET</button>
+</div>
+
+<!-- STEP 3 -->
+<div id="step3" style="display:none">
+  <div id="ofc"><span class="oacc" id="oAcc">—</span><div class="ov" id="oV">—</div><div class="ow" id="oW">—</div></div>
+  <div id="plRow">
+    <div class="pc"><div class="l">Stock now</div><div class="v" id="wPx">—</div></div>
+    <div class="pc"><div class="l">Est. option P/L</div><div class="v" id="wPL">—</div></div>
+  </div>
+  <div class="card"><div class="sec"><span id="w1">Your position</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(2)">← plan</span></div>
+    <span class="flab">YOUR OPTION FILL $ (E)</span><input id="wE" type="number" step="0.01" style="width:130px" onchange="saveWatch()">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><span class="flab">STOCK STOP</span><input id="wStop" type="number" step="0.01" style="width:100%" onchange="saveWatch()"></div>
+      <div style="flex:1"><span class="flab">STOCK TARGET (T1)</span><input id="wT1" type="number" step="0.01" style="width:100%" onchange="saveWatch()"></div>
+    </div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;margin-top:9px;cursor:pointer"><input type="checkbox" id="wVoice" checked style="accent-color:#BF9000"> 🔊 speak the Officer's verdicts</label>
+  </div>
+  <button class="ghost" onclick="closeWatch()">✔ TRADE CLOSED — STAND DOWN</button>
+</div>
+
+<div class="knav">
+<a href="desk.html">DESK</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="ledger.html">LEDGER</a><a href="paperdesk.html">PAPER</a><a href="hub.html">MORE</a>
+</div>
+
+<script>
+const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const $=id=>document.getElementById(id);
+const n2=x=>x==null?'—':(+x).toFixed(2);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
+function say(t){try{if(!$('wVoice')||!$('wVoice').checked)return;if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.68;speechSynthesis.speak(u);}catch(e){}}
+function board(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+
+/* ---------- indicators ---------- */
+function emaAll(c,p){const k=2/(p+1);let e=null;return c.map(x=>{if(x==null)return e;e=e==null?x:x*k+e*(1-k);return e;});}
+function smaAll(c,p){return c.map((x,i)=>{if(i<p-1)return null;let s=0;for(let j=i-p+1;j<=i;j++)s+=c[j];return s/p;});}
+function vwapAll(T,H,L,C,V){const out=[];let d0=null,pv=0,vv=0;for(let i=0;i<C.length;i++){const dd=new Date(T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});if(dd!==d0){d0=dd;pv=0;vv=0;}const tp=(H[i]+L[i]+C[i])/3;pv+=tp*(V[i]||0);vv+=(V[i]||0);out.push(vv?pv/vv:C[i]);}return out;}
+function macdHist(c){const f=emaAll(c,12),s=emaAll(c,26);const m=c.map((_,i)=>f[i]!=null&&s[i]!=null?f[i]-s[i]:null);const sig=emaAll(m.map(x=>x==null?0:x),9);return m.map((x,i)=>x==null?null:x-sig[i]);}
+function rsiAll(c,p){let g=0,l=0;const out=[];for(let i=0;i<c.length;i++){if(i===0){out.push(null);continue;}const ch=c[i]-c[i-1];const up=ch>0?ch:0,dn=ch<0?-ch:0;if(i<=p){g+=up;l+=dn;out.push(i===p?100-100/(1+(g/p)/((l/p)||1e-9)):null);}else{g=(g*(p-1)+up)/p;l=(l*(p-1)+dn)/p;out.push(100-100/(1+g/(l||1e-9)));}}return out;}
+
+/* ---------- data ---------- */
+async function pull(tk){
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=5d');
+  const j=await r.json();const res=j.chart&&j.chart.result&&j.chart.result[0];
+  if(!res)throw new Error('no data '+tk);
+  const q=res.indicators.quote[0],ts=res.timestamp||[];
+  const T=[],O=[],H=[],L=[],C=[],V=[];
+  for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;T.push(ts[i]);O.push(q.open[i]);H.push(q.high[i]);L.push(q.low[i]);C.push(q.close[i]);V.push(q.volume[i]||0);}
+  return {T,O,H,L,C,V,pc:res.meta.chartPreviousClose||null};
+}
+function analyze(b){
+  const n=b.C.length-1,px=b.C[n];
+  const e9=emaAll(b.C,9),s20=smaAll(b.C,20),vw=vwapAll(b.T,b.H,b.L,b.C,b.V),rsi=rsiAll(b.C,14),mh=macdHist(b.C);
+  /* sessions */
+  const days=[];let cur=[],d0=null;
+  for(let i=0;i<b.T.length;i++){const d=new Date(b.T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});if(d0!==null&&d!==d0){days.push(cur);cur=[];}d0=d;cur.push(i);}
+  days.push(cur);
+  const today=days[days.length-1],prior=days.length>1?days[days.length-2]:null;
+  const pdh=prior?Math.max(...prior.map(i=>b.H[i])):null,pdl=prior?Math.min(...prior.map(i=>b.L[i])):null,pdc=prior?b.C[prior[prior.length-1]]:null;
+  const orH=today?b.H[today[0]]:null,orL=today?b.L[today[0]]:null;
+  const nowS=Date.now()/1000;const ci=(nowS-b.T[n]<90&&n>0)?n-1:n;
+  let av=0,ac=0;for(let k=Math.max(0,ci-5);k<ci;k++){av+=b.V[k];ac++;}
+  const avgVol=ac?av/ac:b.V[ci];
+  const prevHi=ci>0?Math.max(...b.C.slice(0,ci).map((_,i)=>b.H[i])):orH;
+  const prevLo=ci>0?Math.min(...b.L.slice(0,ci)):orL;
+  /* ATR14 */
+  let atr=0;for(let i=Math.max(1,n-13);i<=n;i++)atr+=Math.max(b.H[i]-b.L[i],Math.abs(b.H[i]-b.C[i-1]),Math.abs(b.L[i]-b.C[i-1]));atr/=Math.min(14,n);
+  const rv=avgVol?b.V[ci]/avgVol:1;
+  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],vwc:vw[ci],rsi:rsi[n],mh,ci,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,bars:b};
+}
+function score(A,L){
+  const S=[];const add=(ok,pts,lbl)=>S.push({ok,pts,lbl});
+  add(L?A.e9>A.s20:A.e9<A.s20,18,'9/20 aligned');
+  add(L?A.px>A.vw:A.px<A.vw,18,'right side of VWAP');
+  add(L?(A.rsi>=45&&A.rsi<=72):(A.rsi>=28&&A.rsi<=55),12,'RSI healthy');
+  add(A.rv>=1.05,14,'volume alive');
+  add(L?A.px>A.pdc:A.px<A.pdc,12,'winning vs yesterday');
+  add(L?(A.px>=A.orH*0.998):(A.px<=A.orL*1.002),14,'pressing the range edge');
+  add(A.atr/A.px>=0.0018,12,'it can travel');
+  const sc=S.reduce((a,x)=>a+(x.ok?x.pts:0),0);
+  return {score:sc,det:S};
+}
+function compose(A,L){
+  const trig=L?Math.max(A.prevHi||0,A.orH||0):Math.min(A.prevLo||1e9,A.orL||1e9);
+  const stop=L?Math.min(A.e9,A.vw)-0.15*A.atr:Math.max(A.e9,A.vw)+0.15*A.atr;
+  const t1=L?trig+2.2*A.atr:trig-2.2*A.atr;
+  const fired=L?(A.cClose>trig&&A.cVol>=1.2*A.avgVol):(A.cClose<trig&&A.cVol>=1.2*A.avgVol);
+  return {trig,stop,t1,fired};
+}
+
+/* ---------- state ---------- */
+let ALL=[],PICK=null,PLAN=null,CONTRACT=null,TIMER=null;
+
+/* ---------- step 1 ---------- */
+async function loadBoard(force){
+  $('st').textContent='Scoring the board…';$('picks').innerHTML='';
+  ALL=[];
+  for(const tk of board()){
+    try{
+      let c=null;try{c=JSON.parse(localStorage.getItem('kGntS_'+tk));}catch(e){}
+      let A;
+      if(!force&&c&&Date.now()-c.ts<4*60000){A=null;} /* always fresh-pull for honesty of bars */
+      const b=await pull(tk);A=analyze(b);
+      const sC=score(A,true),sP=score(A,false);
+      const L=sC.score>=sP.score;
+      ALL.push({tk,A,L,sc:L?sC:sP});
+      await sleep(300);
+    }catch(e){}
+  }
+  ALL.sort((a,b)=>b.sc.score-a.sc.score);
+  if(!ALL.length){$('picks').innerHTML='<div style="color:var(--dim)">Board unreadable — tap ↻.</div>';$('st').textContent='';return;}
+  $('picks').innerHTML=ALL.map((e,i)=>{
+    const tops=e.sc.det.filter(d=>d.ok).slice(0,3).map(d=>d.lbl).join(' · ');
+    const miss=e.sc.det.filter(d=>!d.ok).slice(0,2).map(d=>d.lbl).join(' · ');
+    return '<button class="pick" onclick="choose('+i+')"><div class="r1"><span class="tk">'+(i===0?'★ ':'')+e.tk+'</span><span class="sd '+(e.L?'C':'P')+'">'+(e.L?'CALLS':'PUTS')+'</span></div>'+
+    '<div class="r2"><span>$'+n2(e.A.px)+(e.A.chg!=null?' ('+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%)':'')+'</span><span class="sc">'+e.sc.score+'/100</span></div>'+
+    '<div class="why">✓ '+tops+(miss?'<br>✗ '+miss:'')+'</div></button>';
+  }).join('');
+  $('st').textContent='Scored '+ALL.length+' names · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+}
+function go(n){
+  ['step1','step2','step3'].forEach((s,i)=>$(s).style.display=(i===n-1?'block':'none'));
+  [1,2,3].forEach(i=>{const el=$('sp'+i);el.className='stp'+(i===n?' on':(i<n?' done':''));});
+}
+function choose(i){PICK=ALL[i];buildGauntlet(true);go(2);}
+
+/* ---------- step 2: the gauntlet ---------- */
+async function buildGauntlet(fresh){
+  if(!PICK)return;
+  const A=PICK.A,L=PICK.L;PLAN=compose(A,L);
+  $('g2title').textContent='THE GAUNTLET — '+PICK.tk+' '+(L?'CALLS':'PUTS')+' · '+PICK.sc.score+'/100';
+  const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();const wd=ctn.getDay()>=1&&ctn.getDay()<=5;
+  const open=wd&&mm>=8*60+30&&mm<15*60;
+  const window_=wd&&((mm>=8*60+35&&mm<11*60)||(mm>=12*60+30&&mm<14*60));
+  const gates=[];
+  const g=(state,txt,sub)=>gates.push({state,txt,sub});
+  g(PICK.sc.score>=70?'pass':(PICK.sc.score>=60?'warn2':'fail'),'<b>Score '+PICK.sc.score+'/100</b> — pass line is 70',PICK.sc.det.map(d=>(d.ok?'✓ ':'✗ ')+d.lbl).join(' · '));
+  g('pass','<b>Trigger $'+n2(PLAN.trig)+'</b> — 5-min CLOSE '+(L?'above':'below')+', volume ≥1.2× prior bars','Currently '+(PLAN.fired?'FIRED on the last closed candle':'not fired — do nothing until it prints'));
+  g('pass','<b>Stop $'+n2(PLAN.stop)+'</b> — structural, '+(L?'under':'over')+' the 9 EMA/VWAP shelf','T1 $'+n2(PLAN.t1)+' (2.2 ATR) · half off there, stop to breakeven');
+  g(open?(window_?'pass':'warn2'):'warn2', open?(window_?'<b>Clock: entry window open</b>':'<b>Clock: outside entry windows</b> — no new risk 11:00–12:30, last entry 2:00'):'<b>Market closed</b> — this is a rehearsal; levels re-compose at the open','Flat by 2:45, always');
+  /* contract */
+  $('st').textContent='Fetching the contract…';
+  try{
+    if(fresh||!CONTRACT||CONTRACT.tk!==PICK.tk||CONTRACT.L!==L){
+      const r=await fetch(RELAY+'/?chain='+encodeURIComponent(PICK.tk));
+      const j=await r.json();const opts=(j.data&&j.data.options)||[];
+      const now=new Date();const want=L?'C':'P';
+      let best=null;
+      for(const o of opts){
+        const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
+        const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+        const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
+        const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;
+        const mid=(bid+ask)/2;const spread=ask-bid;const oi=+o.open_interest||+o.oi||0;
+        /* crude delta estimate by moneyness distance in ATR units */
+        const dist=(L?A.px-K:K-A.px);const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));
+        const dscore=Math.abs(d-0.70);
+        const cand={tk:PICK.tk,L,K,exp,dte,bid,ask,mid,spread,oi,d};
+        if(dist<=0)continue; /* ITM only */
+        if(!best||dscore<Math.abs(best.d-0.70))best=cand;
+      }
+      CONTRACT=best;
+    }
+  }catch(e){CONTRACT=null;}
+  if(CONTRACT){
+    const c=CONTRACT;
+    const spOK=c.spread<=Math.max(0.30,c.mid*0.06);const oiOK=c.oi>=100;
+    g(spOK&&oiOK?'pass':(spOK||oiOK?'warn2':'fail'),
+      '<b>Contract: '+c.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')+'</b> · ~Δ'+c.d.toFixed(2)+' · '+c.dte+' DTE',
+      'mid $'+n2(c.mid)+' · spread $'+n2(c.spread)+(spOK?' ✓':' ✗ wide')+' · OI '+c.oi+(oiOK?' ✓':' ✗ thin')+' · deep ITM per the law');
+  }else{
+    g('warn2','<b>Contract: chain unavailable right now</b>','Gauntlet can arm; pick the exact contract in the Picker or at the broker — 0.65–0.75Δ, 5–10 DTE');
+  }
+  $('gates').innerHTML=gates.map(x=>'<div class="gate"><div class="gl '+x.state+'">'+(x.state==='pass'?'✔':x.state==='fail'?'✘':'◆')+'</div><div><div class="gt">'+x.txt+'</div><div class="gs">'+x.sub+'</div></div></div>').join('');
+  /* ticket */
+  const risk=parseFloat($('riskIn').value)||500;localStorage.setItem('kRisk',risk);
+  const d=CONTRACT?CONTRACT.d:0.70;const E=CONTRACT?CONTRACT.mid:null;
+  const stopDist=Math.abs(PLAN.trig-PLAN.stop),t1Dist=Math.abs(PLAN.t1-PLAN.trig);
+  const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
+  const tp=E!=null?(E+t1Dist*d-0.05):null, st2=E!=null?(E-stopDist*d):null;
+  $('legs').innerHTML=[
+    ['PRIMARY',(E!=null?'$'+n2(E):'mid'),'Buy to Open · '+nC+' · Limit at mid · Day'],
+    ['TAKE PROFIT',(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ'),'Sell to Close · '+half+' (half) · Limit · Day'],
+    ['STOP',(st2!=null?'$'+n2(st2)+' / '+n2(st2-0.20):'E − '+n2(stopDist)+'×Δ'),'Sell to Close · '+nC+' (ALL) · Stop Limit · Day'],
+    ['AFTER T1','breakeven','Re-place stop for '+(nC-half)+' at E · or trail 1.5×ATR×Δ ≈ $'+n2(1.5*A.atr*d)]
+  ].map(l=>'<div class="leg"><div class="ln">'+l[0]+'</div><div><div class="lv">'+l[1]+'</div><div class="ld">'+l[2]+'</div></div></div>').join('');
+  $('st').textContent='Gauntlet built · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+}
+
+/* ---------- step 3: the watch ---------- */
+function arm(){
+  if(!PICK||!PLAN)return;
+  const W={tk:PICK.tk,L:PICK.L,anchor:PICK.A.px,stop:+PLAN.stop.toFixed(2),t1:+PLAN.t1.toFixed(2),
+    E:CONTRACT?+CONTRACT.mid.toFixed(2):null,d:CONTRACT?CONTRACT.d:0.70,n:1,ts:Date.now()};
+  localStorage.setItem('kGauntlet',JSON.stringify(W));
+  $('wE').value=W.E||'';$('wStop').value=W.stop;$('wT1').value=W.t1;
+  $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
+  go(3);watchTick();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchTick,45000);
+  say('The watch is armed. '+W.tk+'. I will speak when a permit fires.');
+}
+function saveWatch(){
+  try{const W=JSON.parse(localStorage.getItem('kGauntlet'));if(!W)return;
+    W.E=parseFloat($('wE').value)||W.E;W.stop=parseFloat($('wStop').value)||W.stop;W.t1=parseFloat($('wT1').value)||W.t1;
+    localStorage.setItem('kGauntlet',JSON.stringify(W));watchTick();}catch(e){}
+}
+let OFLAST=null;
+async function watchTick(){
+  let W=null;try{W=JSON.parse(localStorage.getItem('kGauntlet'));}catch(e){}
+  if(!W)return;
+  let A;try{const b=await pull(W.tk);A=analyze(b);}catch(e){return;}
+  const L=W.L;
+  $('wPx').textContent='$'+n2(A.px);
+  if(W.E){const pl=(A.px-W.anchor)*(L?1:-1)*W.d*100;$('wPL').textContent=(pl>=0?'+':'')+'$'+Math.abs(pl).toFixed(0)+'/ct';$('wPL').style.color=pl>=0?'var(--green)':'var(--red)';}
+  /* acceleration */
+  const mh=A.mh,ci=A.ci;
+  const d0=(L?mh[ci]:-mh[ci])||0,d1=(L?mh[ci-1]:-mh[ci-1])||0,d2=(L?mh[ci-2]:-mh[ci-2])||0;
+  let acc='PAUSING';
+  if(d0>0&&(d0>d1&&d1>=d2||d0>d1*1.15))acc='BUILDING';
+  else if(d0<0&&d0<d1&&d1<=d2)acc='FADING';
+  const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();
+  const brk=(L?A.cClose<A.e9c:A.cClose>A.e9c)&&A.cVol>=1.1*A.avgVol;
+  let cls,v,w;
+  if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — PERMIT #5';w='<b>2:45 flat law.</b> Close by hand; cancel resting orders as you go.';}
+  else if(W.stop&&(L?A.px<=W.stop:A.px>=W.stop)){cls='exit';v='EXIT — PERMIT #1';w='<b>Stop level traded</b> ($'+n2(W.stop)+'). If the resting stop hasn\'t filled you, exit at market now.';}
+  else if(brk){cls='exit';v='EXIT — PERMIT #3';w='<b>Structure broke:</b> 5-min CLOSE '+(L?'below':'above')+' the 9 EMA ($'+n2(A.e9c)+') on '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Leave into the next bounce, not the flush.';}
+  else if(W.t1&&(L?A.cClose>=W.t1:A.cClose<=W.t1)){cls='tighten';v='BANK HALF — PERMIT #2';w='<b>Target reached on a closed candle.</b> Half off, stop to breakeven'+(W.E?' ($'+n2(W.E)+' on the option)':'')+'. The runner rides free.';}
+  else if(acc==='FADING'){cls='tighten';v='TIGHTEN';w='<b>Thrust turning against you.</b> Raise the stop toward the shelf — but no selling: only a closed candle through the 9 EMA (permit #3) is an order.';}
+  else{cls='hold';v='HOLD';w=acc==='PAUSING'?'<b>Pausing, structure intact.</b> The momentum rows may run red — a pause has no thrust. <b>This is a flag, not a top.</b> Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.':'<b>Building.</b> Thrust is growing with you — do nothing; winners accelerate.';}
+  const box=$('ofc');box.style.display='block';box.className=cls;
+  $('oV').textContent=v;$('oW').innerHTML=w;
+  const oa=$('oAcc');oa.textContent=acc;oa.style.color=acc==='BUILDING'?'var(--green)':acc==='PAUSING'?'var(--gold-soft)':'var(--red)';
+  if(OFLAST!==v){say('Exit officer. '+v.replace('—',',').replace('#','number ')+'.');OFLAST=v;}
+}
+function closeWatch(){
+  if(TIMER)clearInterval(TIMER);TIMER=null;
+  localStorage.removeItem('kGauntlet');OFLAST=null;
+  say('Watch closed. Log it in the ledger while it\'s fresh.');
+  alert('Stand-down complete. Log the trade in the LEDGER — entry grade, exit permit used, and what a lawful exit paid.');
+  go(1);loadBoard(false);
+}
+
+/* resume an armed watch on load */
+(function(){
+  let W=null;try{W=JSON.parse(localStorage.getItem('kGauntlet'));}catch(e){}
+  const r=localStorage.getItem('kRisk');if(r)$('riskIn').value=r;
+  if(W&&W.tk){
+    $('wE').value=W.E||'';$('wStop').value=W.stop||'';$('wT1').value=W.t1||'';
+    $('w1').textContent='Your position — '+W.tk+' '+(W.L?'CALLS':'PUTS');
+    go(3);watchTick();TIMER=setInterval(watchTick,45000);
+  }else{loadBoard(false);}
+})();
+</script>
+</body></html>
