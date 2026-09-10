@@ -119,6 +119,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 </div>
 <div id="gBtns">
   <button onclick="speakG()">🔊 SPEAK IT</button>
+  <label style="display:flex;gap:7px;align-items:center;font-size:10px;color:var(--ink);cursor:pointer;margin-top:6px"><input type="checkbox" id="gAutoV" onchange="localStorage.setItem('kGaugeVoice',this.checked?'1':'0')" style="accent-color:#BF9000"> speak automatically after every reading</label>
   <button onclick="saveReading()">💾 SAVE READING</button>
   <button onclick="printG()">🖨 PRINT / PDF</button>
   <button class="gold" onclick="document.getElementById('learnWrap').classList.add('open')">🎓 LEARN</button>
@@ -323,10 +324,13 @@ function updateTrade(){
   }
   document.getElementById('tDev').innerHTML=dev;
   localStorage.setItem('kGaugeLast',JSON.stringify({tk:G.tk,ts:Date.now(),tf:G.tf,fuel:G.fuel,tw:G.tw}));
+  if(localStorage.getItem('kGaugeVoice')==='1'){setTimeout(speakG,400);}
 }
 /* ---------- voice ---------- */
 function speakG(){
-  if(!G||!('speechSynthesis' in window))return;
+  if(!('speechSynthesis' in window)){alert('This browser has no voice.');return;}
+  if(!G){alert('READ THE GAUGES first — then I have something to say.');return;}
+  try{speechSynthesis.cancel();}catch(e){}
   const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
   let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
   const inTk=pos&&(pos.tk||'').toUpperCase()===G.tk;
@@ -592,6 +596,7 @@ drawGLog();
     }
     next();
   }
+  (function(){if(localStorage.getItem('kGaugeVoice')==='1'){var c=document.getElementById('gAutoV');if(c)c.checked=true;}})();
   load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
 })();
 </script>
