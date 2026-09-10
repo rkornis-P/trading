@@ -102,6 +102,18 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 .ktc .p{font-size:10px;color:#8A93A3;font-variant-numeric:tabular-nums}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
 .ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
+
+/* ===== quick-switch + written read ===== */
+#gChips{display:flex;gap:6px;margin:6px 0 4px;flex-wrap:wrap}
+#gChips .gchip{flex:1;min-width:64px;text-align:center;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:9px 4px;font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;letter-spacing:.02em}
+#gChips .gchip.on{border-color:var(--gold);color:var(--gold-soft);background:#1B222D}
+#gChips .gchip .cs{display:block;font-size:9px;color:var(--dim);font-family:-apple-system,sans-serif;letter-spacing:.06em;margin-top:2px}
+#gAnalysis{background:var(--card);border:1.5px solid var(--gold);border-radius:12px;padding:12px;margin:8px 0}
+#gAnalysis .ah{font-family:Georgia,serif;font-size:14px;color:var(--gold-soft);letter-spacing:.06em;margin-bottom:5px}
+#gAnalysis .averdict{font-family:Georgia,serif;font-size:15px;font-weight:700;margin-bottom:5px}
+#gAnalysis .aline{font-size:11.5px;line-height:1.6;color:var(--ink);margin:3px 0}
+#gAnalysis .aline b{color:var(--gold-soft)}
+#gAnalysis .adim{font-size:10px;color:var(--dim);margin-top:6px;border-top:1px solid var(--line);padding-top:6px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -110,7 +122,14 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <input id="tk" placeholder="SPCX" autocapitalize="characters">
   <button class="big" onclick="run()">READ THE GAUGES</button>
 </div>
-<div id="st">Auto-refreshes every 60s while open. Position is read from what you saved in COACH.</div>
+<div id="gChips"></div>
+<div id="st">Auto-refreshes every 60s while open. Tap a board name above to switch instantly.</div>
+<div id="gAnalysis" style="display:none">
+  <div class="ah">THE READ — what the gauges are saying</div>
+  <div class="averdict" id="aV">—</div>
+  <div id="aBody"></div>
+  <div class="adim" id="aDim"></div>
+</div>
 
 <div id="trade">
   <div class="th"><span class="t">Your Trade — live conditions</span><span id="tPL" class="n">—</span></div>
@@ -324,6 +343,8 @@ function updateTrade(){
   }
   document.getElementById('tDev').innerHTML=dev;
   localStorage.setItem('kGaugeLast',JSON.stringify({tk:G.tk,ts:Date.now(),tf:G.tf,fuel:G.fuel,tw:G.tw}));
+  try{writeAnalysis();}catch(e){}
+  try{drawChips(G.tk);}catch(e){}
   if(localStorage.getItem('kGaugeVoice')==='1'){setTimeout(speakG,400);}
 }
 /* ---------- voice ---------- */
@@ -408,6 +429,41 @@ function drawGauge(id,val,lo,hi,zones){
 }
 
 /* ---------- compute ---------- */
+function gBoard(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+function drawChips(active){
+  const el=document.getElementById('gChips');if(!el)return;
+  el.innerHTML=gBoard().map(function(tk){
+    let px='';try{const c=JSON.parse(localStorage.getItem('kTape_'+tk));if(c)px='$'+(+c.px).toFixed(2)+(c.chg!=null?' '+(c.chg>=0?'+':'')+c.chg.toFixed(1)+'%':'');}catch(e){}
+    return '<div class="gchip'+(tk===active?' on':'')+'" onclick="switchTk(\''+tk+'\')">'+tk+'<span class="cs">'+(px||'tap')+'</span></div>';
+  }).join('');
+}
+function switchTk(tk){document.getElementById('tk').value=tk;try{localStorage.setItem('kActive',tk);}catch(e){}drawChips(tk);run();}
+function writeAnalysis(){
+  if(!G)return;
+  const box=document.getElementById('gAnalysis');box.style.display='block';
+  const tf=G.tf,fuel=G.fuel,tw=G.tw;
+  const bull=tf>0;const strong=Math.abs(tf)>=60,mod=Math.abs(tf)>=25;
+  let verdict,vcol;
+  if(fuel<35){verdict='STAND ASIDE — empty tank';vcol='var(--red)';}
+  else if(!mod){verdict='NO EDGE — coin-flip force';vcol='var(--dim)';}
+  else if(strong&&fuel>=55){verdict=(bull?'CALLS':'PUTS')+' FAVORED — force + fuel aligned';vcol=bull?'var(--green)':'var(--red)';}
+  else{verdict=(bull?'CALLS':'PUTS')+' leaning — half-size conditions';vcol='var(--amber)';}
+  document.getElementById('aV').textContent=verdict;document.getElementById('aV').style.color=vcol;
+  const s1=document.getElementById('s1').textContent,s2=document.getElementById('s2').textContent,s3=document.getElementById('s3').textContent;
+  let body='<div class="aline"><b>Trend Force '+(tf>0?'+':'')+tf+':</b> '+s1+'. This is the net of VWAP stretch, 9EMA slope, MACD, RSI and multi-timeframe agreement, damped by ADX — so it reads '+(strong?'a real directional push':mod?'a mild lean':'no conviction either way')+'.</div>';
+  body+='<div class="aline"><b>Fuel '+fuel+':</b> '+s2+'. Volume and range expansion decide whether a move can travel — '+(fuel>=55?'there\'s gas in the tank':fuel>=35?'partial tank, size down':'the tank is empty, even a right call won\'t move')+'.</div>';
+  if(tw!=null)body+='<div class="aline"><b>Theta War '+(tw>0?'+':'')+tw+':</b> '+s3+'.</div>';
+  /* the synthesis */
+  let syn;
+  if(fuel<35)syn='Force without fuel is a trap — the direction may be right but the move won\'t pay before theta eats it. No trade.';
+  else if(strong&&fuel>=55)syn='This is the alignment the playbook waits for: a real '+(bull?'bull':'bear')+' push with fuel behind it. A lawful trigger in this direction is worth taking full size.';
+  else if(mod)syn='A lean, not a conviction. Trade it only on a clean trigger, half size, and let structure — not this needle — time the exit.';
+  else syn='No edge here. The needle near center means the tape hasn\'t decided; wait for it to pick a side.';
+  body+='<div class="aline" style="margin-top:5px"><b>The synthesis:</b> '+syn+'</div>';
+  document.getElementById('aBody').innerHTML=body;
+  const dv=document.getElementById('tDev').textContent;
+  document.getElementById('aDim').textContent=(dv&&dv.length>10?'Change since last reading: '+dv:'These gauges read the tape, not your position — pair with the Cockpit\'s Exit Officer once you\'re in.');
+}
 async function run(){
   const tk=document.getElementById('tk').value.trim().toUpperCase();
   const st=document.getElementById('st');
@@ -596,7 +652,7 @@ drawGLog();
     }
     next();
   }
-  (function(){if(localStorage.getItem('kGaugeVoice')==='1'){var c=document.getElementById('gAutoV');if(c)c.checked=true;}})();
+  (function(){if(localStorage.getItem('kGaugeVoice')==='1'){var c=document.getElementById('gAutoV');if(c)c.checked=true;}try{drawChips((document.getElementById('tk').value||localStorage.getItem('kActive')||'').toUpperCase());}catch(e){}})();
   load(); setInterval(function(){Object.keys(localStorage).forEach(function(k){}); load();},90000);
 })();
 </script>
