@@ -88,15 +88,28 @@ input:focus{outline:none;border-color:var(--gold)}
 .ktc .c{font-size:10px;font-weight:800;font-variant-numeric:tabular-nums}
 .ktc .c.up{color:#2FB673}.ktc .c.dn{color:#E05B44}.ktc .c.fl{color:#8A93A3}
 
+
+/* ===== side-by-side + nav buttons ===== */
+#sxs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.sxc{border:1.5px solid var(--line);border-radius:11px;padding:10px;cursor:pointer;background:var(--card2)}
+.sxc.on{border-color:var(--gold);background:#1B222D}
+.sxc .h{display:flex;justify-content:space-between;align-items:baseline}
+.sxc .s{font-size:10px;font-weight:800;letter-spacing:.1em}
+.sxc .n{font-family:Georgia,serif;font-size:19px;font-weight:700;color:var(--gold-soft)}
+.sxc .d{font-size:9px;color:var(--dim);line-height:1.5;margin-top:5px}
+.sxc.on .d{color:var(--ink)}
+.navrow{display:flex;gap:6px;margin-bottom:10px}
+.navrow button{flex:1;padding:10px 4px;font-size:10px}
+.stp{cursor:pointer}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
 <h1>The Gauntlet</h1>
 <div class="sub">Choose · Prove · Watch — up to three on the board, one bullet</div>
 <div id="steps">
-  <div class="stp on" id="sp1">1 · CHOOSE</div>
-  <div class="stp" id="sp2">2 · THE GAUNTLET</div>
-  <div class="stp" id="sp3">3 · THE WATCH</div>
+  <div class="stp on" id="sp1" onclick="go(1)">1 · CHOOSE</div>
+  <div class="stp" id="sp2" onclick="if(PICK)go(2)">2 · THE GAUNTLET</div>
+  <div class="stp" id="sp3" onclick="if(slots().length)go(3)">3 · THE WATCH</div>
 </div>
 <div id="st">—</div>
 
@@ -108,7 +121,9 @@ input:focus{outline:none;border-color:var(--gold)}
 
 <!-- STEP 2 -->
 <div id="step2" style="display:none">
-  <div class="card"><div class="sec"><span id="g2title">THE GAUNTLET</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(1)">← back</span></div>
+  <div class="navrow"><button class="ghost" onclick="go(1)">← BOARD</button><button class="ghost" onclick="buildGauntlet(true)">⟲ RECOMPOSE</button><button class="ghost" onclick="if(slots().length)go(3);else alert('Nothing on the watch yet.')">THE WATCH →</button></div>
+  <div class="card"><div class="sec"><span>Both sides, side by side — tap to switch</span></div><div id="sxs"></div></div>
+  <div class="card"><div class="sec"><span id="g2title">THE GAUNTLET</span></div>
     <div id="gates"></div>
   </div>
   <div class="card"><div class="sec"><span>The Ticket — OTOCO, ready to type</span></div>
@@ -122,7 +137,8 @@ input:focus{outline:none;border-color:var(--gold)}
 
 <!-- STEP 3 -->
 <div id="step3" style="display:none">
-  <div class="card" style="padding:9px 12px"><div class="sec" style="margin:0"><span>THE WATCH — up to three, one bullet</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="go(1)">+ add from the board</span></div></div>
+  <div class="navrow"><button class="ghost" onclick="go(1)">← BOARD</button><button class="ghost" onclick="watchAll()">⟲ RULE NOW</button><button class="ghost" onclick="if(PICK)go(2);else alert('Pick a name on the board first.')">GAUNTLET →</button></div>
+  <div class="card" style="padding:9px 12px"><div class="sec" style="margin:0"><span>THE WATCH — up to three, one bullet</span></div></div>
   <div id="slots"></div>
   <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;margin:2px 0 10px;cursor:pointer"><input type="checkbox" id="wVoice" checked style="accent-color:#BF9000"> 🔊 speak the rulings</label>
 </div>
@@ -212,7 +228,7 @@ async function loadBoard(force){
       const b=await pull(tk);A=analyze(b);
       const sC=score(A,true),sP=score(A,false);
       const L=sC.score>=sP.score;
-      ALL.push({tk,A,L,sc:L?sC:sP});
+      ALL.push({tk,A,L,sc:L?sC:sP,sC,sP});
       await sleep(300);
     }catch(e){}
   }
@@ -234,8 +250,24 @@ function go(n){
 function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catch(e){}buildGauntlet(true);go(2);}
 
 /* ---------- step 2: the gauntlet ---------- */
+function setSide(callSide){
+  if(!PICK)return;
+  PICK.L=callSide;PICK.sc=callSide?PICK.sC:PICK.sP;CONTRACT=null;
+  buildGauntlet(true);
+}
+function drawSxs(){
+  if(!PICK||!PICK.sC)return;
+  const col=(sc,isCall)=>{
+    const on=PICK.L===isCall;
+    const tops=sc.det.filter(d=>d.ok).map(d=>'✓ '+d.lbl).join('<br>');
+    const miss=sc.det.filter(d=>!d.ok).map(d=>'✗ '+d.lbl).join('<br>');
+    return '<div class="sxc'+(on?' on':'')+'" onclick="setSide('+isCall+')"><div class="h"><span class="s" style="color:'+(isCall?'var(--green)':'var(--red)')+'">'+(isCall?'CALLS':'PUTS')+(on?' ◀ chosen':'')+'</span><span class="n">'+sc.score+'</span></div><div class="d">'+tops+(miss?'<br>'+miss:'')+'</div></div>';
+  };
+  $('sxs').innerHTML=col(PICK.sC,true)+col(PICK.sP,false);
+}
 async function buildGauntlet(fresh){
   if(!PICK)return;
+  drawSxs();
   const A=PICK.A,L=PICK.L;PLAN=compose(A,L);
   $('g2title').textContent='THE GAUNTLET — '+PICK.tk+' '+(L?'CALLS':'PUTS')+' · '+PICK.sc.score+'/100';
   const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();const wd=ctn.getDay()>=1&&ctn.getDay()<=5;
