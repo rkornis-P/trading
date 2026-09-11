@@ -191,6 +191,22 @@ input:focus{outline:none;border-color:var(--gold)}
 .fo .fg .v{color:var(--ink);font-weight:700;font-family:Georgia,serif;font-size:13px}
 .fo .fg .v.chg{color:var(--gold-soft)}
 #fidNote{font-size:10px;color:var(--dim);line-height:1.55;margin-top:6px}
+
+/* ===== per-slot OTOCO order sheet ===== */
+.sheetBtn{margin-top:7px;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold);border-radius:8px;padding:8px;font-weight:800;font-size:10px;cursor:pointer;width:100%;letter-spacing:.04em}
+.sheet{display:none;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.sheet.on{display:block}
+.sheet .so{border-radius:9px;padding:8px 10px;margin-bottom:6px;border-left:4px solid var(--line);background:var(--card2)}
+.sheet .so.a{border-left-color:#1E6FD9}.sheet .so.b{border-left-color:#1F8F57}.sheet .so.c{border-left-color:#C0392B}.sheet .so.g{border-left-color:#B8860B}
+.sheet .so .st{font-family:Georgia,serif;font-size:12px;font-weight:700;margin-bottom:4px}
+.sheet .so.a .st{color:#5B9BFF}.sheet .so.b .st{color:#3BD986}.sheet .so.c .st{color:#FF7A6B}.sheet .so.g .st{color:#E6B84A}
+.sheet .fr{display:grid;grid-template-columns:78px 78px 1fr;gap:6px;padding:3px 0;border-bottom:1px solid #1C222C;font-size:10px;align-items:start}
+.sheet .fr:last-child{border:none}
+.sheet .fr .k{color:var(--dim);font-size:8px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
+.sheet .fr .v{font-family:Georgia,serif;font-size:12px;font-weight:700;color:var(--ink)}
+.sheet .fr .v.chg{color:var(--gold-soft)}
+.sheet .fr .x{color:var(--dim);line-height:1.4}
+.sheet .warn{font-size:9.5px;color:var(--amber);margin:4px 0 6px;line-height:1.45}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -639,6 +655,43 @@ function silence(keep){
   }
 }
 
+
+/* ===== per-slot OTOCO order sheet ===== */
+async function toggleSheet(i){
+  const el=$('sheet'+i);if(!el)return;
+  if(el.classList.contains('on')){el.classList.remove('on');return;}
+  el.classList.add('on');el.innerHTML='<div class="warn">Pulling the live chain…</div>';
+  const S=slots();const w=S[i];if(!w)return;
+  try{
+    const b=await pull(w.tk);const A=analyze(b);const L=w.L;
+    /* find the ~0.70 contract */
+    const r=await fetch(RELAY+'/?chain='+encodeURIComponent(w.tk));const j=await r.json();
+    const opts=(j.data&&j.data.options)||[];const now=new Date();const want=L?'C':'P';let c=null;
+    for(const o of opts){const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
+      const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
+      const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d};
+      if(!c||Math.abs(d-0.70)<Math.abs(c.d-0.70))c=cand;}
+    const trig=w.trig||A.px, stop=w.stop, t1=w.t1;
+    const d=c?c.d:0.70;const E=w.E||(c?c.mid:null);
+    const stopDist=Math.abs(trig-stop),t1Dist=Math.abs(t1-trig);
+    const risk=parseFloat(localStorage.getItem('kRisk'))||500;
+    const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
+    const tp=E!=null?(E+t1Dist*d-0.05):null,st=E!=null?(E-stopDist*d):null;
+    const fast=(A.atr/A.px>0.004);
+    const sym=c?(w.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(L?'CALL':'PUT')):(w.tk+' — pick the ~0.70Δ '+(L?'call below':'put above')+' price');
+    const fr=(k,v,x,chg)=>'<div class="fr"><div class="k">'+k+'</div><div class="v'+(chg?' chg':'')+'">'+v+'</div><div class="x">'+x+'</div></div>';
+    let o='';
+    o+='<div class="warn">'+(L?'CALLS':'PUTS')+' · '+(c?'chain: bid $'+n2(c.bid)+' / ask $'+n2(c.ask)+' · Δ'+d.toFixed(2)+' · '+c.dte+' DTE':'chain unavailable — read bid/ask at the broker')+' · est. value A ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+' (if it shows a few dollars, wrong strike)</div>';
+    o+='<div class="so"><div class="st" style="color:var(--dim)">TICKET HEADER</div>'+fr('Order type','Conditional','Unlocks the multi-order ticket.')+fr('Cond. type','OTOCO','A fills first; then B and C go live and whichever fills cancels the other.')+'</div>';
+    o+='<div class="so a"><div class="st">Order A — the buy (Blue 1)</div>'+fr('Symbol',sym,'Use the chain button — never type it.')+fr('Action','Buy','Opening a long '+(L?'call':'put')+'.')+fr('Quantity',nC,'From $'+risk+' risk ÷ ($'+n2(stopDist)+' × '+d.toFixed(2)+' × 100).')+fr('Order type','Limit','Change from Market.',true)+fr('Limit price',E!=null?'$'+n2(E):'the mid','The mid; shade a penny toward the ask if moving. This is your E.',true)+fr('Time in force','Day','Never GTC.')+'</div>';
+    o+='<div class="so b"><div class="st">Order B — take profit (Green 2)</div>'+fr('Action','Sell','CHANGE from Buy — or this leg buys more.',true)+fr('Quantity',half,'CHANGE from all — half off at T1.',true)+fr('Order type','Limit','')+fr('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ','E + ('+n2(t1Dist)+' stock distance to $'+n2(t1)+' × '+d.toFixed(2)+'), shaded 5¢.',true)+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
+    o+='<div class="so c"><div class="st">Order C — the stop (Red 3)</div>'+fr('Action','Sell','')+fr('Quantity',nC,'ALL — never leave naked contracts.')+fr('Order type',fast?'Stop Loss':'Stop Limit',fast?'Fast mover: market stop guarantees the fill.':'Calm name: stop-limit protects your price.',true)+fr('Stop price',st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ','E − ('+n2(stopDist)+' stock distance to $'+n2(stop)+' × '+d.toFixed(2)+').',true)+(fast?'':fr('Limit price',st!=null?'$'+n2(st-0.20):'stop − 0.20','20¢ cushion so you actually get out.',true))+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
+    o+='<div class="so g"><div class="st">After B fills (Gold 4) — by hand, immediately</div>'+fr('Where','Positions → Trade','Fidelity cancels C when B fills; the runner is unprotected until you do this.')+fr('Sell · qty',nC-half,'')+fr('Stop price',E!=null?'$'+n2(E):'E','Breakeven — the trade can no longer lose.',true)+fr('Or trail','$'+n2(1.5*A.atr*d),'1.5 × ATR × Δ. Exit on a 5-min close through the 9 EMA regardless.')+'</div>';
+    el.innerHTML=o;
+  }catch(e){el.innerHTML='<div class="warn">Could not build the sheet: '+(e.message||e)+'. Tap again.</div>';}
+}
+
 /* ---------- step 3: THE TRIPLE WATCH ---------- */
 function slots(){try{const s=JSON.parse(localStorage.getItem('kGauntletSlots'));return Array.isArray(s)?s:[];}catch(e){return [];}}
 function saveSlots(s){localStorage.setItem('kGauntletSlots',JSON.stringify(s));}
@@ -665,7 +718,8 @@ function renderSlots(){
     '<div><span class="flab">STOP</span><input value="'+(w.stop||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'stop\',this.value)"></div>'+
     '<div><span class="flab">T1</span><input value="'+(w.t1||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'t1\',this.value)"></div>'+
     '<div><span class="flab">E (fill)</span><input value="'+(w.E||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'E\',this.value)"></div>'+
-    '</div><div class="sm2" id="sm'+i+'">'+(bullet&&!w.E?'observation only — today\'s bullet is spent':'')+'</div></div>';
+    '</div><div class="sm2" id="sm'+i+'">'+(bullet&&!w.E?'observation only — today\'s bullet is spent':'')+'</div>'+
+    '<button class="sheetBtn" onclick="toggleSheet('+i+')">📋 OTOCO ORDER SHEET — Fidelity fields, explained</button><div class="sheet" id="sheet'+i+'"></div></div>';
   }).join(''):'<div style="color:var(--dim);font-size:11px">Nothing on the watch — add from the board.</div>';
 }
 async function watchAll(){
