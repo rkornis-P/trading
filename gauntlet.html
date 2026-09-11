@@ -498,7 +498,10 @@ async function buildGauntlet(fresh){
         const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;
         const mid=(bid+ask)/2;const spread=ask-bid;const oi=+o.open_interest||+o.oi||0;
         const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
-        const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));
+        if(dist>A.px*0.12)continue;                 /* never more than 12% in the money — beyond that the chain is dead */
+        if(oi<50)continue;                          /* no real open interest = not a vehicle */
+        /* delta from moneyness in % of price (stable across stock sizes) */
+        const pct=dist/A.px;const d=Math.max(0.50,Math.min(0.90,0.50+pct*4.0));
         cands.push({tk:PICK.tk,L,K,exp,dte,bid,ask,mid,spread,oi,d});
       }
       const pickNear=(tgt)=>{let b=null;for(const c of cands){if(!b||Math.abs(c.d-tgt)<Math.abs(b.d-tgt))b=c;}return b;};
@@ -512,7 +515,7 @@ async function buildGauntlet(fresh){
   const cc=chosenC();
   if(cc){
     const spOK=cc.spread<=Math.max(0.30,cc.mid*0.06);const oiOK=cc.oi>=100;
-    g(spOK&&oiOK?'pass':(spOK||oiOK?'warn2':'fail'),
+    g((spOK&&oiOK)?'pass':(!oiOK?'fail':'warn2'),
       '<b>Vehicle: '+cc.tk+' '+cc.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+cc.K+' '+(L?'CALL':'PUT')+'</b> · ~&#916;'+cc.d.toFixed(2)+' · '+cc.dte+' DTE ('+(VEHICLE==='60'?'cash-friendly':'conviction')+')',
       'mid $'+n2(cc.mid)+' · spread $'+n2(cc.spread)+(spOK?' ok':' wide')+' · OI '+cc.oi+(oiOK?' ok':' thin')+' · tap the other card to switch vehicle');
   }else{
@@ -595,7 +598,8 @@ async function claxonContract(tk,L,A){
     for(const o of opts){const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
       const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
       const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
-      const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d};
+      if(dist>A.px*0.12)continue;const oi=+o.open_interest||+o.oi||0;if(oi<50)continue;
+      const pct=dist/A.px;const d=Math.max(0.50,Math.min(0.90,0.50+pct*4.0));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d,oi};
       if(!best||Math.abs(d-0.70)<Math.abs(best.d-0.70))best=cand;}
     return best;
   }catch(e){return null;}
@@ -670,7 +674,8 @@ async function toggleSheet(i){
     for(const o of opts){const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
       const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
       const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
-      const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d};
+      if(dist>A.px*0.12)continue;const oi=+o.open_interest||+o.oi||0;if(oi<50)continue;
+      const pct=dist/A.px;const d=Math.max(0.50,Math.min(0.90,0.50+pct*4.0));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d,oi};
       if(!c||Math.abs(d-0.70)<Math.abs(c.d-0.70))c=cand;}
     const trig=w.trig||A.px, stop=w.stop, t1=w.t1;
     const d=c?c.d:0.70;const E=w.E||(c?c.mid:null);
