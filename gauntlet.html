@@ -208,20 +208,25 @@ input:focus{outline:none;border-color:var(--gold)}
 .sheet .fr .x{color:var(--dim);line-height:1.4}
 .sheet .warn{font-size:9.5px;color:var(--amber);margin:4px 0 6px;line-height:1.45}
 
-/* ===== print: the OTOCO order sheet ===== */
+/* ===== print: the OTOCO order sheet (Fidelity form mirror) ===== */
 #printSheet{display:none}
 @media print{
   body>*:not(#printSheet){display:none!important}
-  body{background:#fff;color:#111;padding:0;max-width:none;font-family:Georgia,serif}
-  #printSheet{display:block;padding:10px}
-  #printSheet h2{font-size:18px;letter-spacing:.06em;border-bottom:2.5px solid #BF9000;padding-bottom:6px;margin-bottom:10px}
-  #printSheet .ps{border-left:5px solid #ccc;padding:8px 12px;margin:8px 0;page-break-inside:avoid}
-  #printSheet .ps.a{border-color:#1E6FD9}#printSheet .ps.b{border-color:#1F8F57}#printSheet .ps.c{border-color:#C0392B}#printSheet .ps.g{border-color:#B8860B}
-  #printSheet .ps h3{font-size:13px;margin-bottom:5px}
-  #printSheet .ps .r{display:grid;grid-template-columns:120px 130px 1fr;gap:8px;font-size:11px;padding:3px 0;border-bottom:1px solid #eee}
-  #printSheet .ps .r b{font-family:Helvetica,Arial,sans-serif}
-  #printSheet .ps .r .y{background:#FFF3C4}
-  #printSheet .foot{font-size:9px;color:#555;border-top:1px solid #BF9000;padding-top:8px;margin-top:12px}
+  body{background:#fff;color:#111;padding:0;max-width:none;font-family:Helvetica,Arial,sans-serif}
+  #printSheet{display:block;padding:14px 18px}
+  #printSheet .ftitle{font-size:22px;font-weight:700;margin-bottom:2px}
+  #printSheet .fsub{font-size:9.5px;color:#555;margin-bottom:12px;border-bottom:2px solid #BF9000;padding-bottom:6px}
+  #printSheet .frow{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  #printSheet .fbox{border:1.5px solid #333;border-radius:8px;padding:6px 10px;min-width:118px;background:#fff}
+  #printSheet .fbox.y{background:#FFF3C4;border-color:#B8860B}
+  #printSheet .fbox .fl{font-size:7.5px;letter-spacing:.06em;color:#444;text-transform:uppercase}
+  #printSheet .fbox .fv{font-size:14px;font-weight:700;margin-top:2px}
+  #printSheet .forder{border-left:6px solid #999;padding:8px 12px;margin:12px 0;page-break-inside:avoid;background:#fafafa;border-radius:0 8px 8px 0}
+  #printSheet .forder.a{border-color:#1E6FD9}#printSheet .forder.b{border-color:#1F8F57}#printSheet .forder.c{border-color:#C0392B}#printSheet .forder.g{border-color:#B8860B}
+  #printSheet .fhead{font-size:14px;font-weight:700;margin-bottom:4px}
+  #printSheet .fhead span{font-size:9px;font-weight:400;color:#555;margin-left:8px}
+  #printSheet .fnote{font-size:9.5px;color:#444;margin-top:6px}
+  #printSheet .ffoot{font-size:9px;color:#333;border-top:1.5px solid #BF9000;padding-top:8px;margin-top:14px;line-height:1.5}
 }
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
@@ -421,26 +426,45 @@ function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catc
 /* ---------- step 2: the gauntlet ---------- */
 function atrInfo(on){document.getElementById('atrModal').classList.toggle('on',!!on);}
 
-/* ===== print the OTOCO order sheet ===== */
+/* ===== print the OTOCO order sheet — mirrors the Fidelity form ===== */
 function printOrder(){
   if(!PICK||!PLAN){alert('Run a name through the gauntlet first.');return;}
-  const A=PICK.A,L=PICK.L,c=chosenC();const d=c?c.d:0.70;const E=c?c.mid:null;
+  const A=PICK.A,L=PICK.L,c=chosenC();const d=c?c.d:0.70;
+  /* E: chain mid if we have it; otherwise the user's typed E on a slot; otherwise ask */
+  let E=c?c.mid:null;
+  if(E==null){const s=slots().find(x=>x.tk===PICK.tk);if(s&&s.E)E=s.E;}
+  if(E==null){const v=prompt('No chain price available. Enter the option price (E) you see on Fidelity:');E=parseFloat(v)||null;}
+  if(E==null){alert('Need an option price to build the sheet.');return;}
   const risk=parseFloat($('riskIn').value)||500;
   const stopDist=Math.abs(PLAN.trig-PLAN.stop),t1Dist=Math.abs(PLAN.t1-PLAN.trig);
   const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
-  const tp=E!=null?(E+t1Dist*d-0.05):null,st=E!=null?(E-stopDist*d):null;
+  const tp=E+t1Dist*d-0.05, st=E-stopDist*d, stL=st-0.20;
   const fast=(A.atr/A.px>0.004);
-  const sym=c?(PICK.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(L?'CALL':'PUT')):PICK.tk;
+  const sym=c?(PICK.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(L?'CALL':'PUT')):(PICK.tk+' ___ '+(L?'CALL':'PUT'));
   const when=ctNow().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  const r=(k,v,x,y)=>'<div class="r"><b>'+k+'</b><span class="'+(y?'y':'')+'">'+v+'</span><span>'+x+'</span></div>';
-  let s='<h2>KORNIS PROTOCOL — OTOCO ORDER SHEET · '+PICK.tk+' '+(L?'CALLS':'PUTS')+'</h2>';
-  s+='<div style="font-size:11px;margin-bottom:8px">'+when+' CT · stock $'+n2(A.px)+' · '+PLAN.kind+' trigger $'+n2(PLAN.trig)+' · stop $'+n2(PLAN.stop)+' · T1 $'+n2(PLAN.t1)+' · 5-min ATR $'+n2(A.atr)+' · score '+PICK.sc.score+'/100 · '+(c?'chain bid $'+n2(c.bid)+' / ask $'+n2(c.ask)+' · Δ'+d.toFixed(2)+' · OI '+c.oi:'chain unavailable')+'</div>';
-  s+='<div class="ps"><h3>TICKET HEADER</h3>'+r('Order type','Conditional','')+r('Conditional type','OTOCO','A fills first; then B and C go live, whichever fills cancels the other.')+'</div>';
-  s+='<div class="ps a"><h3>ORDER A — the buy (Blue 1)</h3>'+r('Symbol',sym,'Select from the chain button — never type it.')+r('Action','Buy','')+r('Quantity',nC,'$'+risk+' risk ÷ ($'+n2(stopDist)+' × '+d.toFixed(2)+' × 100)')+r('Order type','Limit','change from Market',true)+r('Limit price',E!=null?'$'+n2(E):'the mid','the mid — shade toward the ask if moving; this is E',true)+r('Time in force','Day','never GTC')+r('Check','est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—'),'if it shows a few dollars, wrong strike')+'</div>';
-  s+='<div class="ps b"><h3>ORDER B — take profit (Green 2)</h3>'+r('Action','Sell','change from Buy',true)+r('Quantity',half,'half',true)+r('Order type','Limit','')+r('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ','E + ('+n2(t1Dist)+' × '+d.toFixed(2)+'), shaded 5¢',true)+r('Time in force','Day','change from GTC',true)+'</div>';
-  s+='<div class="ps c"><h3>ORDER C — the stop (Red 3)</h3>'+r('Action','Sell','')+r('Quantity',nC,'ALL')+r('Order type',fast?'Stop Loss':'Stop Limit',fast?'fast mover — market stop guarantees the fill':'calm name — stop-limit protects price',true)+r('Stop price',st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ','E − ('+n2(stopDist)+' × '+d.toFixed(2)+')',true)+(fast?'':r('Limit price',st!=null?'$'+n2(st-0.20):'stop − 0.20','20¢ cushion',true))+r('Time in force','Day','change from GTC',true)+'</div>';
-  s+='<div class="ps g"><h3>AFTER B FILLS (Gold 4) — by hand, immediately</h3>'+r('Where','Positions → Trade','C is cancelled automatically when B fills')+r('Sell · qty',nC-half,'')+r('Stop price',E!=null?'$'+n2(E):'E','breakeven — the trade can no longer lose',true)+r('Or trail','$'+n2(1.5*A.atr*d),'1.5 × ATR × Δ · exit on a 5-min close through the 9 EMA regardless')+'</div>';
-  s+='<div class="foot">Fields Fidelity defaults wrong: A Market→Limit · B Buy→Sell · B qty→half · B GTC→Day · C GTC→Day. Enter only on a 5-min CLOSE beyond the trigger with volume ≥1.2× prior bars. Bracket at birth. Flat by 2:45.</div>';
+  /* a Fidelity-style field box */
+  const box=(label,val,y)=>'<div class="fbox'+(y?' y':'')+'"><div class="fl">'+label+'</div><div class="fv">'+val+'</div></div>';
+  let s='<div class="ftitle">Trade</div>';
+  s+='<div class="fsub">'+PICK.tk+' · $'+n2(A.px)+' · '+when+' CT · '+PLAN.kind+' trigger $'+n2(PLAN.trig)+' · stop $'+n2(PLAN.stop)+' · T1 $'+n2(PLAN.t1)+' · Δ'+d.toFixed(2)+(c?' · bid $'+n2(c.bid)+' / ask $'+n2(c.ask):'')+'</div>';
+  s+='<div class="frow">'+box('ORDER TYPE','Conditional')+box('CONDITIONAL TYPE','OTOCO')+'</div>';
+  /* ORDER A */
+  s+='<div class="forder a"><div class="fhead">Order A <span>If Order A executes then a One Cancels the Other is placed</span></div>';
+  s+='<div class="frow">'+box('SYMBOL',sym)+'</div>';
+  s+='<div class="frow">'+box('ACTION','Buy')+box('QUANTITY',nC)+box('ORDER TYPE','Limit',true)+box('LIMIT PRICE','$'+n2(E),true)+box('TIME IN FORCE','Day')+'</div>';
+  s+='<div class="fnote">Estimated value (A): about $'+(E*100*nC).toFixed(2)+' — if Fidelity shows a few dollars, the wrong strike is selected.</div></div>';
+  /* ORDER B */
+  s+='<div class="forder b"><div class="fhead">Order B <span>take profit — half</span></div>';
+  s+='<div class="frow">'+box('ACTION','Sell',true)+box('QUANTITY',half,true)+box('ORDER TYPE','Limit')+box('LIMIT PRICE','$'+n2(tp),true)+box('TIME IN FORCE','Day',true)+'</div>';
+  s+='<div class="fnote">'+n2(E)+' + ('+n2(t1Dist)+' stock distance to $'+n2(PLAN.t1)+' × '+d.toFixed(2)+') = '+n2(E+t1Dist*d)+', shaded 5¢ to fill.</div></div>';
+  /* ORDER C */
+  s+='<div class="forder c"><div class="fhead">Order C <span>the stop — all</span></div>';
+  s+='<div class="frow">'+box('ACTION','Sell')+box('QUANTITY',nC)+box('ORDER TYPE',fast?'Stop Loss':'Stop Limit',true)+box('STOP PRICE','$'+n2(st),true)+(fast?'':box('LIMIT PRICE','$'+n2(stL),true))+box('TIME IN FORCE','Day',true)+'</div>';
+  s+='<div class="fnote">'+n2(E)+' − ('+n2(stopDist)+' stock distance to $'+n2(PLAN.stop)+' × '+d.toFixed(2)+') = '+n2(st)+'. '+(fast?'Stop Loss (market): '+PICK.tk+' is a fast mover — guarantee the fill.':'Stop Limit: calm name — limit is the stop minus a 20¢ cushion.')+'</div></div>';
+  /* AFTER */
+  s+='<div class="forder g"><div class="fhead">After Order B fills <span>by hand, immediately — C is cancelled automatically</span></div>';
+  s+='<div class="frow">'+box('WHERE','Positions → Trade')+box('ACTION','Sell')+box('QUANTITY',nC-half)+box('ORDER TYPE','Stop Limit')+box('STOP PRICE','$'+n2(E),true)+box('LIMIT PRICE','$'+n2(E-0.20))+box('TIME IN FORCE','Day')+'</div>';
+  s+='<div class="fnote">Breakeven — the trade can no longer lose. Or use Trailing Stop Limit, trail $'+n2(1.5*A.atr*d)+', offset $'+n2(0.75*A.atr*d)+'. Exit on a 5-min close through the 9 EMA regardless.</div></div>';
+  s+='<div class="ffoot">Yellow = fields Fidelity defaults wrong. Preview order → confirm A buys '+nC+' at $'+n2(E)+', B sells '+half+' at $'+n2(tp)+', C sells '+nC+' at $'+n2(st)+' stop'+(fast?'':' / $'+n2(stL)+' limit')+', all Day → Place only on a 5-min CLOSE beyond the trigger with volume.</div>';
   $('printSheet').innerHTML=s;
   window.print();
 }
