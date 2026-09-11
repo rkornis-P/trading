@@ -104,6 +104,37 @@ input:focus{outline:none;border-color:var(--gold)}
 .navrow{display:flex;gap:6px;margin-bottom:10px}
 .navrow button{flex:1;padding:10px 4px;font-size:10px}
 .stp{cursor:pointer}
+
+/* ===== two-delta contract chooser ===== */
+#vpick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 2px}
+.vc{border:1.5px solid var(--line);border-radius:11px;padding:10px;cursor:pointer;background:var(--card2)}
+.vc.on{border-color:var(--gold);background:#1B222D}
+.vc .vt{font-size:9px;font-weight:800;letter-spacing:.1em;color:var(--dim)}
+.vc.on .vt{color:var(--gold-soft)}
+.vc .vd{font-family:Georgia,serif;font-size:17px;font-weight:700;color:var(--ink);margin:2px 0}
+.vc .vk{font-size:10.5px;color:var(--dim);line-height:1.5}
+.vc .vk b{color:var(--ink)}
+.vc .vcost{font-size:10px;color:var(--gold-soft);margin-top:3px;font-weight:700}
+.vc .vgate{font-size:9px;margin-top:3px}
+
+/* ===== ATR readout + info modal ===== */
+#atrLine{font-size:10px;color:var(--dim);margin:2px 0 6px;line-height:1.5}
+#atrLine b{color:var(--gold-soft)}
+#atrLine .qi{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border:1px solid var(--gold);border-radius:50%;color:var(--gold-soft);font-size:9px;font-weight:800;cursor:pointer;margin-left:4px}
+#atrModal{display:none;position:fixed;inset:0;background:rgba(4,6,10,.82);z-index:200;padding:20px 14px;overflow-y:auto}
+#atrModal.on{display:block}
+#atrBox{max-width:600px;margin:20px auto;background:var(--card);border:2px solid var(--gold);border-radius:16px;padding:16px 16px 20px}
+#atrBox h3{font-family:Georgia,serif;font-size:16px;color:var(--gold-soft);letter-spacing:.04em;margin-bottom:8px}
+#atrBox p{font-size:12px;line-height:1.65;color:var(--ink);margin-bottom:9px}
+#atrBox p b{color:var(--gold-soft)}
+#atrBox .ex{background:var(--card2);border-left:3px solid var(--gold);border-radius:0 9px 9px 0;padding:9px 12px;font-size:11.5px;line-height:1.6;margin:9px 0}
+#atrBox .ex b{color:var(--gold-soft)}
+#atrBox .close{margin-top:6px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:11px;font-weight:800;font-size:11px;width:100%;cursor:pointer}
+
+/* ===== copy-ready OTOCO sentences ===== */
+.oline{font-size:12px;line-height:1.7;padding:5px 0;border-bottom:1px solid #1C222C;color:var(--ink)}
+.oline:last-child{border:none}
+.oline .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -129,6 +160,7 @@ input:focus{outline:none;border-color:var(--gold)}
   <div class="card"><div class="sec"><span id="g2title">THE GAUNTLET</span></div>
     <div id="gates"></div>
   </div>
+  <div class="card"><div class="sec"><span>Choose your vehicle — tap one</span><span style="font-size:8.5px;color:var(--dim)">0.70 conviction · 0.60 cash-friendly</span></div><div id="vpick"></div></div>
   <div class="card"><div class="sec"><span>The Ticket — OTOCO, ready to type</span></div>
     <span class="flab">RISK $ PER TRADE</span><input id="riskIn" type="number" value="500" style="width:120px" onchange="buildGauntlet(false)">
     <div id="legs" style="margin-top:6px"></div>
@@ -217,7 +249,8 @@ function compose(A,L){
 }
 
 /* ---------- state ---------- */
-let ALL=[],PICK=null,PLAN=null,CONTRACT=null,TIMER=null;
+let ALL=[],PICK=null,PLAN=null,CONTRACT=null,CONTRACT2=null,VEHICLE='70',TIMER=null;
+function chosenC(){return (VEHICLE==='60'&&CONTRACT2)?CONTRACT2:CONTRACT;}
 
 /* ---------- step 1 ---------- */
 async function loadBoard(force){
@@ -253,6 +286,38 @@ function go(n){
 function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catch(e){}buildGauntlet(true);go(2);}
 
 /* ---------- step 2: the gauntlet ---------- */
+function atrInfo(on){document.getElementById('atrModal').classList.toggle('on',!!on);}
+function pickVehicle(v){VEHICLE=v;drawVehicles();ticketFrom();}
+function drawVehicles(){
+  const box=document.getElementById('vpick');if(!box)return;
+  const card=(c,tag,tgt)=>{
+    if(!c)return '<div class="vc" style="opacity:.5"><div class="vt">'+tag+'</div><div class="vd">—</div><div class="vk">no matching strike on the chain</div></div>';
+    const on=(chosenC()===c);const cost=(c.mid*100).toFixed(0);
+    const spOK=c.spread<=Math.max(0.30,c.mid*0.06),oiOK=c.oi>=100;
+    return '<div class="vc'+(on?' on':'')+'" onclick="pickVehicle(\''+(tgt===0.60?'60':'70')+'\')">'+
+      '<div class="vt">'+tag+'</div>'+
+      '<div class="vd">$'+c.K+' '+(c.L?'C':'P')+' · &#916;'+c.d.toFixed(2)+'</div>'+
+      '<div class="vk">'+c.exp.toLocaleDateString("en-US",{month:"short",day:"numeric"})+' · '+c.dte+' DTE · mid <b>$'+c.mid.toFixed(2)+'</b></div>'+
+      '<div class="vcost">&#8776; $'+cost+' / contract</div>'+
+      '<div class="vgate" style="color:'+((spOK&&oiOK)?'var(--green)':'var(--amber)')+'">spread $'+c.spread.toFixed(2)+(spOK?' &#10003;':' &#10007;')+' · OI '+c.oi+(oiOK?' &#10003;':' &#10007;')+'</div></div>';
+  };
+  box.innerHTML=card(CONTRACT,'CONVICTION · 0.70',0.70)+card(CONTRACT2,'CASH-FRIENDLY · 0.60',0.60);
+}
+function ticketFrom(){
+  if(!PICK||!PLAN)return;const A=PICK.A;const c=chosenC();
+  const risk=parseFloat($('riskIn').value)||500;localStorage.setItem('kRisk',risk);
+  const d=c?c.d:0.70;const E=c?c.mid:null;
+  const stopDist=Math.abs(PLAN.trig-PLAN.stop),t1Dist=Math.abs(PLAN.t1-PLAN.trig);
+  const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
+  const tp=E!=null?(E+t1Dist*d-0.05):null, st2=E!=null?(E-stopDist*d):null;
+  const sym=c?(c.tk+' '+c.exp.toLocaleDateString("en-US",{month:"short",day:"numeric"})+' $'+c.K+' '+(PICK.L?'CALL':'PUT')):'';
+  const S=[];
+  S.push(['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+(sym||'the contract')+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.']);
+  S.push(['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day.']);
+  S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st2!=null?'$'+n2(st2)+' stop / $'+n2(st2-0.20)+' limit':'E − '+n2(stopDist)+'×Δ')+', Day.']);
+  S.push(['AFTER T1','Once half fills, re-place a stop for the remaining '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven), or trail $'+n2(1.5*A.atr*d)+'.']);
+  $('legs').innerHTML=S.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
+}
 function setSide(callSide){
   if(!PICK)return;
   PICK.L=callSide;PICK.sc=callSide?PICK.sC:PICK.sP;CONTRACT=null;
@@ -282,53 +347,51 @@ async function buildGauntlet(fresh){
   g('pass','<b>Trigger $'+n2(PLAN.trig)+'</b> — 5-min CLOSE '+(L?'above':'below')+', volume ≥1.2× prior bars','Currently '+(PLAN.fired?'FIRED on the last closed candle':'not fired — do nothing until it prints'));
   g('pass','<b>Stop $'+n2(PLAN.stop)+'</b> — structural, '+(L?'under':'over')+' the 9 EMA/VWAP shelf','T1 $'+n2(PLAN.t1)+' (2.2 ATR) · half off there, stop to breakeven');
   g(open?(window_?'pass':'warn2'):'warn2', open?(window_?'<b>Clock: entry window open</b>':'<b>Clock: outside entry windows</b> — no new risk 11:00–12:30, last entry 2:00'):'<b>Market closed</b> — this is a rehearsal; levels re-compose at the open','Flat by 2:45, always');
-  /* contract */
-  $('st').textContent='Fetching the contract…';
+  /* contracts — find BOTH a ~0.70 and a ~0.60 vehicle */
+  $('st').textContent='Fetching the vehicles…';
   try{
     if(fresh||!CONTRACT||CONTRACT.tk!==PICK.tk||CONTRACT.L!==L){
       const r=await fetch(RELAY+'/?chain='+encodeURIComponent(PICK.tk));
       const j=await r.json();const opts=(j.data&&j.data.options)||[];
       const now=new Date();const want=L?'C':'P';
-      let best=null;
+      const cands=[];
       for(const o of opts){
         const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
         const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
         const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
         const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;
         const mid=(bid+ask)/2;const spread=ask-bid;const oi=+o.open_interest||+o.oi||0;
-        /* crude delta estimate by moneyness distance in ATR units */
-        const dist=(L?A.px-K:K-A.px);const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));
-        const dscore=Math.abs(d-0.70);
-        const cand={tk:PICK.tk,L,K,exp,dte,bid,ask,mid,spread,oi,d};
-        if(dist<=0)continue; /* ITM only */
-        if(!best||dscore<Math.abs(best.d-0.70))best=cand;
+        const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
+        const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));
+        cands.push({tk:PICK.tk,L,K,exp,dte,bid,ask,mid,spread,oi,d});
       }
-      CONTRACT=best;
+      const pickNear=(tgt)=>{let b=null;for(const c of cands){if(!b||Math.abs(c.d-tgt)<Math.abs(b.d-tgt))b=c;}return b;};
+      CONTRACT=pickNear(0.70);
+      CONTRACT2=pickNear(0.60);
+      if(CONTRACT2&&CONTRACT&&CONTRACT2.K===CONTRACT.K)CONTRACT2=null;
+      VEHICLE=(VEHICLE==='60'&&CONTRACT2)?'60':'70';
     }
-  }catch(e){CONTRACT=null;}
-  if(CONTRACT){
-    const c=CONTRACT;
-    const spOK=c.spread<=Math.max(0.30,c.mid*0.06);const oiOK=c.oi>=100;
+  }catch(e){CONTRACT=null;CONTRACT2=null;}
+  drawVehicles();
+  const cc=chosenC();
+  if(cc){
+    const spOK=cc.spread<=Math.max(0.30,cc.mid*0.06);const oiOK=cc.oi>=100;
     g(spOK&&oiOK?'pass':(spOK||oiOK?'warn2':'fail'),
-      '<b>Contract: '+c.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')+'</b> · ~Δ'+c.d.toFixed(2)+' · '+c.dte+' DTE',
-      'mid $'+n2(c.mid)+' · spread $'+n2(c.spread)+(spOK?' ✓':' ✗ wide')+' · OI '+c.oi+(oiOK?' ✓':' ✗ thin')+' · deep ITM per the law');
+      '<b>Vehicle: '+cc.tk+' '+cc.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+cc.K+' '+(L?'CALL':'PUT')+'</b> · ~&#916;'+cc.d.toFixed(2)+' · '+cc.dte+' DTE ('+(VEHICLE==='60'?'cash-friendly':'conviction')+')',
+      'mid $'+n2(cc.mid)+' · spread $'+n2(cc.spread)+(spOK?' ok':' wide')+' · OI '+cc.oi+(oiOK?' ok':' thin')+' · tap the other card to switch vehicle');
   }else{
-    g('warn2','<b>Contract: chain unavailable right now</b>','Gauntlet can arm; pick the exact contract in the Picker or at the broker — 0.65–0.75Δ, 5–10 DTE');
+    g('warn2','<b>Contract: chain unavailable right now</b>','Gauntlet can arm; pick the vehicle at the broker — 0.60 to 0.75 delta, 5 to 10 DTE');
   }
   $('gates').innerHTML=gates.map(x=>'<div class="gate"><div class="gl '+x.state+'">'+(x.state==='pass'?'✔':x.state==='fail'?'✘':'◆')+'</div><div><div class="gt">'+x.txt+'</div><div class="gs">'+x.sub+'</div></div></div>').join('');
-  /* ticket */
-  const risk=parseFloat($('riskIn').value)||500;localStorage.setItem('kRisk',risk);
-  const d=CONTRACT?CONTRACT.d:0.70;const E=CONTRACT?CONTRACT.mid:null;
-  const stopDist=Math.abs(PLAN.trig-PLAN.stop),t1Dist=Math.abs(PLAN.t1-PLAN.trig);
-  const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
-  const tp=E!=null?(E+t1Dist*d-0.05):null, st2=E!=null?(E-stopDist*d):null;
-  $('legs').innerHTML=[
-    ['PRIMARY',(E!=null?'$'+n2(E):'mid'),'Buy to Open · '+nC+' · Limit at mid · Day'],
-    ['TAKE PROFIT',(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ'),'Sell to Close · '+half+' (half) · Limit · Day'],
-    ['STOP',(st2!=null?'$'+n2(st2)+' / '+n2(st2-0.20):'E − '+n2(stopDist)+'×Δ'),'Sell to Close · '+nC+' (ALL) · Stop Limit · Day'],
-    ['AFTER T1','breakeven','Re-place stop for '+(nC-half)+' at E · or trail 1.5×ATR×Δ ≈ $'+n2(1.5*A.atr*d)]
-  ].map(l=>'<div class="leg"><div class="ln">'+l[0]+'</div><div><div class="lv">'+l[1]+'</div><div class="ld">'+l[2]+'</div></div></div>').join('');
-  $('st').textContent='Gauntlet built · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  try{
+    const stopW=Math.abs(PLAN.trig-PLAN.stop),t1W=Math.abs(PLAN.t1-PLAN.trig);
+    const inATR=x=>A.atr?(x/A.atr).toFixed(1):'?';
+    let al=document.getElementById('atrLine');
+    if(!al){al=document.createElement('div');al.id='atrLine';$('gates').parentNode.appendChild(al);}
+    al.innerHTML='<b>5-min ATR $'+n2(A.atr)+'</b> (one normal move) · stop is '+inATR(stopW)+' ATR wide · T1 is '+inATR(t1W)+' ATR out · trail ≈ $'+n2(1.5*A.atr*(chosenC()?chosenC().d:0.70))+'<span class="qi" onclick="atrInfo(true)">i</span>';
+  }catch(e){}
+  ticketFrom();
+  $('st').textContent='Gauntlet built · vehicle '+(VEHICLE==='60'?'0.60 cash-friendly':'0.70 conviction')+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
 }
 
 /* ---------- step 3: THE TRIPLE WATCH ---------- */
@@ -340,7 +403,7 @@ function arm(){
   if(S.find(x=>x.tk===PICK.tk)){alert(PICK.tk+' is already on the watch.');go(3);renderSlots();return;}
   if(S.length>=3){alert('Three is the table limit — release a slot (✕) first.');go(3);renderSlots();return;}
   S.push({tk:PICK.tk,L:PICK.L,anchor:PICK.A.px,trig:+PLAN.trig.toFixed(2),stop:+PLAN.stop.toFixed(2),t1:+PLAN.t1.toFixed(2),
-    E:null,d:CONTRACT?CONTRACT.d:0.70,ts:Date.now(),lastV:null,lastCi:null});
+    E:null,d:chosenC()?chosenC().d:0.70,vehicle:VEHICLE,ts:Date.now(),lastV:null,lastCi:null});
   saveSlots(S);go(3);renderSlots();watchAll();
   if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchAll,30000);
   say(PICK.tk+' is on the watch. I will call its trigger.');
@@ -467,4 +530,26 @@ function closeWatch(){}
   load();setInterval(load,90000);
 })();
 </script>
+<div id="atrModal" onclick="if(event.target.id==='atrModal')atrInfo(false)"><div id="atrBox">
+  <h3>ATR — the stock's normal step size</h3>
+  <p><b>ATR (Average True Range)</b> measures how far a stock typically moves in one candle — its normal breathing, in dollars. On the 5-minute chart, the 5-minute ATR is the average full height (high to low, including any gap) of the last 14 five-minute candles. It is the single most important number for sizing a trade, because a dollar means something different on a $40 stock than on a $940 one — but one ATR always means the same thing: <b>one normal move.</b></p>
+  <p><b>Why the Gauntlet is built on it.</b> Every level you see was sized in ATRs so it fits the stock you're actually trading:</p>
+  <div class="ex">
+    <b>STOP</b> = the 9EMA/VWAP shelf, minus a 0.15-ATR buffer. A stop closer than the noise gets hit by ordinary breathing; the ATR buffer keeps it just beyond.<br><br>
+    <b>T1 (first target)</b> = trigger ± 2.2 ATR. About two normal moves — ambitious but reachable on a real push, not a fantasy.<br><br>
+    <b>TRAILING STOP</b> (after T1) = 1.5 × ATR × delta. The leash must be longer than one breath or the wiggle stops you out.<br><br>
+    <b>SCORE</b> includes an "it can travel" test (ATR ÷ price ≥ 0.18%) — the machine refuses to rank a stock that doesn't move enough to pay.
+  </div>
+  <p><b>A full worked example — XOM, 5-minute ATR = $0.28:</b></p>
+  <div class="ex">
+    That $0.28 means XOM has moved about 28¢ per 5-minute candle lately.<br><br>
+    • A stop only 15¢ away sits <b>inside</b> the noise — you'd be stopped by random ticks. Bad.<br>
+    • The Gauntlet's stop sits ~0.7 ATR below the shelf (~$0.42 of room) — <b>beyond</b> the breathing, so only a real reversal triggers it.<br>
+    • T1 at 2.2 ATR = 2.2 × 0.28 ≈ <b>$0.62</b> of stock travel from the trigger — reachable on one good push.<br>
+    • The trailing stop = 1.5 × 0.28 × 0.70Δ ≈ <b>$0.30</b> on the option — rides just outside XOM's normal wiggle.<br><br>
+    Now compare <b>SPCX with a $0.70 ATR</b>: the very same formulas give a wider stop, a ~$1.54 T1 distance, and a <b>$0.75</b> trail — 2½× everything — because SPCX breathes 2½× harder. Same rules, sized to the animal. That is why one fixed dollar stop can't work across stocks, and why the Gauntlet does the ATR math for you on every name.
+  </div>
+  <p style="font-size:11px;color:var(--dim)">Rule of thumb: stops beyond one ATR, targets a few ATRs out, trails about 1.5 ATR behind. Watch it change through the day — rising ATR means the stock is getting wild; size down.</p>
+  <button class="close" onclick="atrInfo(false)">GOT IT</button>
+</div></div>
 </body></html>

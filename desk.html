@@ -172,6 +172,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #ktapeEdit{position:absolute;right:4px;top:4px;background:#12161D;border:1px solid #BF9000;color:#D9B44A;border-radius:6px;font-size:9px;font-weight:800;padding:3px 7px;cursor:pointer;z-index:3}
 #ktape:after{content:'';position:absolute;top:0;right:0;width:34px;height:100%;background:linear-gradient(90deg,transparent,#0E1117);pointer-events:none;z-index:2}
 
+
+.oline{font-size:12px;line-height:1.7;padding:5px 0;border-bottom:1px solid var(--line);color:var(--ink)}
+.oline:last-child{border:none}
+.oline .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -538,12 +542,12 @@ function buildTicket(){
   const per=stopDist*d*100;const n=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(n/2));
   const sym=b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT');
   const legs=[
-   ['PRIMARY','$'+E.toFixed(2),'gold','Buy to Open · '+n+' · Limit at mid · Day — '+sym],
-   ['TAKE PROFIT','$'+tpS.toFixed(2),'g','Sell to Close · '+half+' (half) · Limit · Day — math: '+E.toFixed(2)+' + ('+t1Dist.toFixed(2)+' × Δ'+d.toFixed(2)+') = '+tp.toFixed(2)+', shaded 5¢'],
-   ['STOP','$'+st.toFixed(2)+' / '+stL.toFixed(2),'r','Sell to Close · '+n+' (ALL held) · Stop Limit · Day — math: '+E.toFixed(2)+' − ('+stopDist.toFixed(2)+' × Δ'+d.toFixed(2)+'); limit 20¢ under'],
-   ['AFTER T1','breakeven','gold','Re-place a stop for '+(n-half)+' at $'+E.toFixed(2)+' (or trail $'+(t1Dist*0.5*d).toFixed(2)+'). If the ticket forces equal legs: use '+n+' / '+n+', all off at T1.']
+   ['ENTRY','Buy to Open '+n+' contract'+(n>1?'s':'')+' of '+sym+' at $'+E.toFixed(2)+' limit, Day.'],
+   ['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at $'+tpS.toFixed(2)+' limit, Day.'],
+   ['STOP','Sell to Close '+n+' contract'+(n>1?'s':'')+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit, Day.'],
+   ['AFTER T1','Once half fills, re-place a stop for the remaining '+(n-half)+' at $'+E.toFixed(2)+' (breakeven), or trail $'+(t1Dist*0.5*d).toFixed(2)+'. If the ticket forces equal legs, use '+n+'/'+n+' — all off at T1.']
   ];
-  document.getElementById('tkLegs').innerHTML=legs.map(l=>'<div class="leg"><div class="ln">'+l[0]+'</div><div><div class="lv '+l[2]+'">'+l[1]+'</div><div class="ld">'+l[3]+'</div></div></div>').join('');
+  document.getElementById('tkLegs').innerHTML=legs.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
 }
 
 function sizeIt(){

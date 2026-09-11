@@ -128,6 +128,22 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 #officer .ow{font-size:11.5px;line-height:1.55;color:var(--ink)}
 #officer .ow b{color:var(--gold-soft)}
 #officer .oi{font-size:9.5px;color:var(--dim);margin-top:6px;cursor:pointer;text-decoration:underline}
+
+/* ===== cockpit OTOCO ticket ===== */
+#ockTicket{display:none;background:var(--panel,#12161D);border:1.5px solid var(--gold);border-radius:12px;padding:11px;margin:8px 0}
+#ockTicket .tth{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:6px;display:flex;justify-content:space-between}
+#ockTicket .tin{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--dim);margin-bottom:8px;flex-wrap:wrap}
+#ockTicket .tin input{width:64px;background:var(--card2,#0E1117);border:1px solid var(--line);border-radius:7px;color:#fff;padding:6px;font-size:12px;text-align:center}
+#ockTicket .leg{display:grid;grid-template-columns:84px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid #1C222C;align-items:baseline}
+#ockTicket .leg:last-child{border:none}
+#ockTicket .leg .ln{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--dim)}
+#ockTicket .leg .lv{font-family:Georgia,serif;font-size:14px;font-weight:700}
+#ockTicket .leg .lv.g{color:var(--green)}#ockTicket .leg .lv.r{color:var(--red)}#ockTicket .leg .lv.gold{color:var(--gold-soft)}
+#ockTicket .leg .ld{font-size:9.5px;color:var(--dim)}
+
+.oline{font-size:12px;line-height:1.7;padding:5px 0;border-bottom:1px solid #1C222C;color:var(--ink)}
+.oline:last-child{border:none}
+.oline .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -152,6 +168,12 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   <div class="oh"><span class="ov" id="ofV">—</span><span class="oacc" id="ofA">—</span></div>
   <div class="ow" id="ofW">—</div>
   <div class="oi" onclick="info('officer')">ⓘ the five permits, and why structure outranks momentum</div>
+</div>
+
+<div id="ockTicket">
+  <div class="tth"><span>THE OTOCO TICKET — ready to type</span><span id="ockVeh">Δ live</span></div>
+  <div class="tin">E (option fill) $<input id="ockE" type="number" step="0.01" onchange="buildOck()"> · risk $<input id="ockRisk" type="number" value="500" onchange="buildOck()"> <span id="ockNote"></span></div>
+  <div id="ockLegs"></div>
 </div>
 
 <div id="readPanel" style="display:none">
@@ -286,8 +308,8 @@ async function loadAll(){
   const openNow=ctn.getDay()>=1&&ctn.getDay()<=5&&mm>=8*60+30&&mm<15*60;
   const stale=openNow&&ageS>12*60;
   st.innerHTML=tk+' · '+b.C.length+' bars · $'+n2(b.C[b.C.length-1])+' · newest candle <b>'+barTm+' CT</b> ('+(ageS<90?Math.round(ageS)+'s':Math.round(ageS/60)+' min')+' ago)'+(stale?' — <span style="color:var(--red);font-weight:800">STALE FEED: pull again; relay may be serving its last good copy</span>':'');}
-  loadChain(tk);draw();health();drawRead();officerRun();
-  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();officerRun();}},45000);
+  loadChain(tk);draw();health();drawRead();officerRun();buildOck();
+  if(TIMER)clearInterval(TIMER);TIMER=setInterval(async()=>{const nb=await fetchHist(tk,used,plan.find(p=>p[0]===used)[1]).catch(()=>null);if(nb){BARS={tk,...nb,e9:emaAll(nb.C,9),s20:smaAll(nb.C,20),bb:bbAll(nb.C),vw:vwapAll(nb.T,nb.H,nb.L,nb.C,nb.V),rsi:rsiAll(nb.C,14),macd:macdAll(nb.C),mom:momAll(nb.C,12),adx:adxAll(nb.H,nb.L,nb.C,14)};draw();health();drawRead();officerRun();buildOck();}},45000);
 }
 let CHAIN_RETRY=null;
 function loadChain(tk){
@@ -508,6 +530,44 @@ function accelState(){
   else if(d0<0&&d0<d1*1.3&&!adxUp)st='FADING';
   return {st,ci,L};
 }
+
+/* ===== Cockpit OTOCO ticket ===== */
+function ockDelta(){
+  /* estimate delta from moneyness if a chain contract is loaded; else 0.70 */
+  try{if(window.LVL&&LVL.d)return LVL.d;}catch(e){}
+  return 0.70;
+}
+function buildOck(){
+  const box=document.getElementById('ockTicket');
+  if(!BARS){box.style.display='none';return;}
+  const trig=parseFloat(document.getElementById('entry').value);
+  const stop=parseFloat(document.getElementById('stop').value);
+  const tgt=parseFloat(document.getElementById('target').value);
+  if(!trig||!stop){box.style.display='none';return;}
+  box.style.display='block';
+  const L=document.getElementById('dir').value==='long';
+  const d=ockDelta();
+  const atr=BARS.atr||null;
+  const t1=tgt||(L?trig+2.2*(atr||0.5):trig-2.2*(atr||0.5));
+  const stopDist=Math.abs(trig-stop), t1Dist=Math.abs(t1-trig);
+  const Ein=document.getElementById('ockE');
+  const E=parseFloat(Ein.value)||null;
+  const risk=parseFloat(document.getElementById('ockRisk').value)||500;
+  const per=stopDist*d*100; const nC=Math.max(1,Math.floor(risk/per)); const half=Math.max(1,Math.floor(nC/2));
+  document.getElementById('ockVeh').textContent='Δ'+d.toFixed(2)+(atr?' · ATR $'+n2(atr):'');
+  const tp=E!=null?(E+t1Dist*d-0.05):null;
+  const st=E!=null?(E-stopDist*d):null;
+  document.getElementById('ockNote').textContent=E!=null?('size '+nC+' · half '+half):'enter E to price the legs · size '+nC;
+  const tkm=(BARS.tk||'the contract');
+  const legs=[
+    ['ENTRY','g','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tkm+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.'],
+    ['TAKE PROFIT','g','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day. (T1 '+n2(t1)+')'],
+    ['STOP','r','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st!=null?'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit':'E − '+n2(stopDist)+'×Δ')+', Day.'],
+    ['AFTER T1','gold','Once half fills, re-place a stop for the remaining '+(nC-half)+' at '+(E!=null?'$'+n2(E):'E')+' (breakeven), or trail $'+n2(1.5*(atr||0.4)*d)+'.']
+  ];
+  document.getElementById('ockLegs').innerHTML=legs.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[2]+'</div>').join('');
+}
+
 function officerRun(){
   const box=document.getElementById('officer');
   if(!BARS){box.style.display='none';return;}
@@ -611,7 +671,7 @@ function drawRead(){
 
 window.addEventListener('resize',draw);
 document.getElementById('dir').addEventListener('change',()=>{if(BARS){loadChain(BARS.tk);health();}});
-['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();officerRun();}));
+['entry','stop','target'].forEach(id=>document.getElementById(id).addEventListener('change',()=>{draw();health();drawRead();officerRun();buildOck();}));
 
 /* ---------- health + alerts ---------- */
 function lamp(id,state){const el=document.getElementById('h_'+id);el.className='lp '+(state===1?'ok':state===0?'bad':'warn');return state===1?1:0;}
