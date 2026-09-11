@@ -132,9 +132,6 @@ input:focus{outline:none;border-color:var(--gold)}
 #atrBox .close{margin-top:6px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:11px;font-weight:800;font-size:11px;width:100%;cursor:pointer}
 
 /* ===== copy-ready OTOCO sentences ===== */
-.oline{font-size:12px;line-height:1.7;padding:5px 0;border-bottom:1px solid #1C222C;color:var(--ink)}
-.oline:last-child{border:none}
-.oline .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
 
 /* ===== THE HUNT ===== */
 #hunt{margin-bottom:10px}
@@ -170,6 +167,17 @@ input:focus{outline:none;border-color:var(--gold)}
 #claxon .otoco .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
 #claxon .stop{background:var(--gold);color:#000;border:none;border-radius:12px;padding:16px 40px;font-weight:800;font-size:15px;cursor:pointer;letter-spacing:.04em;margin-top:8px}
 #claxon .dismiss{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:9px;padding:9px 20px;font-size:11px;cursor:pointer;margin-top:12px}
+
+/* ===== KORNIS COLOR CODE — 1 blue entry · 2 green profit · 3 red stop · 4 gold after-T1 · 5 purple runner ===== */
+.oline{display:grid;grid-template-columns:26px 1fr;gap:9px;align-items:start;font-size:12px;line-height:1.65;padding:7px 8px;margin:3px 0;border-radius:9px;border-left:4px solid var(--line);background:rgba(255,255,255,.02)}
+.oline .ol{display:none}
+.oline .on{width:24px;height:24px;border-radius:6px;color:#fff;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif}
+.oline .ot{font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:1px}
+.oline.c1{border-left-color:#1E6FD9}.oline.c1 .on{background:#1E6FD9}.oline.c1 .ot{color:#5B9BFF}
+.oline.c2{border-left-color:#1F8F57}.oline.c2 .on{background:#1F8F57}.oline.c2 .ot{color:#3BD986}
+.oline.c3{border-left-color:#C0392B}.oline.c3 .on{background:#C0392B}.oline.c3 .ot{color:#FF7A6B}
+.oline.c4{border-left-color:#B8860B}.oline.c4 .on{background:#B8860B}.oline.c4 .ot{color:#E6B84A}
+.oline.c5{border-left-color:#7B3FA0}.oline.c5 .on{background:#7B3FA0}.oline.c5 .ot{color:#C08BE6}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -243,6 +251,12 @@ input:focus{outline:none;border-color:var(--gold)}
 </div>
 
 <script>
+function kLeg(name,text){
+  const M={'ENTRY':[1,'ENTRY — the buy'],'PRIMARY':[1,'ENTRY — the buy'],'TAKE PROFIT':[2,'TAKE PROFIT — sell half'],'STOP':[3,'STOP — sell all if wrong'],'AFTER T1':[4,'AFTER T1 — re-protect at breakeven'],'RUNNER':[5,'RUNNER — let it ride']};
+  const m=M[name]||[0,name];
+  return '<div class="oline c'+m[0]+'"><div class="on">'+(m[0]||'•')+'</div><div><span class="ot">'+m[1]+'</span>'+text+'</div></div>';
+}
+
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 const $=id=>document.getElementById(id);
 const n2=x=>x==null?'—':(+x).toFixed(2);
@@ -390,7 +404,7 @@ function ticketFrom(){
     : (st2!=null?'$'+n2(st2)+' stop / $'+n2(st2-0.20)+' limit':'E − '+n2(stopDist)+'×Δ');
   S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+stopTxt+', Day. — '+ss.why]);
   S.push(['AFTER T1','Once half fills, re-place a stop for the remaining '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven), or trail $'+n2(1.5*A.atr*d)+'.']);
-  $('legs').innerHTML=S.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
+  $('legs').innerHTML=S.map(l=>kLeg(l[0],l[1])).join('');
 }
 function setSide(callSide){
   if(!PICK)return;
@@ -539,7 +553,7 @@ function fireClaxon(tk,L,A,P,sc){
     ['TAKE PROFIT','Sell to Close '+half+' at E + '+n2(t1Dist)+'×Δ (T1 stock $'+n2(P.t1)+'), Day.'],
     ['STOP','Sell to Close '+nC+' at E − '+n2(stopDist)+'×Δ '+((A.atr/A.px>0.004)?'(MARKET — fast mover, guarantee fill)':'/ limit 20¢ under (calm — protect price)')+' (stock stop $'+n2(P.stop)+'), Day.'],
     ['AFTER T1','Re-place stop for '+(nC-half)+' at breakeven, or trail $'+n2(1.5*atr*d)+'.']
-  ].map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
+  ].map(l=>kLeg(l[0],l[1])).join('');
   CLAXON_CTX={tk:tk,L:L,A:A,P:P,sc:sc};
   $('claxon').classList.add('on');
   startAlarm();
