@@ -397,7 +397,9 @@ function ticketFrom(){
   const ss=stopStyle(A,c);
   const sym=c?(c.tk+' '+c.exp.toLocaleDateString("en-US",{month:"short",day:"numeric"})+' $'+c.K+' '+(PICK.L?'CALL':'PUT')):'';
   const S=[];
-  S.push(['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+(sym||'the contract')+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.']);
+  const bidask=c?(' (bid $'+n2(c.bid)+' · mid $'+n2(c.mid)+' · ask $'+n2(c.ask)+')'):'';
+  const limitE=c?('$'+n2(c.mid)):'the mid';
+  S.push(['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+(sym||'the contract')+' at <b>'+limitE+' limit</b>, Day.'+bidask+(c?' — shade a penny or two toward the ask if it\'s moving.':'')]);
   S.push(['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day.']);
   const stopTxt=ss.kind==='market'
     ? (st2!=null?'$'+n2(st2)+' stop (MARKET)':'E − '+n2(stopDist)+'×Δ (MARKET)')
@@ -479,7 +481,7 @@ async function buildGauntlet(fresh){
     al.innerHTML='<b>5-min ATR $'+n2(A.atr)+'</b> (one normal move) · stop is '+inATR(stopW)+' ATR wide · T1 is '+inATR(t1W)+' ATR out · trail ≈ $'+n2(1.5*A.atr*(chosenC()?chosenC().d:0.70))+'<span class="qi" onclick="atrInfo(true)">i</span>';
   }catch(e){}
   ticketFrom();
-  $('st').textContent='Gauntlet built · vehicle '+(VEHICLE==='60'?'0.60 cash-friendly':'0.70 conviction')+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  $('st').textContent='Gauntlet built · vehicle '+(VEHICLE==='60'?'0.60 cash-friendly':'0.70 conviction')+(chosenC()?' · limit $'+n2(chosenC().mid)+' from the live chain':'')+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
 }
 
 
@@ -540,19 +542,36 @@ async function huntOne(i,tk){
   }
 }
 function go2(){ /* jump to gauntlet step 2 */ ['step1','step2','step3','step4'].forEach((s,idx)=>$(s).style.display=(idx===1?'block':'none'));[1,2,3,4].forEach(k=>{const el=$('sp'+k);if(el)el.className='stp'+(k===2?' on':(k<2?' done':''));}); }
-function fireClaxon(tk,L,A,P,sc){
-  /* compute the OTOCO for the claxon */
-  const d=0.70;const atr=A.atr||0.4;
+async function claxonContract(tk,L,A){
+  try{
+    const r=await fetch(RELAY+'/?chain='+encodeURIComponent(tk));const j=await r.json();
+    const opts=(j.data&&j.data.options)||[];const now=new Date();const want=L?'C':'P';let best=null;
+    for(const o of opts){const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
+      const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(L?A.px-K:K-A.px);if(dist<=0)continue;
+      const d=Math.max(0.05,Math.min(0.95,0.5+0.5*(dist/(4*A.atr||1))));const cand={K,exp,dte,bid,ask,mid:(bid+ask)/2,d};
+      if(!best||Math.abs(d-0.70)<Math.abs(best.d-0.70))best=cand;}
+    return best;
+  }catch(e){return null;}
+}
+async function fireClaxon(tk,L,A,P,sc){
+  /* compute the OTOCO for the claxon — with real limit prices from the chain */
+  const cc=await claxonContract(tk,L,A);
+  const d=cc?cc.d:0.70;const atr=A.atr||0.4;
+  const E=cc?cc.mid:null;
   const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
   const risk=parseFloat(localStorage.getItem('kRisk'))||500;
   const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
   $('cxBig').textContent='⚡ '+tk+' '+(L?'CALLS':'PUTS')+' — SETUP FIRED';
   $('cxSub').textContent='5-minute close '+(L?'above':'below')+' $'+n2(P.trig)+' on '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Fill at the broker, then read E into the ticket.';
+  const sym=cc?(tk+' '+cc.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+cc.K+' '+(L?'CALL':'PUT')):(tk+' ('+(L?'call':'put')+', ~0.70Δ, 5–10 DTE)');
+  const tp=E!=null?(E+t1Dist*d-0.05):null;const st=E!=null?(E-stopDist*d):null;
+  const fast=(A.atr/A.px>0.004);
   $('cxOtoco').innerHTML=[
-    ['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tk+' ('+(L?'call':'put')+', ~0.70Δ, 5–10 DTE) at the mid, Day.'],
-    ['TAKE PROFIT','Sell to Close '+half+' at E + '+n2(t1Dist)+'×Δ (T1 stock $'+n2(P.t1)+'), Day.'],
-    ['STOP','Sell to Close '+nC+' at E − '+n2(stopDist)+'×Δ '+((A.atr/A.px>0.004)?'(MARKET — fast mover, guarantee fill)':'/ limit 20¢ under (calm — protect price)')+' (stock stop $'+n2(P.stop)+'), Day.'],
-    ['AFTER T1','Re-place stop for '+(nC-half)+' at breakeven, or trail $'+n2(1.5*atr*d)+'.']
+    ['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+sym+' at <b>'+(E!=null?'$'+n2(E):'the mid')+' limit</b>, Day.'+(cc?' (bid $'+n2(cc.bid)+' · ask $'+n2(cc.ask)+' · Δ'+d.toFixed(2)+')':'')],
+    ['TAKE PROFIT','Sell to Close '+half+' at <b>'+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit</b>, Day. (T1 on the stock $'+n2(P.t1)+')'],
+    ['STOP','Sell to Close '+nC+' at <b>'+(st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ')+(fast?' stop (MARKET)':' stop / $'+(st!=null?n2(st-0.20):'…')+' limit')+'</b>, Day. — '+(fast?'fast mover: guarantee the fill':'calm: protect the price')+' (stock stop $'+n2(P.stop)+')'],
+    ['AFTER T1','Once half fills, re-place a stop for '+(nC-half)+' at '+(E!=null?'$'+n2(E):'breakeven')+', or trail $'+n2(1.5*atr*d)+'.']
   ].map(l=>kLeg(l[0],l[1])).join('');
   CLAXON_CTX={tk:tk,L:L,A:A,P:P,sc:sc};
   $('claxon').classList.add('on');
