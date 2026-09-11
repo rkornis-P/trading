@@ -562,7 +562,7 @@ function buildOck(){
   const legs=[
     ['ENTRY','g','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tkm+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.'],
     ['TAKE PROFIT','g','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day. (T1 '+n2(t1)+')'],
-    ['STOP','r','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st!=null?'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit':'E − '+n2(stopDist)+'×Δ')+', Day.'],
+    ['STOP','r','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st!=null?(((atr&&trig&&atr/trig>0.004)?'$'+n2(st)+' stop (MARKET — fast mover)':'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit (calm)')):'E − '+n2(stopDist)+'×Δ')+', Day.'],
     ['AFTER T1','gold','Once half fills, re-place a stop for the remaining '+(nC-half)+' at '+(E!=null?'$'+n2(E):'E')+' (breakeven), or trail $'+n2(1.5*(atr||0.4)*d)+'.']
   ];
   document.getElementById('ockLegs').innerHTML=legs.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[2]+'</div>').join('');

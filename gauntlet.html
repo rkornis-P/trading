@@ -135,6 +135,41 @@ input:focus{outline:none;border-color:var(--gold)}
 .oline{font-size:12px;line-height:1.7;padding:5px 0;border-bottom:1px solid #1C222C;color:var(--ink)}
 .oline:last-child{border:none}
 .oline .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
+
+/* ===== THE HUNT ===== */
+#hunt{margin-bottom:10px}
+#huntBar{display:flex;gap:6px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;flex-wrap:wrap}
+#huntBar .ht{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-soft);font-weight:800}
+#huntBar label{display:flex;gap:6px;align-items:center;font-size:10px;color:var(--ink);cursor:pointer}
+#huntBar input[type=checkbox]{accent-color:#BF9000}
+#huntBar .hbtn{margin-left:auto;background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 12px;font-weight:800;font-size:10px;cursor:pointer}
+#huntBar .hbtn.off{background:var(--card);color:var(--dim);border:1px solid var(--line)}
+.hcard{border-radius:12px;padding:10px 12px;margin-bottom:7px;border:2px solid var(--line);background:var(--card)}
+.hcard.wait{border-color:var(--line)}
+.hcard.near{border-color:var(--amber);animation:hp 2s ease-in-out infinite alternate}
+.hcard.fired{border-color:var(--gold-soft);animation:hp .8s ease-in-out infinite alternate}
+.hcard.thin{border-color:#3a4152}
+@keyframes hp{from{box-shadow:0 0 0 rgba(217,180,74,0)}to{box-shadow:0 0 16px rgba(217,180,74,.5)}}
+.hcard .hh{display:flex;justify-content:space-between;align-items:baseline}
+.hcard .htk{font-family:Georgia,serif;font-size:16px;font-weight:700}
+.hcard .hsd{font-size:9px;font-weight:800;letter-spacing:.08em;padding:1px 6px;border-radius:4px}
+.hcard .hv{font-family:Georgia,serif;font-size:13px;font-weight:700;margin-top:2px}
+.hcard.fired .hv{color:var(--gold-soft)}.hcard.near .hv{color:var(--amber)}
+.hcard .hw{font-size:10.5px;color:var(--dim);line-height:1.5;margin-top:2px}
+.hcard .hgo{margin-top:7px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:9px;font-weight:800;font-size:10.5px;cursor:pointer;width:100%;display:none}
+.hcard.fired .hgo{display:block}
+/* the claxon overlay */
+#claxon{display:none;position:fixed;inset:0;background:rgba(20,6,4,.94);z-index:300;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
+#claxon.on{display:flex}
+#claxon .big{font-family:Georgia,serif;font-size:30px;font-weight:700;color:var(--gold-soft);letter-spacing:.04em;animation:cx .5s ease-in-out infinite alternate}
+@keyframes cx{from{opacity:.6}to{opacity:1}}
+#claxon .sub{font-size:15px;color:#fff;margin:12px 0 6px;line-height:1.5;max-width:460px}
+#claxon .otoco{background:#12161D;border:1px solid var(--gold);border-radius:12px;padding:14px;margin:12px 0;text-align:left;max-width:520px;width:100%}
+#claxon .otoco .oline{font-size:12.5px;line-height:1.7;padding:5px 0;border-bottom:1px solid #1C222C;color:#fff}
+#claxon .otoco .oline:last-child{border:none}
+#claxon .otoco .ol{font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--gold-soft);margin-right:5px}
+#claxon .stop{background:var(--gold);color:#000;border:none;border-radius:12px;padding:16px 40px;font-weight:800;font-size:15px;cursor:pointer;letter-spacing:.04em;margin-top:8px}
+#claxon .dismiss{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:9px;padding:9px 20px;font-size:11px;cursor:pointer;margin-top:12px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -143,7 +178,7 @@ input:focus{outline:none;border-color:var(--gold)}
 <div id="steps">
   <div class="stp on" id="sp1" onclick="go(1)">1 · CHOOSE</div>
   <div class="stp" id="sp2" onclick="if(PICK)go(2)">2 · THE GAUNTLET</div>
-  <div class="stp" id="sp3" onclick="if(slots().length)go(3)">3 · THE WATCH</div>
+  <div class="stp" id="sp3" onclick="if(slots().length)go(3)">3 · WATCH</div><div class="stp" id="sp4" onclick="go(4)">4 · THE HUNT</div>
 </div>
 <div id="st">—</div>
 
@@ -176,6 +211,31 @@ input:focus{outline:none;border-color:var(--gold)}
   <div class="card" style="padding:9px 12px"><div class="sec" style="margin:0"><span>THE WATCH — up to three, one bullet</span></div></div>
   <div id="slots"></div>
   <label style="display:flex;gap:8px;align-items:center;font-size:10.5px;margin:2px 0 10px;cursor:pointer"><input type="checkbox" id="wVoice" checked style="accent-color:#BF9000"> 🔊 speak the rulings</label>
+</div>
+
+<!-- STEP 4: THE HUNT -->
+<div id="step4" style="display:none">
+  <div id="hunt">
+    <div id="huntBar">
+      <span class="ht">🎯 THE HUNT</span>
+      <label><input type="checkbox" id="huntAuto" checked onchange="saveHunt()"> auto-pick top graded</label>
+      <label><input type="checkbox" id="huntTicker" checked onchange="saveHunt()"> include my ticker</label>
+      <label><input type="checkbox" id="huntVoice" checked> speak</label>
+      <button class="hbtn" id="huntToggle" onclick="toggleHunt()">START HUNT</button>
+    </div>
+    <div id="huntCards"></div>
+    <div id="huntSt" style="font-size:10px;color:var(--dim);text-align:center;margin-top:4px">Pick up to 6 to stalk. With auto-pick on, the top-graded names load themselves. The alarm sounds when one fires — even if you\'ve stepped away from this screen.</div>
+  </div>
+</div>
+
+<!-- THE CLAXON -->
+<div id="claxon">
+  <div class="big" id="cxBig">⚡ TRADE SETUP</div>
+  <div class="sub" id="cxSub">—</div>
+  <div class="otoco" id="cxOtoco"></div>
+  <button class="stop" onclick="silence()">🔕 I\'M HERE — STOP THE ALARM</button>
+  <button class="dismiss" onclick="coachSpeak()" style="border-color:#BF9000;color:#D9B44A">HEAR THE COACH ON THIS TRADE</button>
+  <button class="dismiss" onclick="silence(true)">dismiss &amp; keep hunting</button>
 </div>
 
 <div class="knav">
@@ -280,8 +340,9 @@ async function loadBoard(force){
   $('st').textContent='Scored '+ALL.length+' names · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
 }
 function go(n){
-  ['step1','step2','step3'].forEach((s,i)=>$(s).style.display=(i===n-1?'block':'none'));
-  [1,2,3].forEach(i=>{const el=$('sp'+i);el.className='stp'+(i===n?' on':(i<n?' done':''));});
+  ['step1','step2','step3','step4'].forEach((s,i)=>{const el=$(s);if(el)el.style.display=(i===n-1?'block':'none');});
+  [1,2,3,4].forEach(i=>{const el=$('sp'+i);if(el)el.className='stp'+(i===n?' on':(i<n?' done':''));});
+  if(n===4){try{if($('huntAuto').checked&&(!ALL||!ALL.length)){loadBoard(false).then(rebuildHuntList);}else{rebuildHuntList();}}catch(e){}}
 }
 function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catch(e){}buildGauntlet(true);go(2);}
 
@@ -303,6 +364,15 @@ function drawVehicles(){
   };
   box.innerHTML=card(CONTRACT,'CONVICTION · 0.70',0.70)+card(CONTRACT2,'CASH-FRIENDLY · 0.60',0.60);
 }
+function stopStyle(A,c){
+  /* Option A: adaptive. Wide spread OR high ATR% => STOP MARKET (guarantee fill). Else STOP LIMIT (protect price). */
+  const atrP=A&&A.atr&&A.px?A.atr/A.px:0;
+  const spr=c?c.spread:0, mid=c?c.mid:1;
+  const wide=(spr/(mid||1))>0.05;           /* spread over 5% of mid = illiquid/fast */
+  const fast=atrP>0.004;                     /* 5-min ATR over 0.4% of price = high-beta */
+  if(wide||fast)return {kind:'market',why:(fast?'high volatility':'wide spread')+' — STOP MARKET to guarantee the exit (accepts small slippage)'};
+  return {kind:'limit',why:'calm, tight spread — STOP LIMIT to protect your price (20¢ cushion)'};
+}
 function ticketFrom(){
   if(!PICK||!PLAN)return;const A=PICK.A;const c=chosenC();
   const risk=parseFloat($('riskIn').value)||500;localStorage.setItem('kRisk',risk);
@@ -310,11 +380,15 @@ function ticketFrom(){
   const stopDist=Math.abs(PLAN.trig-PLAN.stop),t1Dist=Math.abs(PLAN.t1-PLAN.trig);
   const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
   const tp=E!=null?(E+t1Dist*d-0.05):null, st2=E!=null?(E-stopDist*d):null;
+  const ss=stopStyle(A,c);
   const sym=c?(c.tk+' '+c.exp.toLocaleDateString("en-US",{month:"short",day:"numeric"})+' $'+c.K+' '+(PICK.L?'CALL':'PUT')):'';
   const S=[];
   S.push(['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+(sym||'the contract')+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.']);
   S.push(['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day.']);
-  S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st2!=null?'$'+n2(st2)+' stop / $'+n2(st2-0.20)+' limit':'E − '+n2(stopDist)+'×Δ')+', Day.']);
+  const stopTxt=ss.kind==='market'
+    ? (st2!=null?'$'+n2(st2)+' stop (MARKET)':'E − '+n2(stopDist)+'×Δ (MARKET)')
+    : (st2!=null?'$'+n2(st2)+' stop / $'+n2(st2-0.20)+' limit':'E − '+n2(stopDist)+'×Δ');
+  S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+stopTxt+', Day. — '+ss.why]);
   S.push(['AFTER T1','Once half fills, re-place a stop for the remaining '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven), or trail $'+n2(1.5*A.atr*d)+'.']);
   $('legs').innerHTML=S.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
 }
@@ -392,6 +466,114 @@ async function buildGauntlet(fresh){
   }catch(e){}
   ticketFrom();
   $('st').textContent='Gauntlet built · vehicle '+(VEHICLE==='60'?'0.60 cash-friendly':'0.70 conviction')+' · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+}
+
+
+/* ================= THE HUNT — auto-populated, alarmed setup monitor ================= */
+let HUNT={on:false,list:[],timer:null,audio:null,alarming:false,fired:{}};
+function hcfg(){try{return JSON.parse(localStorage.getItem('kHuntCfg'))||{};}catch(e){return {};}}
+function saveHunt(){localStorage.setItem('kHuntCfg',JSON.stringify({auto:$('huntAuto').checked,ticker:$('huntTicker').checked}));rebuildHuntList();}
+function tickerList(){try{var b=JSON.parse(localStorage.getItem('kTapeList'));if(Array.isArray(b))return b;}catch(e){}try{var k=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(k))return k;}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
+function rebuildHuntList(){
+  const cfg={auto:$('huntAuto').checked,ticker:$('huntTicker').checked};
+  let names=[];
+  if(cfg.auto&&ALL&&ALL.length){names=ALL.slice(0,6).map(e=>e.tk);}     /* top graded from the board */
+  if(cfg.ticker){tickerList().forEach(t=>{if(!names.includes(t))names.push(t);});} /* plus ticker names */
+  if(!names.length)names=tickerList();
+  HUNT.list=names.slice(0,6);
+  renderHunt();
+}
+function toggleHunt(){
+  HUNT.on=!HUNT.on;
+  $('huntToggle').textContent=HUNT.on?'■ STOP HUNT':'START HUNT';
+  $('huntToggle').className='hbtn'+(HUNT.on?'':' off');
+  if(HUNT.on){rebuildHuntList();huntScan();HUNT.timer=setInterval(huntScan,60000);huntSay('The hunt is on. Watching '+HUNT.list.length+' names.');}
+  else{if(HUNT.timer)clearInterval(HUNT.timer);HUNT.timer=null;$('huntSt').textContent='Hunt stopped.';}
+}
+function huntSay(t){try{if(!$('huntVoice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}}
+function renderHunt(){
+  $('huntCards').innerHTML=HUNT.list.map((tk,i)=>'<div class="hcard wait" id="hc'+i+'"><div class="hh"><span class="htk">'+tk+'</span><span class="hsd" id="hcs'+i+'"></span></div><div class="hv" id="hcv'+i+'">—</div><div class="hw" id="hcw'+i+'">tap START HUNT to begin</div><button class="hgo" id="hcg'+i+'">⚡ GO — SHOW OTOCO</button></div>').join('');
+}
+async function huntScan(){
+  if(!HUNT.on)return;
+  $('huntSt').textContent='Scanning '+HUNT.list.length+' names · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  for(let i=0;i<HUNT.list.length;i++){try{await huntOne(i,HUNT.list[i]);}catch(e){}await sleep(250);}
+}
+async function huntOne(i,tk){
+  const b=await pull(tk);const A=analyze(b);
+  const sC=score(A,true),sP=score(A,false);const L=sC.score>=sP.score;const sc=L?sC:sP;
+  const P=compose(A,L);
+  const card=$('hc'+i);if(!card)return;
+  const atr=A.atr||0.4;const near=Math.abs(A.px-P.trig)<=0.35*atr;
+  const fired=L?(A.cClose>P.trig&&A.cVol>=1.2*A.avgVol):(A.cClose<P.trig&&A.cVol>=1.2*A.avgVol);
+  const thin=(L?A.cClose>P.trig:A.cClose<P.trig)&&!fired;
+  let cls,v,w;
+  if(fired){cls='fired';v='⚡ FIRED — '+tk+' '+(L?'CALLS':'PUTS');w='5-min close '+(L?'above':'below')+' $'+n2(P.trig)+' with '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Trade now.';}
+  else if(thin){cls='thin';v='close beyond — volume thin';w='$'+n2(A.px)+' · closed past $'+n2(P.trig)+' but only '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Veto holds.';}
+  else if(near){cls='near';v='◆ APPROACHING — '+tk;w='$'+n2(A.px)+' · within '+(Math.abs(A.px-P.trig)/atr).toFixed(1)+' ATR of the trigger $'+n2(P.trig)+'. Get to the desk.';}
+  else{cls='wait';v='watching · '+sc.score+'/100';w='$'+n2(A.px)+' · '+n2(Math.abs(A.px-P.trig))+' from trigger $'+n2(P.trig);}
+  card.className='hcard '+cls;
+  $('hcs'+i).textContent=L?'CALLS':'PUTS';$('hcs'+i).style.color=L?'var(--green)':'var(--red)';
+  $('hcv'+i).textContent=v;$('hcw'+i).textContent=w;
+  const go=$('hcg'+i);go.onclick=()=>{PICK={tk,A,L,sc,sC,sP};buildGauntlet(true);go2();};
+  /* alarm on a fresh fire */
+  const key=tk+'|'+A.ci;
+  if(fired&&HUNT.fired[tk]!==A.ci){
+    HUNT.fired[tk]=A.ci;
+    fireClaxon(tk,L,A,P,sc);
+  } else if(near&&HUNT.fired['near_'+tk]!==A.ci){
+    HUNT.fired['near_'+tk]=A.ci;huntSay(tk+' approaching its trigger.');
+  }
+}
+function go2(){ /* jump to gauntlet step 2 */ ['step1','step2','step3','step4'].forEach((s,idx)=>$(s).style.display=(idx===1?'block':'none'));[1,2,3,4].forEach(k=>{const el=$('sp'+k);if(el)el.className='stp'+(k===2?' on':(k<2?' done':''));}); }
+function fireClaxon(tk,L,A,P,sc){
+  /* compute the OTOCO for the claxon */
+  const d=0.70;const atr=A.atr||0.4;
+  const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
+  const risk=parseFloat(localStorage.getItem('kRisk'))||500;
+  const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
+  $('cxBig').textContent='⚡ '+tk+' '+(L?'CALLS':'PUTS')+' — SETUP FIRED';
+  $('cxSub').textContent='5-minute close '+(L?'above':'below')+' $'+n2(P.trig)+' on '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Fill at the broker, then read E into the ticket.';
+  $('cxOtoco').innerHTML=[
+    ['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tk+' ('+(L?'call':'put')+', ~0.70Δ, 5–10 DTE) at the mid, Day.'],
+    ['TAKE PROFIT','Sell to Close '+half+' at E + '+n2(t1Dist)+'×Δ (T1 stock $'+n2(P.t1)+'), Day.'],
+    ['STOP','Sell to Close '+nC+' at E − '+n2(stopDist)+'×Δ '+((A.atr/A.px>0.004)?'(MARKET — fast mover, guarantee fill)':'/ limit 20¢ under (calm — protect price)')+' (stock stop $'+n2(P.stop)+'), Day.'],
+    ['AFTER T1','Re-place stop for '+(nC-half)+' at breakeven, or trail $'+n2(1.5*atr*d)+'.']
+  ].map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
+  CLAXON_CTX={tk:tk,L:L,A:A,P:P,sc:sc};
+  $('claxon').classList.add('on');
+  startAlarm();
+  huntSay('Setup fired. '+tk+' '+(L?'calls':'puts')+'. Close '+(L?'above':'below')+' '+n2(P.trig)+' with volume. Come to the desk.');
+}
+function startAlarm(){
+  HUNT.alarming=true;
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    if(!HUNT.audio)HUNT.audio=new AC();
+    const ac=HUNT.audio;
+    function beep(){
+      if(!HUNT.alarming)return;
+      const o=ac.createOscillator(),g=ac.createGain();
+      o.type='square';o.frequency.value=880;
+      g.gain.setValueAtTime(0.001,ac.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.25,ac.currentTime+0.02);
+      g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4);
+      o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+0.42);
+      setTimeout(beep,900);
+    }
+    ac.resume&&ac.resume();beep();
+  }catch(e){}
+  /* also flash the tab title */
+  HUNT.titleFlip=setInterval(()=>{document.title=document.title.startsWith('⚡')?'Kornis — SETUP':'⚡ TRADE NOW ⚡';},700);
+}
+function silence(keep){
+  HUNT.alarming=false;
+  if(HUNT.titleFlip){clearInterval(HUNT.titleFlip);HUNT.titleFlip=null;document.title='The Gauntlet · Kornis Protocol';}
+  $('claxon').classList.remove('on');
+  if(!keep){/* jump to that name's gauntlet */
+    const tk=($('cxBig').textContent.split(' ')[1])||null;
+    if(tk){const e=(ALL||[]).find(x=>x.tk===tk);if(e){PICK=e;buildGauntlet(true);go2();}}
+  }
 }
 
 /* ---------- step 3: THE TRIPLE WATCH ---------- */
@@ -472,6 +654,7 @@ function closeWatch(){}
 /* resume the watch on load (migrates the old single-slot format) */
 (function(){
   const r=localStorage.getItem('kRisk');if(r)$('riskIn').value=r;
+  try{const hc=hcfg();if(hc.auto===false)$('huntAuto').checked=false;if(hc.ticker===false)$('huntTicker').checked=false;}catch(e){}
   try{const old=JSON.parse(localStorage.getItem('kGauntlet'));
     if(old&&old.tk&&!localStorage.getItem('kGauntletSlots')){saveSlots([{tk:old.tk,L:old.L,anchor:old.anchor,trig:old.t1?null:null,stop:old.stop,t1:old.t1,E:old.E,d:old.d||0.7,ts:old.ts,trig:old.stop&&old.t1?((old.stop+old.t1)/2):null,lastV:null,lastCi:null}]);localStorage.removeItem('kGauntlet');}
   }catch(e){}

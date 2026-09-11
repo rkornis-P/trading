@@ -544,7 +544,7 @@ function buildTicket(){
   const legs=[
    ['ENTRY','Buy to Open '+n+' contract'+(n>1?'s':'')+' of '+sym+' at $'+E.toFixed(2)+' limit, Day.'],
    ['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at $'+tpS.toFixed(2)+' limit, Day.'],
-   ['STOP','Sell to Close '+n+' contract'+(n>1?'s':'')+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit, Day.'],
+   ['STOP','Sell to Close '+n+' contract'+(n>1?'s':'')+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit — use MARKET stop instead on fast/wide names, Day.'],
    ['AFTER T1','Once half fills, re-place a stop for the remaining '+(n-half)+' at $'+E.toFixed(2)+' (breakeven), or trail $'+(t1Dist*0.5*d).toFixed(2)+'. If the ticket forces equal legs, use '+n+'/'+n+' — all off at T1.']
   ];
   document.getElementById('tkLegs').innerHTML=legs.map(l=>'<div class="oline"><span class="ol">'+l[0]+':</span> '+l[1]+'</div>').join('');
