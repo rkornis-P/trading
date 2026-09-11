@@ -262,10 +262,11 @@ input:focus{outline:none;border-color:var(--gold)}
   <div class="fh"><span>Fidelity OTOCO — fill the form exactly like this</span><span>Conditional › OTOCO</span></div>
   <div id="fidBody"></div>
   <div id="fidNote"></div>
+  <button onclick="printOrder()" style="margin-top:10px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:13px;font-weight:800;font-size:12px;width:100%;cursor:pointer;letter-spacing:.04em">🖨 PRINT THIS OTOCO ORDER — Fidelity form, filled in</button>
 </div>
 <button id="armBtn" onclick="arm()">⚔ I'M IN — ARM THE WATCH</button>
   <div style="height:6px"></div>
-  <button class="ghost" onclick="printOrder()">🖨 PRINT THE OTOCO ORDER SHEET</button>
+  
 </div>
 
 <!-- STEP 3 -->
@@ -298,6 +299,7 @@ input:focus{outline:none;border-color:var(--gold)}
   <div class="otoco" id="cxOtoco"></div>
   <button class="stop" onclick="silence()">🔕 I\'M HERE — STOP THE ALARM</button>
   <button class="dismiss" onclick="coachSpeak()" style="border-color:#BF9000;color:#D9B44A">HEAR THE COACH ON THIS TRADE</button>
+  <button class="dismiss" onclick="printClaxon()" style="border-color:#BF9000;color:#D9B44A">🖨 PRINT THIS ORDER — Fidelity form</button>
   <button class="dismiss" onclick="silence(true)">dismiss &amp; keep hunting</button>
 </div>
 
@@ -425,6 +427,31 @@ function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catc
 
 /* ---------- step 2: the gauntlet ---------- */
 function atrInfo(on){document.getElementById('atrModal').classList.toggle('on',!!on);}
+
+
+/* print a Watch slot's order using the same Fidelity-form sheet */
+async function printSlot(i){
+  const S=slots();const w=S[i];if(!w)return;
+  try{
+    const b=await pull(w.tk);const A=analyze(b);
+    const sC=score(A,true),sP=score(A,false);
+    PICK={tk:w.tk,A,L:w.L,sc:w.L?sC:sP,sC,sP};
+    PLAN={trig:w.trig||A.px,stop:w.stop,t1:w.t1,kind:'WATCH',brk:w.trig||A.px,rec:w.trig||A.px,fired:false};
+    CONTRACT=null;CONTRACT2=null;VEHICLE='70';
+    /* pull the contract so E is real */
+    const r=await fetch(RELAY+'/?chain='+encodeURIComponent(w.tk));const j=await r.json();
+    const opts=(j.data&&j.data.options)||[];const now=new Date();const want=w.L?'C':'P';let c=null;
+    for(const o of opts){const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
+      const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(w.L?A.px-K:K-A.px);if(dist<=0||dist>A.px*0.12)continue;
+      const oi=+o.open_interest||+o.oi||0;if(oi<50)continue;const pct=dist/A.px;const d=Math.max(0.50,Math.min(0.90,0.50+pct*4.0));
+      const cand={tk:w.tk,L:w.L,K,exp,dte,bid,ask,mid:(bid+ask)/2,spread:ask-bid,oi,d};
+      if(!c||Math.abs(d-0.70)<Math.abs(c.d-0.70))c=cand;}
+    CONTRACT=c;
+    if(w.E&&CONTRACT)CONTRACT.mid=w.E;  /* your real fill overrides the mid */
+    printOrder();
+  }catch(e){alert('Could not build the print: '+(e.message||e));}
+}
 
 /* ===== print the OTOCO order sheet — mirrors the Fidelity form ===== */
 function printOrder(){
@@ -608,6 +635,32 @@ async function buildGauntlet(fresh){
 }
 
 
+
+/* ===== coach + print on the fired setup ===== */
+let CLAXON_CTX=null;
+function coachSpeak(){
+  if(!CLAXON_CTX)return;
+  const c=CLAXON_CTX,L=c.L,A=c.A,P=c.P,sc=c.sc;
+  const passed=sc.det.filter(d=>d.ok).map(d=>d.lbl);const failed=sc.det.filter(d=>!d.ok).map(d=>d.lbl);
+  const atr=A.atr||0.4;
+  let s='Coach on '+c.tk+', '+(L?'calls':'puts')+'. Score '+sc.score+' out of 100. ';
+  s+='It fired because price closed '+(L?'above':'below')+' '+n2(P.trig)+' with volume '+(A.cVol/A.avgVol).toFixed(1)+' times the prior bars. ';
+  s+='Working for you: '+(passed.slice(0,4).join(', ')||'thin edge')+'. ';
+  if(failed.length)s+='Missing: '+failed.slice(0,2).join(', ')+', so respect the stop. ';
+  s+='Stop is '+n2(P.stop)+', about '+(Math.abs(P.trig-P.stop)/atr).toFixed(1)+' ATR from entry. First target '+n2(P.t1)+'. Take half there and move the stop to breakeven. ';
+  s+='If the next 5-minute candle closes back through the 9 EMA against you, that is your exit, permit three. Bracket on the ticket.';
+  let box=document.getElementById('cxCoach');
+  if(!box){box=document.createElement('div');box.id='cxCoach';box.style.cssText='max-width:520px;width:100%;font-size:11.5px;line-height:1.6;color:#cfd6e2;background:#0E1117;border:1px solid #242B36;border-radius:10px;padding:11px;margin:6px 0';document.getElementById('cxOtoco').after(box);}
+  box.textContent=s;
+  try{if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.rate=0.66;speechSynthesis.speak(u);}}catch(e){}
+}
+function printClaxon(){
+  if(!CLAXON_CTX)return;const c=CLAXON_CTX;
+  PICK={tk:c.tk,A:c.A,L:c.L,sc:c.sc,sC:c.sc,sP:c.sc};PLAN=Object.assign({kind:'FIRED',brk:c.P.trig,rec:c.P.trig},c.P);
+  CONTRACT=null;CONTRACT2=null;VEHICLE='70';
+  claxonContract(c.tk,c.L,c.A).then(cc=>{if(cc){CONTRACT={tk:c.tk,L:c.L,K:cc.K,exp:cc.exp,dte:cc.dte,bid:cc.bid,ask:cc.ask,mid:cc.mid,spread:cc.ask-cc.bid,oi:cc.oi||0,d:cc.d};}printOrder();});
+}
+
 /* ================= THE HUNT — auto-populated, alarmed setup monitor ================= */
 let HUNT={on:false,list:[],timer:null,audio:null,alarming:false,fired:{}};
 function hcfg(){try{return JSON.parse(localStorage.getItem('kHuntCfg'))||{};}catch(e){return {};}}
@@ -766,6 +819,7 @@ async function toggleSheet(i){
     o+='<div class="so a"><div class="st">Order A — the buy (Blue 1)</div>'+fr('Symbol',sym,'Use the chain button — never type it.')+fr('Action','Buy','Opening a long '+(L?'call':'put')+'.')+fr('Quantity',nC,'From $'+risk+' risk ÷ ($'+n2(stopDist)+' × '+d.toFixed(2)+' × 100).')+fr('Order type','Limit','Change from Market.',true)+fr('Limit price',E!=null?'$'+n2(E):'the mid','The mid; shade a penny toward the ask if moving. This is your E.',true)+fr('Time in force','Day','Never GTC.')+'</div>';
     o+='<div class="so b"><div class="st">Order B — take profit (Green 2)</div>'+fr('Action','Sell','CHANGE from Buy — or this leg buys more.',true)+fr('Quantity',half,'CHANGE from all — half off at T1.',true)+fr('Order type','Limit','')+fr('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ','E + ('+n2(t1Dist)+' stock distance to $'+n2(t1)+' × '+d.toFixed(2)+'), shaded 5¢.',true)+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
     o+='<div class="so c"><div class="st">Order C — the stop (Red 3)</div>'+fr('Action','Sell','')+fr('Quantity',nC,'ALL — never leave naked contracts.')+fr('Order type',fast?'Stop Loss':'Stop Limit',fast?'Fast mover: market stop guarantees the fill.':'Calm name: stop-limit protects your price.',true)+fr('Stop price',st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ','E − ('+n2(stopDist)+' stock distance to $'+n2(stop)+' × '+d.toFixed(2)+').',true)+(fast?'':fr('Limit price',st!=null?'$'+n2(st-0.20):'stop − 0.20','20¢ cushion so you actually get out.',true))+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
+    o+='<button onclick="printSlot('+i+')" style="margin:6px 0 8px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:10.5px;width:100%;cursor:pointer">🖨 PRINT THIS ORDER — Fidelity form</button>';
     o+='<div class="so g"><div class="st">After B fills (Gold 4) — by hand, immediately</div>'+fr('Where','Positions → Trade','Fidelity cancels C when B fills; the runner is unprotected until you do this.')+fr('Sell · qty',nC-half,'')+fr('Stop price',E!=null?'$'+n2(E):'E','Breakeven — the trade can no longer lose.',true)+fr('Or trail','$'+n2(1.5*A.atr*d),'1.5 × ATR × Δ. Exit on a 5-min close through the 9 EMA regardless.')+'</div>';
     el.innerHTML=o;
   }catch(e){el.innerHTML='<div class="warn">Could not build the sheet: '+(e.message||e)+'. Tap again.</div>';}
