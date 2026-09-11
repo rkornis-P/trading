@@ -259,10 +259,10 @@ input:focus{outline:none;border-color:var(--gold)}
     <div id="legs" style="margin-top:6px"></div>
   </div>
   <div id="fidForm">
-  <div class="fh"><span>Fidelity OTOCO — fill the form exactly like this</span><span>Conditional › OTOCO</span></div>
+  <div class="fh"><span>Fidelity — the two-ticket order (options ticket)</span><span>BUY → STOP → half by hand</span></div>
   <div id="fidBody"></div>
   <div id="fidNote"></div>
-  <button onclick="printOrder()" style="margin-top:10px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:13px;font-weight:800;font-size:12px;width:100%;cursor:pointer;letter-spacing:.04em">🖨 PRINT THIS OTOCO ORDER — Fidelity form, filled in</button>
+  <button onclick="printOrder()" style="margin-top:10px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:13px;font-weight:800;font-size:12px;width:100%;cursor:pointer;letter-spacing:.04em">🖨 PRINT THIS ORDER — Fidelity options tickets, filled in</button>
 </div>
 <button id="armBtn" onclick="arm()">⚔ I'M IN — ARM THE WATCH</button>
   <div style="height:6px"></div>
@@ -299,7 +299,7 @@ input:focus{outline:none;border-color:var(--gold)}
   <div class="otoco" id="cxOtoco"></div>
   <button class="stop" onclick="silence()">🔕 I\'M HERE — STOP THE ALARM</button>
   <button class="dismiss" onclick="coachSpeak()" style="border-color:#BF9000;color:#D9B44A">HEAR THE COACH ON THIS TRADE</button>
-  <button class="dismiss" onclick="printClaxon()" style="border-color:#BF9000;color:#D9B44A">🖨 PRINT THIS ORDER — Fidelity form</button>
+  <button class="dismiss" onclick="printClaxon()" style="border-color:#BF9000;color:#D9B44A">🖨 PRINT THIS ORDER — Fidelity tickets</button>
   <button class="dismiss" onclick="silence(true)">dismiss &amp; keep hunting</button>
 </div>
 
@@ -453,11 +453,10 @@ async function printSlot(i){
   }catch(e){alert('Could not build the print: '+(e.message||e));}
 }
 
-/* ===== print the OTOCO order sheet — mirrors the Fidelity form ===== */
+/* ===== print the ORDER SHEET — the two-ticket workflow on Fidelity's OPTIONS ticket ===== */
 function printOrder(){
   if(!PICK||!PLAN){alert('Run a name through the gauntlet first.');return;}
   const A=PICK.A,L=PICK.L,c=chosenC();const d=c?c.d:0.70;
-  /* E: chain mid if we have it; otherwise the user's typed E on a slot; otherwise ask */
   let E=c?c.mid:null;
   if(E==null){const s=slots().find(x=>x.tk===PICK.tk);if(s&&s.E)E=s.E;}
   if(E==null){const v=prompt('No chain price available. Enter the option price (E) you see on Fidelity:');E=parseFloat(v)||null;}
@@ -467,31 +466,30 @@ function printOrder(){
   const per=stopDist*d*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
   const tp=E+t1Dist*d-0.05, st=E-stopDist*d, stL=st-0.20;
   const fast=(A.atr/A.px>0.004);
+  const trail=1.5*A.atr*d;
   const sym=c?(PICK.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(L?'CALL':'PUT')):(PICK.tk+' ___ '+(L?'CALL':'PUT'));
   const when=ctNow().toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-  /* a Fidelity-style field box */
   const box=(label,val,y)=>'<div class="fbox'+(y?' y':'')+'"><div class="fl">'+label+'</div><div class="fv">'+val+'</div></div>';
-  let s='<div class="ftitle">Trade</div>';
-  s+='<div class="fsub">'+PICK.tk+' · $'+n2(A.px)+' · '+when+' CT · '+PLAN.kind+' trigger $'+n2(PLAN.trig)+' · stop $'+n2(PLAN.stop)+' · T1 $'+n2(PLAN.t1)+' · Δ'+d.toFixed(2)+(c?' · bid $'+n2(c.bid)+' / ask $'+n2(c.ask):'')+'</div>';
-  s+='<div class="frow">'+box('ORDER TYPE','Conditional')+box('CONDITIONAL TYPE','OTOCO')+'</div>';
-  /* ORDER A */
-  s+='<div class="forder a"><div class="fhead">Order A <span>If Order A executes then a One Cancels the Other is placed</span></div>';
+  let s='<div class="ftitle">Trade — '+PICK.tk+' '+(L?'CALLS':'PUTS')+'</div>';
+  s+='<div class="fsub">'+when+' CT · stock $'+n2(A.px)+' · '+PLAN.kind+' trigger $'+n2(PLAN.trig)+' · stock stop $'+n2(PLAN.stop)+' · stock T1 $'+n2(PLAN.t1)+' · Δ'+d.toFixed(2)+' · 5-min ATR $'+n2(A.atr)+(c?' · chain bid $'+n2(c.bid)+' / ask $'+n2(c.ask)+' · OI '+c.oi:'')+'</div>';
+  /* TICKET 1 */
+  s+='<div class="forder a"><div class="fhead">TICKET 1 — BUY (Blue 1) <span>Fidelity → Trade → Options ticket · place only on a 5-min CLOSE beyond the trigger with volume</span></div>';
   s+='<div class="frow">'+box('SYMBOL',sym)+'</div>';
-  s+='<div class="frow">'+box('ACTION','Buy')+box('QUANTITY',nC)+box('ORDER TYPE','Limit',true)+box('LIMIT PRICE','$'+n2(E),true)+box('TIME IN FORCE','Day')+'</div>';
-  s+='<div class="fnote">Estimated value (A): about $'+(E*100*nC).toFixed(2)+' — if Fidelity shows a few dollars, the wrong strike is selected.</div></div>';
-  /* ORDER B */
-  s+='<div class="forder b"><div class="fhead">Order B <span>take profit — half</span></div>';
-  s+='<div class="frow">'+box('ACTION','Sell',true)+box('QUANTITY',half,true)+box('ORDER TYPE','Limit')+box('LIMIT PRICE','$'+n2(tp),true)+box('TIME IN FORCE','Day',true)+'</div>';
-  s+='<div class="fnote">'+n2(E)+' + ('+n2(t1Dist)+' stock distance to $'+n2(PLAN.t1)+' × '+d.toFixed(2)+') = '+n2(E+t1Dist*d)+', shaded 5¢ to fill.</div></div>';
-  /* ORDER C */
-  s+='<div class="forder c"><div class="fhead">Order C <span>the stop — all</span></div>';
-  s+='<div class="frow">'+box('ACTION','Sell')+box('QUANTITY',nC)+box('ORDER TYPE',fast?'Stop Loss':'Stop Limit',true)+box('STOP PRICE','$'+n2(st),true)+(fast?'':box('LIMIT PRICE','$'+n2(stL),true))+box('TIME IN FORCE','Day',true)+'</div>';
-  s+='<div class="fnote">'+n2(E)+' − ('+n2(stopDist)+' stock distance to $'+n2(PLAN.stop)+' × '+d.toFixed(2)+') = '+n2(st)+'. '+(fast?'Stop Loss (market): '+PICK.tk+' is a fast mover — guarantee the fill.':'Stop Limit: calm name — limit is the stop minus a 20¢ cushion.')+'</div></div>';
-  /* AFTER */
-  s+='<div class="forder g"><div class="fhead">After Order B fills <span>by hand, immediately — C is cancelled automatically</span></div>';
-  s+='<div class="frow">'+box('WHERE','Positions → Trade')+box('ACTION','Sell')+box('QUANTITY',nC-half)+box('ORDER TYPE','Stop Limit')+box('STOP PRICE','$'+n2(E),true)+box('LIMIT PRICE','$'+n2(E-0.20))+box('TIME IN FORCE','Day')+'</div>';
-  s+='<div class="fnote">Breakeven — the trade can no longer lose. Or use Trailing Stop Limit, trail $'+n2(1.5*A.atr*d)+', offset $'+n2(0.75*A.atr*d)+'. Exit on a 5-min close through the 9 EMA regardless.</div></div>';
-  s+='<div class="ffoot">Yellow = fields Fidelity defaults wrong. Preview order → confirm A buys '+nC+' at $'+n2(E)+', B sells '+half+' at $'+n2(tp)+', C sells '+nC+' at $'+n2(st)+' stop'+(fast?'':' / $'+n2(stL)+' limit')+', all Day → Place only on a 5-min CLOSE beyond the trigger with volume.</div>';
+  s+='<div class="frow">'+box('ACTION','Buy to Open')+box('QUANTITY',nC)+box('ORDER TYPE','Limit',true)+box('LIMIT PRICE','$'+n2(E),true)+box('TIME IN FORCE','Day')+'</div>';
+  s+='<div class="fnote">Select the contract from the chain (never type it). Estimated value ≈ $'+(E*100*nC).toFixed(0)+' — if it shows a few dollars, wrong strike. Shade a penny toward the ask if it\'s moving. Wait for the fill; your fill price is E.</div></div>';
+  /* TICKET 2 */
+  s+='<div class="forder c"><div class="fhead">TICKET 2 — THE STOP (Red 3) <span>within 60 seconds of the fill · Positions → the option → Trade</span></div>';
+  s+='<div class="frow">'+box('ACTION','Sell to Close')+box('QUANTITY',nC+' (ALL)')+box('ORDER TYPE',fast?'Stop Loss':'Stop Limit',true)+box('STOP PRICE','$'+n2(st),true)+(fast?'':box('LIMIT PRICE','$'+n2(stL),true))+box('TIME IN FORCE','Day')+'</div>';
+  s+='<div class="fnote">'+n2(E)+' − ('+n2(stopDist)+' stock distance to $'+n2(PLAN.stop)+' × '+d.toFixed(2)+') = '+n2(st)+'. '+(fast?'Stop Loss (market) — '+PICK.tk+' is a fast mover; guarantee the fill.':'Stop Limit — calm name; limit is the stop minus 20¢.')+' If you filled at a different E, move the stop by the same amount. <b>The stop is the seatbelt — no resting stop within a minute = close the trade.</b></div></div>';
+  /* TAKE PROFIT by hand */
+  s+='<div class="forder b"><div class="fhead">TAKE PROFIT — by hand (Green 2) <span>when the Officer speaks BANK HALF, permit #2</span></div>';
+  s+='<div class="frow">'+box('ACTION','Sell to Close')+box('QUANTITY',half+' (half)',true)+box('ORDER TYPE','Limit')+box('LIMIT PRICE','$'+n2(tp),true)+box('TIME IN FORCE','Day')+'</div>';
+  s+='<div class="fnote">'+n2(E)+' + ('+n2(t1Dist)+' stock distance to $'+n2(PLAN.t1)+' × '+d.toFixed(2)+') = '+n2(E+t1Dist*d)+', shaded 5¢. Or simply place this as a resting limit right after Ticket 2 — but then if it fills you must MODIFY the stop\'s quantity down to '+(nC-half)+' immediately.</div></div>';
+  /* AFTER T1 */
+  s+='<div class="forder g"><div class="fhead">AFTER THE HALF SELLS (Gold 4) <span>Orders → the resting stop → Modify</span></div>';
+  s+='<div class="frow">'+box('QUANTITY',nC-half,true)+box('STOP PRICE','$'+n2(E)+' (breakeven)',true)+box('OR: ORDER TYPE','Trailing Stop Limit ($)')+box('TRAIL VALUE','$'+n2(trail))+box('LIMIT OFFSET','$'+n2(trail/2))+'</div>';
+  s+='<div class="fnote">Modify the resting stop: quantity to the remaining '+(nC-half)+', price to your entry — the trade can no longer lose. Or replace it with the trailing stop (trail = 1.5 × ATR × Δ) and let the runner ride. Exit regardless on a 5-min close through the 9 EMA (permit #3). Flat by 2:45.</div></div>';
+  s+='<div class="ffoot">Two tickets, sixty seconds: BUY at $'+n2(E)+' limit → STOP for '+nC+' at $'+n2(st)+(fast?' (Stop Loss)':' / $'+n2(stL)+' limit')+'. Take half at $'+n2(tp)+' when the Officer calls it, then modify the stop to '+(nC-half)+' at breakeven or trail $'+n2(trail)+'. All orders Day. (OTOCO bracket available only in Active Trader Pro.)</div>';
   $('printSheet').innerHTML=s;
   window.print();
 }
@@ -541,17 +539,17 @@ function ticketFrom(){
   S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+stopTxt+', Day. — '+ss.why]);
   S.push(['AFTER T1','Once half fills, re-place a stop for the remaining '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven), or trail $'+n2(1.5*A.atr*d)+'.']);
   $('legs').innerHTML=S.map(l=>kLeg(l[0],l[1])).join('');
-  /* Fidelity form view */
+  /* Fidelity form view — the two-ticket workflow (options ticket has no OTOCO) */
   try{
-    const fast=(A.atr/A.px>0.004);
+    const fast=(A.atr/A.px>0.004);const trail=1.5*A.atr*d;
     const symTxt=c?(PICK.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(PICK.L?'Call':'Put')):PICK.tk+' (pick strike in chain)';
     const fld=(k,v,chg)=>'<div><div class="k">'+k+'</div><div class="v'+(chg?' chg':'')+'">'+v+'</div></div>';
     let f='';
-    f+='<div class="fo a"><div class="ft">Order A — the buy (Blue 1)</div><div class="fg">'+fld('Symbol',symTxt)+fld('Action','Buy')+fld('Quantity',nC)+fld('Order type','Limit',true)+fld('Limit price',E!=null?'$'+n2(E):'the mid',true)+fld('Time in force','Day')+'</div></div>';
-    f+='<div class="fo b"><div class="ft">Order B — take profit (Green 2)</div><div class="fg">'+fld('Action','Sell',true)+fld('Quantity',half+' (half)',true)+fld('Order type','Limit')+fld('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ',true)+fld('Time in force','Day',true)+fld('','')+'</div></div>';
-    f+='<div class="fo c"><div class="ft">Order C — the stop (Red 3)</div><div class="fg">'+fld('Action','Sell')+fld('Quantity',nC+' (all)')+fld('Order type',fast?'Stop Loss':'Stop Limit',true)+fld('Stop price',st2!=null?'$'+n2(st2):'E − '+n2(stopDist)+'×Δ',true)+(fast?fld('',''):fld('Limit price',st2!=null?'$'+n2(st2-0.20):'stop − 0.20',true))+fld('Time in force','Day',true)+'</div></div>';
+    f+='<div class="fo a"><div class="ft">Ticket 1 — BUY (Blue 1) · Options ticket</div><div class="fg">'+fld('Symbol',symTxt)+fld('Action','Buy to Open')+fld('Quantity',nC)+fld('Order type','Limit',true)+fld('Limit price',E!=null?'$'+n2(E):'the mid',true)+fld('Time in force','Day')+'</div></div>';
+    f+='<div class="fo c"><div class="ft">Ticket 2 — THE STOP (Red 3) · within 60s of the fill</div><div class="fg">'+fld('Where','Positions → Trade')+fld('Action','Sell to Close')+fld('Quantity',nC+' (all)')+fld('Order type',fast?'Stop Loss':'Stop Limit',true)+fld('Stop price',st2!=null?'$'+n2(st2):'E − '+n2(stopDist)+'×Δ',true)+(fast?fld('',''):fld('Limit price',st2!=null?'$'+n2(st2-0.20):'stop − 0.20',true))+'</div></div>';
+    f+='<div class="fo b"><div class="ft">Take profit — by hand (Green 2) · when the Officer says permit #2</div><div class="fg">'+fld('Action','Sell to Close')+fld('Quantity',half+' (half)',true)+fld('Order type','Limit')+fld('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ',true)+fld('Then','Modify the stop → qty '+(nC-half)+', price E')+fld('Or trail','$'+n2(trail))+'</div></div>';
     $('fidBody').innerHTML=f;
-    $('fidNote').innerHTML='Gold-highlighted fields are the ones Fidelity defaults wrong (Market, Buy, GTC) — change them. '+(fast?'Order C is <b>Stop Loss</b> (market): fast mover, guarantee the fill. ':'Order C is <b>Stop Limit</b>: calm name, protect the price. ')+'Estimated value for Order A should be about <b>$'+(E!=null?(E*100*nC).toFixed(0):'—')+'</b> — if it shows a few dollars, the strike is wrong (penny-stock error). After Order B fills: re-place a stop for '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven). Preview → Place.';
+    $('fidNote').innerHTML='<b>Two tickets, sixty seconds.</b> Buy at the limit; the moment it fills, put the stop on it (Ticket 2). Estimated value for Ticket 1 should be about <b>$'+(E!=null?(E*100*nC).toFixed(0):'—')+'</b> — a few dollars means the wrong strike. The take-profit is a spoken cue you act on by hand, then modify the stop to breakeven for the rest. No resting stop within a minute = close the trade. (True OTOCO brackets need Active Trader Pro.)';
   }catch(e){}
 }
 function setSide(callSide){
@@ -745,10 +743,10 @@ async function fireClaxon(tk,L,A,P,sc){
   const tp=E!=null?(E+t1Dist*d-0.05):null;const st=E!=null?(E-stopDist*d):null;
   const fast=(A.atr/A.px>0.004);
   $('cxOtoco').innerHTML=[
-    ['ENTRY','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+sym+' at <b>'+(E!=null?'$'+n2(E):'the mid')+' limit</b>, Day.'+(cc?' (bid $'+n2(cc.bid)+' · ask $'+n2(cc.ask)+' · Δ'+d.toFixed(2)+')':'')],
-    ['TAKE PROFIT','Sell to Close '+half+' at <b>'+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit</b>, Day. (T1 on the stock $'+n2(P.t1)+')'],
-    ['STOP','Sell to Close '+nC+' at <b>'+(st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ')+(fast?' stop (MARKET)':' stop / $'+(st!=null?n2(st-0.20):'…')+' limit')+'</b>, Day. — '+(fast?'fast mover: guarantee the fill':'calm: protect the price')+' (stock stop $'+n2(P.stop)+')'],
-    ['AFTER T1','Once half fills, re-place a stop for '+(nC-half)+' at '+(E!=null?'$'+n2(E):'breakeven')+', or trail $'+n2(1.5*atr*d)+'.']
+    ['ENTRY','TICKET 1 — Options ticket: Buy to Open '+nC+' of '+sym+' at <b>'+(E!=null?'$'+n2(E):'the mid')+' limit</b>, Day.'+(cc?' (bid $'+n2(cc.bid)+' · ask $'+n2(cc.ask)+' · Δ'+d.toFixed(2)+')':'')],
+    ['STOP','TICKET 2 — within 60s of the fill: Positions → Trade → Sell to Close '+nC+' at <b>'+(st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ')+(fast?' (Stop Loss)':' stop / $'+(st!=null?n2(st-0.20):'…')+' limit')+'</b>, Day. (stock stop $'+n2(P.stop)+')'],
+    ['TAKE PROFIT','By hand when the Officer says permit #2: Sell to Close '+half+' at <b>'+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit</b>. (T1 on the stock $'+n2(P.t1)+')'],
+    ['AFTER T1','Modify the stop: qty '+(nC-half)+', price '+(E!=null?'$'+n2(E):'breakeven')+' — or trail $'+n2(1.5*atr*d)+'.']
   ].map(l=>kLeg(l[0],l[1])).join('');
   CLAXON_CTX={tk:tk,L:L,A:A,P:P,sc:sc};
   $('claxon').classList.add('on');
@@ -814,13 +812,12 @@ async function toggleSheet(i){
     const sym=c?(w.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(L?'CALL':'PUT')):(w.tk+' — pick the ~0.70Δ '+(L?'call below':'put above')+' price');
     const fr=(k,v,x,chg)=>'<div class="fr"><div class="k">'+k+'</div><div class="v'+(chg?' chg':'')+'">'+v+'</div><div class="x">'+x+'</div></div>';
     let o='';
-    o+='<div class="warn">'+(L?'CALLS':'PUTS')+' · '+(c?'chain: bid $'+n2(c.bid)+' / ask $'+n2(c.ask)+' · Δ'+d.toFixed(2)+' · '+c.dte+' DTE':'chain unavailable — read bid/ask at the broker')+' · est. value A ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+' (if it shows a few dollars, wrong strike)</div>';
-    o+='<div class="so"><div class="st" style="color:var(--dim)">TICKET HEADER</div>'+fr('Order type','Conditional','Unlocks the multi-order ticket.')+fr('Cond. type','OTOCO','A fills first; then B and C go live and whichever fills cancels the other.')+'</div>';
-    o+='<div class="so a"><div class="st">Order A — the buy (Blue 1)</div>'+fr('Symbol',sym,'Use the chain button — never type it.')+fr('Action','Buy','Opening a long '+(L?'call':'put')+'.')+fr('Quantity',nC,'From $'+risk+' risk ÷ ($'+n2(stopDist)+' × '+d.toFixed(2)+' × 100).')+fr('Order type','Limit','Change from Market.',true)+fr('Limit price',E!=null?'$'+n2(E):'the mid','The mid; shade a penny toward the ask if moving. This is your E.',true)+fr('Time in force','Day','Never GTC.')+'</div>';
-    o+='<div class="so b"><div class="st">Order B — take profit (Green 2)</div>'+fr('Action','Sell','CHANGE from Buy — or this leg buys more.',true)+fr('Quantity',half,'CHANGE from all — half off at T1.',true)+fr('Order type','Limit','')+fr('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ','E + ('+n2(t1Dist)+' stock distance to $'+n2(t1)+' × '+d.toFixed(2)+'), shaded 5¢.',true)+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
-    o+='<div class="so c"><div class="st">Order C — the stop (Red 3)</div>'+fr('Action','Sell','')+fr('Quantity',nC,'ALL — never leave naked contracts.')+fr('Order type',fast?'Stop Loss':'Stop Limit',fast?'Fast mover: market stop guarantees the fill.':'Calm name: stop-limit protects your price.',true)+fr('Stop price',st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ','E − ('+n2(stopDist)+' stock distance to $'+n2(stop)+' × '+d.toFixed(2)+').',true)+(fast?'':fr('Limit price',st!=null?'$'+n2(st-0.20):'stop − 0.20','20¢ cushion so you actually get out.',true))+fr('Time in force','Day','CHANGE from GTC.',true)+'</div>';
-    o+='<button onclick="printSlot('+i+')" style="margin:6px 0 8px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:10.5px;width:100%;cursor:pointer">🖨 PRINT THIS ORDER — Fidelity form</button>';
-    o+='<div class="so g"><div class="st">After B fills (Gold 4) — by hand, immediately</div>'+fr('Where','Positions → Trade','Fidelity cancels C when B fills; the runner is unprotected until you do this.')+fr('Sell · qty',nC-half,'')+fr('Stop price',E!=null?'$'+n2(E):'E','Breakeven — the trade can no longer lose.',true)+fr('Or trail','$'+n2(1.5*A.atr*d),'1.5 × ATR × Δ. Exit on a 5-min close through the 9 EMA regardless.')+'</div>';
+    o+='<div class="warn">'+(L?'CALLS':'PUTS')+' · '+(c?'chain: bid $'+n2(c.bid)+' / ask $'+n2(c.ask)+' · Δ'+d.toFixed(2)+' · '+c.dte+' DTE':'chain unavailable — read bid/ask at the broker')+' · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+' (a few dollars = wrong strike)</div>';
+    o+='<div class="so a"><div class="st">Ticket 1 — BUY (Blue 1) · Options ticket</div>'+fr('Symbol',sym,'Select from the chain — never type it.')+fr('Action','Buy to Open','')+fr('Quantity',nC,'From $'+risk+' risk ÷ ($'+n2(stopDist)+' × '+d.toFixed(2)+' × 100).')+fr('Order type','Limit','',true)+fr('Limit price',E!=null?'$'+n2(E):'the mid','The mid; shade toward the ask if moving. This is E.',true)+fr('Time in force','Day','')+'</div>';
+    o+='<button onclick="printSlot('+i+')" style="margin:6px 0 8px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px;font-weight:800;font-size:10.5px;width:100%;cursor:pointer">🖨 PRINT THIS ORDER — Fidelity tickets</button>';
+    o+='<div class="so c"><div class="st">Ticket 2 — THE STOP (Red 3) · within 60s of the fill</div>'+fr('Where','Positions → Trade','Sell to Close opens pre-filled.')+fr('Quantity',nC,'ALL — never leave naked contracts.')+fr('Order type',fast?'Stop Loss':'Stop Limit',fast?'Fast mover: market stop guarantees the fill.':'Calm name: stop-limit protects price.',true)+fr('Stop price',st!=null?'$'+n2(st):'E − '+n2(stopDist)+'×Δ','E − ('+n2(stopDist)+' × '+d.toFixed(2)+').',true)+(fast?'':fr('Limit price',st!=null?'$'+n2(st-0.20):'stop − 0.20','20¢ cushion.',true))+fr('Time in force','Day','')+'</div>';
+    o+='<div class="so b"><div class="st">Take profit — by hand (Green 2) · when the Officer says permit #2</div>'+fr('Quantity',half,'Half.',true)+fr('Order type','Limit','')+fr('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ','E + ('+n2(t1Dist)+' × '+d.toFixed(2)+'), shaded 5¢.',true)+'</div>';
+    o+='<div class="so g"><div class="st">After the half sells (Gold 4) — Orders → Modify the stop</div>'+fr('Quantity',nC-half,'The remaining half.')+fr('Stop price',E!=null?'$'+n2(E):'E','Breakeven — the trade can no longer lose.',true)+fr('Or trail','$'+n2(1.5*A.atr*d),'Trailing Stop Limit: trail 1.5 × ATR × Δ. Exit on a 5-min close through the 9 EMA regardless.')+'</div>';
     el.innerHTML=o;
   }catch(e){el.innerHTML='<div class="warn">Could not build the sheet: '+(e.message||e)+'. Tap again.</div>';}
 }
@@ -852,7 +849,7 @@ function renderSlots(){
     '<div><span class="flab">T1</span><input value="'+(w.t1||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'t1\',this.value)"></div>'+
     '<div><span class="flab">E (fill)</span><input value="'+(w.E||'')+'" type="number" step="0.01" onchange="slotField('+i+',\'E\',this.value)"></div>'+
     '</div><div class="sm2" id="sm'+i+'">'+(bullet&&!w.E?'observation only — today\'s bullet is spent':'')+'</div>'+
-    '<button class="sheetBtn" onclick="toggleSheet('+i+')">📋 OTOCO ORDER SHEET — Fidelity fields, explained</button><div class="sheet" id="sheet'+i+'"></div></div>';
+    '<button class="sheetBtn" onclick="toggleSheet('+i+')">📋 ORDER SHEET — Fidelity tickets, explained</button><div class="sheet" id="sheet'+i+'"></div></div>';
   }).join(''):'<div style="color:var(--dim);font-size:11px">Nothing on the watch — add from the board.</div>';
 }
 async function watchAll(){

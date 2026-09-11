@@ -179,7 +179,7 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 </div>
 
 <div id="ockTicket">
-  <div class="tth"><span>THE OTOCO TICKET — ready to type</span><span id="ockVeh">Δ live</span></div>
+  <div class="tth"><span>THE ORDER — two Fidelity tickets, ready to type</span><span id="ockVeh">Δ live</span></div>
   <div class="tin">E (option fill) $<input id="ockE" type="number" step="0.01" onchange="buildOck()"> · risk $<input id="ockRisk" type="number" value="500" onchange="buildOck()"> <span id="ockNote"></span></div>
   <div id="ockLegs"></div>
 </div>
@@ -573,11 +573,12 @@ function buildOck(){
   const st=E!=null?(E-stopDist*d):null;
   document.getElementById('ockNote').textContent=E!=null?('size '+nC+' · half '+half):'enter E to price the legs · size '+nC;
   const tkm=(BARS.tk||'the contract');
+  const fastc=(atr&&trig&&atr/trig>0.004);
   const legs=[
-    ['ENTRY','g','Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tkm+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.'],
-    ['TAKE PROFIT','g','Sell to Close '+half+' contract'+(half>1?'s':'')+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit, Day. (T1 '+n2(t1)+')'],
-    ['STOP','r','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+(st!=null?(((atr&&trig&&atr/trig>0.004)?'$'+n2(st)+' stop (MARKET — fast mover)':'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit (calm)')):'E − '+n2(stopDist)+'×Δ')+', Day.'],
-    ['AFTER T1','gold','Once half fills, re-place a stop for the remaining '+(nC-half)+' at '+(E!=null?'$'+n2(E):'E')+' (breakeven), or trail $'+n2(1.5*(atr||0.4)*d)+'.']
+    ['ENTRY','g','TICKET 1 (Options ticket): Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tkm+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.'],
+    ['STOP','r','TICKET 2 (within 60s of the fill — Positions → Trade): Sell to Close '+nC+' at '+(st!=null?(fastc?'$'+n2(st)+' (Stop Loss)':'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit'):'E − '+n2(stopDist)+'×Δ')+', Day.'],
+    ['TAKE PROFIT','g','By hand when the Officer says permit #2: Sell to Close '+half+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit. (T1 '+n2(t1)+')'],
+    ['AFTER T1','gold','Modify the stop: qty '+(nC-half)+', price '+(E!=null?'$'+n2(E):'E')+' (breakeven), or trail $'+n2(1.5*(atr||0.4)*d)+'.']
   ];
   document.getElementById('ockLegs').innerHTML=legs.map(l=>kLeg(l[0],l[2])).join('');
 }

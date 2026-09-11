@@ -208,7 +208,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <div id="tRows"></div>
   <div id="tContract" class="trow" style="display:none"></div>
   <div id="tTicket">
-    <div class="th"><span>The Ticket — OTOCO, ready to type</span><span>delta math done for you</span></div>
+    <div class="th"><span>The Order — two Fidelity tickets</span><span>delta math done for you</span></div>
     <div id="tkIn">E (your option fill) $<input id="tkE" type="number" step="0.01"> <span>· defaults to the live mid; overwrite with your real fill</span></div>
     <div id="tkLegs"></div>
   </div>
@@ -556,10 +556,10 @@ function buildTicket(){
   const per=stopDist*d*100;const n=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(n/2));
   const sym=b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT');
   const legs=[
-   ['ENTRY','Buy to Open '+n+' contract'+(n>1?'s':'')+' of '+sym+' at $'+E.toFixed(2)+' limit, Day.'],
-   ['TAKE PROFIT','Sell to Close '+half+' contract'+(half>1?'s':'')+' at $'+tpS.toFixed(2)+' limit, Day.'],
-   ['STOP','Sell to Close '+n+' contract'+(n>1?'s':'')+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit — use MARKET stop instead on fast/wide names, Day.'],
-   ['AFTER T1','Once half fills, re-place a stop for the remaining '+(n-half)+' at $'+E.toFixed(2)+' (breakeven), or trail $'+(t1Dist*0.5*d).toFixed(2)+'. If the ticket forces equal legs, use '+n+'/'+n+' — all off at T1.']
+   ['ENTRY','TICKET 1 (Options ticket): Buy to Open '+n+' contract'+(n>1?'s':'')+' of '+sym+' at $'+E.toFixed(2)+' limit, Day.'],
+   ['STOP','TICKET 2 (within 60s of the fill): Sell to Close '+n+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit — Stop Loss (market) on fast names, Day.'],
+   ['TAKE PROFIT','By hand when the Officer says permit #2: Sell to Close '+half+' at $'+tpS.toFixed(2)+' limit.'],
+   ['AFTER T1','Modify the stop: qty '+(n-half)+', price $'+E.toFixed(2)+' (breakeven), or trail $'+(t1Dist*0.5*d).toFixed(2)+'.']
   ];
   document.getElementById('tkLegs').innerHTML=legs.map(l=>kLeg(l[0],l[1])).join('');
 }
