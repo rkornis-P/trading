@@ -178,6 +178,19 @@ input:focus{outline:none;border-color:var(--gold)}
 .oline.c3{border-left-color:#C0392B}.oline.c3 .on{background:#C0392B}.oline.c3 .ot{color:#FF7A6B}
 .oline.c4{border-left-color:#B8860B}.oline.c4 .on{background:#B8860B}.oline.c4 .ot{color:#E6B84A}
 .oline.c5{border-left-color:#7B3FA0}.oline.c5 .on{background:#7B3FA0}.oline.c5 .ot{color:#C08BE6}
+
+/* ===== FIDELITY OTOCO FORM (fill-in) ===== */
+#fidForm{background:var(--card);border:1.5px solid var(--gold);border-radius:12px;padding:12px;margin:8px 0}
+#fidForm .fh{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px;display:flex;justify-content:space-between}
+.fo{border-radius:10px;padding:9px 11px;margin-bottom:8px;border-left:4px solid var(--line);background:var(--card2)}
+.fo.a{border-left-color:#1E6FD9}.fo.b{border-left-color:#1F8F57}.fo.c{border-left-color:#C0392B}
+.fo .ft{font-family:Georgia,serif;font-size:13px;font-weight:700;margin-bottom:5px}
+.fo.a .ft{color:#5B9BFF}.fo.b .ft{color:#3BD986}.fo.c .ft{color:#FF7A6B}
+.fo .fg{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:11px}
+.fo .fg .k{color:var(--dim);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase}
+.fo .fg .v{color:var(--ink);font-weight:700;font-family:Georgia,serif;font-size:13px}
+.fo .fg .v.chg{color:var(--gold-soft)}
+#fidNote{font-size:10px;color:var(--dim);line-height:1.55;margin-top:6px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -208,7 +221,12 @@ input:focus{outline:none;border-color:var(--gold)}
     <span class="flab">RISK $ PER TRADE</span><input id="riskIn" type="number" value="500" style="width:120px" onchange="buildGauntlet(false)">
     <div id="legs" style="margin-top:6px"></div>
   </div>
-  <button id="armBtn" onclick="arm()">⚔ I'M IN — ARM THE WATCH</button>
+  <div id="fidForm">
+  <div class="fh"><span>Fidelity OTOCO — fill the form exactly like this</span><span>Conditional › OTOCO</span></div>
+  <div id="fidBody"></div>
+  <div id="fidNote"></div>
+</div>
+<button id="armBtn" onclick="arm()">⚔ I'M IN — ARM THE WATCH</button>
   <div style="height:6px"></div>
   <button class="ghost" onclick="window.print()">🖨 PRINT THE GAUNTLET</button>
 </div>
@@ -407,6 +425,18 @@ function ticketFrom(){
   S.push(['STOP','Sell to Close '+nC+' contract'+(nC>1?'s':'')+' at '+stopTxt+', Day. — '+ss.why]);
   S.push(['AFTER T1','Once half fills, re-place a stop for the remaining '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven), or trail $'+n2(1.5*A.atr*d)+'.']);
   $('legs').innerHTML=S.map(l=>kLeg(l[0],l[1])).join('');
+  /* Fidelity form view */
+  try{
+    const fast=(A.atr/A.px>0.004);
+    const symTxt=c?(PICK.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})+' $'+c.K+' '+(PICK.L?'Call':'Put')):PICK.tk+' (pick strike in chain)';
+    const fld=(k,v,chg)=>'<div><div class="k">'+k+'</div><div class="v'+(chg?' chg':'')+'">'+v+'</div></div>';
+    let f='';
+    f+='<div class="fo a"><div class="ft">Order A — the buy (Blue 1)</div><div class="fg">'+fld('Symbol',symTxt)+fld('Action','Buy')+fld('Quantity',nC)+fld('Order type','Limit',true)+fld('Limit price',E!=null?'$'+n2(E):'the mid',true)+fld('Time in force','Day')+'</div></div>';
+    f+='<div class="fo b"><div class="ft">Order B — take profit (Green 2)</div><div class="fg">'+fld('Action','Sell',true)+fld('Quantity',half+' (half)',true)+fld('Order type','Limit')+fld('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ',true)+fld('Time in force','Day',true)+fld('','')+'</div></div>';
+    f+='<div class="fo c"><div class="ft">Order C — the stop (Red 3)</div><div class="fg">'+fld('Action','Sell')+fld('Quantity',nC+' (all)')+fld('Order type',fast?'Stop Loss':'Stop Limit',true)+fld('Stop price',st2!=null?'$'+n2(st2):'E − '+n2(stopDist)+'×Δ',true)+(fast?fld('',''):fld('Limit price',st2!=null?'$'+n2(st2-0.20):'stop − 0.20',true))+fld('Time in force','Day',true)+'</div></div>';
+    $('fidBody').innerHTML=f;
+    $('fidNote').innerHTML='Gold-highlighted fields are the ones Fidelity defaults wrong (Market, Buy, GTC) — change them. '+(fast?'Order C is <b>Stop Loss</b> (market): fast mover, guarantee the fill. ':'Order C is <b>Stop Limit</b>: calm name, protect the price. ')+'Estimated value for Order A should be about <b>$'+(E!=null?(E*100*nC).toFixed(0):'—')+'</b> — if it shows a few dollars, the strike is wrong (penny-stock error). After Order B fills: re-place a stop for '+(nC-half)+' at $'+(E!=null?n2(E):'E')+' (breakeven). Preview → Place.';
+  }catch(e){}
 }
 function setSide(callSide){
   if(!PICK)return;
