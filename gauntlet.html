@@ -228,6 +228,26 @@ input:focus{outline:none;border-color:var(--gold)}
   #printSheet .fnote{font-size:9.5px;color:#444;margin-top:6px}
   #printSheet .ffoot{font-size:9px;color:#333;border-top:1.5px solid #BF9000;padding-top:8px;margin-top:14px;line-height:1.5}
 }
+
+/* ===== SECTOR CHOICES ===== */
+#sectorBar{display:flex;gap:6px;margin-bottom:8px}
+#sectorBar button{flex:1;padding:10px 4px;font-size:10px}
+.secgrp{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px;background:var(--card)}
+.secgrp .sgh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.secgrp .sgn{font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--gold-soft);letter-spacing:.04em}
+.secgrp .sge{font-size:9px;color:var(--dim);letter-spacing:.08em}
+.secrow{display:grid;grid-template-columns:24px 62px 1fr 56px;gap:6px;align-items:center;padding:6px 4px;border-radius:8px;border:1px solid transparent;font-size:11px}
+.secrow.best{border-color:var(--gold);background:#1B222D}
+.secrow.tell{opacity:.55}
+.secrow .pk{width:18px;height:18px;border:1.5px solid var(--line);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--gold-soft)}
+.secrow .pk.on{border-color:var(--gold);background:var(--gold);color:#000}
+.secrow .tk{font-family:Georgia,serif;font-weight:700;font-size:13px}
+.secrow .info{font-size:10px;color:var(--dim)}
+.secrow .info b{color:var(--ink)}
+.secrow .sc{font-family:Georgia,serif;font-weight:700;color:var(--gold-soft);text-align:right}
+#secFoot{display:flex;gap:6px;margin-top:6px}
+#secFoot button{flex:1;padding:12px 4px;font-size:11px}
+#secSt{font-size:10px;color:var(--dim);text-align:center;margin-top:5px}
 </style></head><body>
 <div id="ktape"><span style="font-size:10px;color:#8A93A3;padding:2px 6px">tape…</span></div>
 
@@ -242,7 +262,14 @@ input:focus{outline:none;border-color:var(--gold)}
 
 <!-- STEP 1 -->
 <div id="step1">
-  <div class="card"><div class="sec"><span>The program's top choices — tap one</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="loadBoard(true)">↻</span></div>
+  <div class="card" style="border:1.5px solid var(--gold)">
+    <div class="sec"><span>SECTOR CHOICES — the machine's best per engine, today</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="loadSectors(true)">↻</span></div>
+    <div id="sectorBar"><button class="ghost" onclick="secAuto(2)">AUTO-PICK 2 SECTORS</button><button class="ghost" onclick="secAuto(3)">AUTO-PICK 3 SECTORS</button></div>
+    <div id="sectorBody"><div style="color:var(--dim);font-size:11px">Scoring the dozen…</div></div>
+    <div id="secFoot"><button onclick="secArmSelected()">⚔ ARM THE CHECKED (→ Watch)</button><button class="ghost" onclick="secPrintSelected()">🖨 PRINT THE CHECKED</button></div>
+    <div id="secSt"></div>
+  </div>
+  <div class="card"><div class="sec"><span>The full board — tap one</span><span style="cursor:pointer;color:var(--gold-soft)" onclick="loadBoard(true)">↻</span></div>
   <div id="picks">Loading the board…</div></div>
 </div>
 
@@ -438,8 +465,92 @@ function compose(A,L){
 let ALL=[],PICK=null,PLAN=null,CONTRACT=null,CONTRACT2=null,VEHICLE='70',TIMER=null;
 function chosenC(){return (VEHICLE==='60'&&CONTRACT2)?CONTRACT2:CONTRACT;}
 
+
+/* ================= SECTOR CHOICES ================= */
+/* The dozen, by engine. tier: 'bullet' = sized by the law; 'second' = 0.60 vehicle, 1-2 contracts, A+ only; 'tell' = never traded, read beside its names. */
+const SECTORS=[
+ {name:'TECH · SEMIS',engine:'NQ · semis tone',names:[{tk:'SMCI',tier:'bullet'},{tk:'NVDA',tier:'second'},{tk:'AMD',tier:'second'},{tk:'MU',tier:'tell'}]},
+ {name:'HIGH-BETA GROWTH',engine:'risk appetite · NQ',names:[{tk:'SPCX',tier:'bullet'},{tk:'IONQ',tier:'bullet'},{tk:'PLTR',tier:'second'},{tk:'TSLA',tier:'tell'}]},
+ {name:'ENERGY',engine:'crude · Hormuz · OPEC',names:[{tk:'OXY',tier:'bullet'},{tk:'USO',tier:'tell'}]},
+ {name:'RATES · FINTECH',engine:'the 10-year · jobs',names:[{tk:'SOFI',tier:'bullet'}]},
+ {name:'CRYPTO BETA',engine:'bitcoin overnight',names:[{tk:'RIOT',tier:'bullet'}]},
+];
+let SEC={scores:{},checked:new Set()};
+async function loadSectors(force){
+  const body=$('sectorBody');body.innerHTML='<div style="color:var(--dim);font-size:11px">Scoring the dozen…</div>';
+  SEC.scores={};
+  const all=[];SECTORS.forEach(s=>s.names.forEach(n=>all.push(n.tk)));
+  for(const tk of all){
+    try{const b=await pull(tk);const A=analyze(b);const sC=score(A,true),sP=score(A,false);const L=sC.score>=sP.score;const sc=L?sC:sP;
+      SEC.scores[tk]={A,L,sc,sC,sP,rm:sc.rm||runMeter(A,L)};}catch(e){SEC.scores[tk]=null;}
+    await sleep(220);
+  }
+  renderSectors();
+  $('secSt').textContent='Scored '+all.length+' names · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · gold row = the best tradeable name in each sector';
+}
+function secBest(s){
+  /* best = highest score among bullet/second tier, penalized by run meter already; must be run FRESH/EARLY/RUNNING to qualify */
+  let best=null;
+  for(const n of s.names){if(n.tier==='tell')continue;const d=SEC.scores[n.tk];if(!d)continue;
+    const ok=d.rm.phase!=='LATE'&&d.rm.phase!=='EXHAUSTED';
+    const val=d.sc.score-(n.tier==='second'?5:0)-(ok?0:100);
+    if(!best||val>best.val)best={tk:n.tk,val,d};}
+  return best;
+}
+function renderSectors(){
+  let out='';
+  for(const s of SECTORS){
+    const best=secBest(s);
+    out+='<div class="secgrp"><div class="sgh"><span class="sgn">'+s.name+'</span><span class="sge">'+s.engine+'</span></div>';
+    for(const n of s.names){
+      const d=SEC.scores[n.tk];
+      const isBest=best&&best.tk===n.tk&&best.val>0;
+      const chk=SEC.checked.has(n.tk);
+      const info=d?('$'+n2(d.A.px)+' · <b>'+(d.L?'CALLS':'PUTS')+'</b> · RUN <span style="color:'+d.rm.color+'">'+d.rm.phase+'</span> · VOL '+(d.A.volState==='RISING'?'▲':d.A.volState==='FADING'?'▼':'▬')+(n.tier==='second'?' · <i>0.60 vehicle, 1–2 cts</i>':'')):'no data';
+      const tellNote=n.tier==='tell'?' · <i>tell only — never traded</i>':'';
+      out+='<div class="secrow'+(isBest?' best':'')+(n.tier==='tell'?' tell':'')+'">'+
+        (n.tier==='tell'?'<div></div>':'<div class="pk'+(chk?' on':'')+'" onclick="secToggle(\''+n.tk+'\')">'+(chk?'✓':'')+'</div>')+
+        '<div class="tk">'+(isBest?'★ ':'')+n.tk+'</div><div class="info">'+info+tellNote+'</div><div class="sc">'+(d&&n.tier!=='tell'?d.sc.score:'')+'</div></div>';
+    }
+    out+='</div>';
+  }
+  $('sectorBody').innerHTML=out;
+}
+function secToggle(tk){if(SEC.checked.has(tk))SEC.checked.delete(tk);else{if(SEC.checked.size>=3){alert('Three is the limit — uncheck one first.');return;}SEC.checked.add(tk);}renderSectors();}
+function secAuto(n){
+  /* pick the best name from the n strongest DIFFERENT sectors */
+  const cands=SECTORS.map(s=>({s,b:secBest(s)})).filter(x=>x.b&&x.b.val>0).sort((a,b)=>b.b.val-a.b.val).slice(0,n);
+  SEC.checked=new Set(cands.map(x=>x.b.tk));renderSectors();
+  $('secSt').textContent='Auto-picked '+cands.map(x=>x.b.tk+' ('+x.s.name.split(' ')[0]+')').join(' · ')+' — '+n+' different engines. Uncheck/check to adjust, then ARM or PRINT.';
+  say&&say('Sector choices: '+cands.map(x=>x.b.tk+', '+(x.b.d.L?'calls':'puts')).join('. ')+'.');
+}
+async function secArmSelected(){
+  const picks=[...SEC.checked];if(!picks.length){alert('Check up to three names first (or AUTO-PICK).');return;}
+  for(const tk of picks){
+    const d=SEC.scores[tk];if(!d)continue;
+    PICK={tk,A:d.A,L:d.L,sc:d.sc,sC:d.sC,sP:d.sP};PLAN=compose(d.A,d.L);
+    let S=slots();if(S.find(x=>x.tk===tk))continue;if(S.length>=3){alert('The Watch is full — release a slot first.');break;}
+    S.push({tk,L:d.L,anchor:d.A.px,trig:+PLAN.trig.toFixed(2),stop:+PLAN.stop.toFixed(2),t1:+PLAN.t1.toFixed(2),E:null,d:0.70,vehicle:'70',ts:Date.now(),lastV:null,lastCi:null});
+    saveSlots(S);
+  }
+  go(3);renderSlots();watchAll();if(TIMER)clearInterval(TIMER);TIMER=setInterval(watchAll,30000);
+  say('Armed: '+picks.join(', ')+'. The watch is on.');
+}
+async function secPrintSelected(){
+  const picks=[...SEC.checked];if(!picks.length){alert('Check the names to print first (or AUTO-PICK).');return;}
+  /* print each as its own sheet, one after another */
+  for(const tk of picks){
+    const d=SEC.scores[tk];if(!d)continue;
+    PICK={tk,A:d.A,L:d.L,sc:d.sc,sC:d.sC,sP:d.sP};PLAN=compose(d.A,d.L);CONTRACT=null;CONTRACT2=null;VEHICLE='70';
+    await buildGauntlet(true);
+    printOrder();
+    await sleep(1200);
+  }
+}
+
 /* ---------- step 1 ---------- */
 async function loadBoard(force){
+  try{loadSectors(force);}catch(e){}
   $('st').textContent='Scoring the board…';$('picks').innerHTML='';
   ALL=[];
   for(const tk of board()){
