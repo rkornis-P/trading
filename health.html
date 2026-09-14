@@ -115,7 +115,10 @@ function checkCaches(){
     row('cacheRows',name,cnt?(cnt+' item'+(cnt>1?'s':'')+(oldest?' · oldest '+ago(oldest/1000):'')):'none','dim');
     REPORT.caches[name]=cnt;
   }
-  document.getElementById('cacheV').textContent=n+' cached items';
+  let bytes=0;for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);bytes+=(k.length+(localStorage.getItem(k)||'').length)*2;}
+  row('cacheRows','Storage used',(bytes/1048576).toFixed(2)+' MB of ~5 MB'+(bytes>4*1048576?' — near the limit, tap 🧹':''),bytes>4*1048576?'warn':'dim');
+  if(bytes>4.5*1048576)FIX.push('<b>Browser storage is nearly full</b> — pages may fail to cache data. Tap 🧹 CLEAR DATA CACHES (keeps your board, logs and settings).');
+  document.getElementById('cacheV').textContent=n+' cached items · storage used '+(bytes/1048576).toFixed(1)+' MB';
   row('cacheRows','Board',(function(){try{return (JSON.parse(localStorage.getItem('kBoard'))||[]).join(' · ')||'default';}catch(e){return 'default';}})(),'dim');
 }
 function clearData(){

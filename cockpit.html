@@ -245,6 +245,32 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <div class="knav"><a href="desk.html">DESK</a><a href="gauntlet.html">GAUNTLET</a><a href="cockpit.html" class="on">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="health.html">HEALTH</a><a href="hub.html">MORE</a></div>
 
 <script>
+/* ===== safe chain cache (quota-proof) ===== */
+function kTrimChain(cj){
+  try{
+    const d=cj&&cj.data;if(!d||!Array.isArray(d.options))return cj;
+    const px=+(d.current_price!=null?d.current_price:d.close)||0;
+    const now=new Date();
+    const keep=d.options.filter(o=>{
+      const s=o.option||o.symbol||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m)return false;
+      const K=+m[3]/1000;if(px&&Math.abs(K-px)>px*0.15)return false;
+      const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));
+      const dte=Math.round((exp-now)/86400000);return dte>=0&&dte<=45;
+    }).map(o=>({option:o.option||o.symbol,bid:+o.bid||0,ask:+o.ask||0,open_interest:+o.open_interest||+o.oi||0,volume:+o.volume||0,iv:o.iv||null,last:+o.last||0}));
+    return {source:cj.source,data:{current_price:d.current_price,close:d.close,options:keep}};
+  }catch(e){return cj;}
+}
+function kCacheChain(tk,cj){
+  const slim=kTrimChain(cj);
+  const payload=JSON.stringify({ts:Date.now(),cj:slim});
+  try{localStorage.setItem('kChain_'+tk,payload);return true;}
+  catch(e){
+    /* quota: evict every other cached chain, then retry once */
+    try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('kChain_')&&k!=='kChain_'+tk)localStorage.removeItem(k);}
+      localStorage.setItem('kChain_'+tk,payload);return true;}catch(e2){return false;}
+  }
+}
+
 function kLeg(name,text){
   const M={'ENTRY':[1,'ENTRY — the buy'],'PRIMARY':[1,'ENTRY — the buy'],'TAKE PROFIT':[2,'TAKE PROFIT — sell half'],'STOP':[3,'STOP — sell all if wrong'],'AFTER T1':[4,'AFTER T1 — re-protect at breakeven'],'RUNNER':[5,'RUNNER — let it ride']};
   const m=M[name]||[0,name];
@@ -340,7 +366,7 @@ function loadChain(tk){
       if(!CHAIN_RETRY)CHAIN_RETRY=setTimeout(()=>{CHAIN_RETRY=null;loadChain(tk);},90000);
       return;
     }
-    localStorage.setItem('kChain_'+tk,JSON.stringify({ts:Date.now(),cj}));
+    kCacheChain(tk,cj);
     procChain(tk,cj,st,false);
   }).catch(e=>{
     const cached=chainCache(tk);
