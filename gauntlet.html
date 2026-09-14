@@ -358,8 +358,52 @@ function analyze(b){
   /* ATR14 */
   let atr=0;for(let i=Math.max(1,n-13);i<=n;i++)atr+=Math.max(b.H[i]-b.L[i],Math.abs(b.H[i]-b.C[i-1]),Math.abs(b.L[i]-b.C[i-1]));atr/=Math.min(14,n);
   const rv=avgVol?b.V[ci]/avgVol:1;
-  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],vwc:vw[ci],rsi:rsi[n],mh,ci,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,bars:b};
+  /* ---- RUN METER inputs ---- */
+  /* ADR: average of completed prior sessions' high-low (the 5-day pull gives ~4) */
+  const priorDays=days.slice(0,-1).filter(dd=>dd.length>10);
+  const adr=priorDays.length?priorDays.reduce((s,dd)=>s+(Math.max(...dd.map(i=>b.H[i]))-Math.min(...dd.map(i=>b.L[i]))),0)/priorDays.length:null;
+  const todayHi=today?Math.max(...today.map(i=>b.H[i])):null,todayLo=today?Math.min(...today.map(i=>b.L[i])):null;
+  const adrUsed=(adr&&todayHi!=null)?(todayHi-todayLo)/adr:null;
+  /* VWAP sigma: volume-weighted std of typical price around the running VWAP, this session */
+  let wv=0,wsum=0;if(today){for(const i of today){const tp=(b.H[i]+b.L[i]+b.C[i])/3;const w=b.V[i]||1;wv+=w*Math.pow(tp-vw[i],2);wsum+=w;}}
+  const vsig=wsum?Math.sqrt(wv/wsum):null;const vz=(vsig&&vsig>0)?(px-vw[n])/vsig:null;
+  /* leg: bars since the last 9EMA/20SMA cross, and travel since in ATR */
+  let legStart=n;for(let i=n;i>0;i--){const a=(e9[i]||0)-(s20[i]||0),bb=(e9[i-1]||0)-(s20[i-1]||0);if(a===0||bb===0)continue;if((a>0)!==(bb>0)){legStart=i;break;}legStart=i;}
+  const legBars=n-legStart;
+  let r3=0,p6=0;for(let k=Math.max(0,ci-2);k<=ci;k++)r3+=b.V[k];for(let k=Math.max(0,ci-8);k<=ci-3;k++)p6+=b.V[k];
+  const volTrend=(p6>0)?((r3/3)/(p6/6)):1;  /* >1.15 rising · <0.85 fading · else steady */
+  const volState=volTrend>=1.15?'RISING':volTrend<=0.85?'FADING':'STEADY';
+  const legMove=Math.abs(px-b.C[legStart]);
+  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],vwc:vw[ci],rsi:rsi[n],mh,ci,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,volState,adr,adrUsed,vz,vsig,legBars,legMove,bars:b};
 }
+
+/* ================= THE RUN METER — where is the stock in its run? ================= */
+function runMeter(A,L){
+  /* Components (higher = more spent):
+     ADR used     40%  : today's range vs average day (0.35 early · 0.6 running · 0.85 late · 1.0+ exhausted)
+     VWAP stretch 30%  : |z| sigma from VWAP in the trade direction (1 normal · 2 extended · 3 exhausted)
+     Leg travel   20%  : move since the 9/20 cross in ATR (2 fresh · 4 running · 6 late)
+     RSI          10%  : 70+/30- stretched */
+  const dirZ=A.vz==null?0:(L?A.vz:-A.vz);          /* positive = stretched in your direction */
+  const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);
+  const cZ=Math.max(0,Math.min(1,dirZ/3));
+  const cLeg=A.atr?Math.max(0,Math.min(1,(A.legMove/A.atr)/6)):0.3;
+  const rsiS=L?Math.max(0,Math.min(1,(A.rsi-55)/25)):Math.max(0,Math.min(1,(45-A.rsi)/25));
+  const score=Math.round(100*(0.40*cAdr+0.30*cZ+0.20*cLeg+0.10*rsiS));
+  let phase,color,advice;
+  if(score<30){phase='EARLY';color='var(--dim)';advice='The run hasn\'t started. Don\'t front-run it — wait for the trigger candle.';}
+  else if(score<50){phase='FRESH';color='var(--green)';advice='The sweet spot. A fired trigger here has most of the day\'s range still ahead of it. Enter on the trigger.';}
+  else if(score<70){phase='RUNNING';color='var(--amber)';advice='Mid-life. Only a PULLBACK entry (to the 9 EMA / VWAP that holds and pushes off) — never the breakout candle. Half size, closer target.';}
+  else if(score<85){phase='LATE';color='var(--red)';advice='You would be buying the top of the cycle. This is the entry that reverses the moment you\'re in. No chase — wait for the reversion, or for tomorrow.';}
+  else{phase='EXHAUSTED';color='var(--red)';advice='Reversal risk. The day has delivered more than a normal day and price is stretched from fair value. The only trade here is the fade, and that is not your playbook. Pass.';}
+  const lines=[];
+  if(A.adrUsed!=null)lines.push('Day range used: '+(A.adrUsed*100).toFixed(0)+'% of a normal day'+(A.adrUsed>=1?' — the day is spent':A.adrUsed>=0.8?' — nearing the end':A.adrUsed<0.35?' — plenty of room':' — room left'));
+  if(A.vz!=null)lines.push('Stretch from VWAP: '+(dirZ>=0?'+':'')+dirZ.toFixed(1)+'σ '+(L?'above':'below')+' fair value'+(dirZ>=3?' — extreme':dirZ>=2?' — extended, chasers beware':dirZ>=1?' — normal':' — near fair value'));
+  if(A.atr)lines.push('This leg: '+(A.legMove/A.atr).toFixed(1)+' ATR traveled over '+A.legBars+' bars since the 9/20 cross'+((A.legMove/A.atr)>=5?' — old leg':(A.legMove/A.atr)<=2?' — young leg':''));
+  lines.push('RSI '+A.rsi.toFixed(0)+(L?(A.rsi>70?' — stretched hot':''):(A.rsi<30?' — washed out':'')));
+  return {score,phase,color,advice,lines};
+}
+
 function score(A,L){
   const S=[];const add=(ok,pts,lbl)=>S.push({ok,pts,lbl});
   add(L?A.e9>A.s20:A.e9<A.s20,18,'9/20 aligned');
@@ -369,8 +413,13 @@ function score(A,L){
   add(L?A.px>A.pdc:A.px<A.pdc,12,'winning vs yesterday');
   add(L?(A.px>=A.orH*0.998):(A.px<=A.orL*1.002),14,'pressing the range edge');
   add(A.atr/A.px>=0.0018,12,'it can travel');
-  const sc=S.reduce((a,x)=>a+(x.ok?x.pts:0),0);
-  return {score:sc,det:S};
+  let sc=S.reduce((a,x)=>a+(x.ok?x.pts:0),0);
+  /* RUN penalty: a strong stock whose move is spent is not a candidate */
+  const rm=runMeter(A,L);
+  if(rm.phase==='LATE')sc=Math.max(0,sc-15);
+  if(rm.phase==='EXHAUSTED')sc=Math.max(0,sc-30);
+  S.push({ok:rm.phase==='FRESH'||rm.phase==='EARLY',pts:0,lbl:'run '+rm.phase.toLowerCase()+' ('+rm.score+')'});
+  return {score:sc,det:S,rm};
 }
 function compose(A,L){
   /* BREAKOUT trigger: the prior high (calls) / low (puts) — the classic break of structure */
@@ -412,9 +461,16 @@ async function loadBoard(force){
   $('picks').innerHTML=ALL.map((e,i)=>{
     const tops=e.sc.det.filter(d=>d.ok).slice(0,3).map(d=>d.lbl).join(' · ');
     const miss=e.sc.det.filter(d=>!d.ok).slice(0,2).map(d=>d.lbl).join(' · ');
+    const vs=e.A.volState||'STEADY';const vc=vs==='RISING'?'var(--green)':vs==='FADING'?'var(--red)':'var(--dim)';
+    const va=vs==='RISING'?'▲':vs==='FADING'?'▼':'▬';
+    const P=compose(e.A,e.L);
+    const rm=e.sc.rm||runMeter(e.A,e.L);
+    const runChip='<span style="color:'+rm.color+';font-weight:800"> · RUN '+rm.score+' '+rm.phase+'</span>';
+    const gap=(e.sc.score>=70&&vs==='FADING')?'<div style="color:var(--amber);font-size:10px;margin-top:4px">Strong stock, tired move — score says watch, volume says not this candle. Wait for the pullback-and-push.</div>':'';
+    const lateNote=(rm.phase==='LATE'||rm.phase==='EXHAUSTED')?'<div style="color:var(--red);font-size:10px;margin-top:4px">'+rm.phase+' — '+rm.advice+'</div>':(rm.phase==='RUNNING'?'<div style="color:var(--amber);font-size:10px;margin-top:4px">RUNNING — pullback entry only, half size.</div>':'');
     return '<button class="pick" onclick="choose('+i+')"><div class="r1"><span class="tk">'+(i===0?'★ ':'')+e.tk+'</span><span class="sd '+(e.L?'C':'P')+'">'+(e.L?'CALLS':'PUTS')+'</span></div>'+
-    '<div class="r2"><span>$'+n2(e.A.px)+(e.A.chg!=null?' ('+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%)':'')+'</span><span class="sc">'+e.sc.score+'/100</span></div>'+
-    '<div class="why">✓ '+tops+(miss?'<br>✗ '+miss:'')+'</div></button>';
+    '<div class="r2"><span>$'+n2(e.A.px)+(e.A.chg!=null?' ('+(e.A.chg>=0?'+':'')+e.A.chg.toFixed(1)+'%)':'')+' · <span style="color:'+vc+';font-weight:800">VOL '+va+'</span>'+runChip+'</span><span class="sc">'+e.sc.score+'/100</span></div>'+
+    '<div class="why">✓ '+tops+(miss?'<br>✗ '+miss:'')+'</div>'+gap+lateNote+'</button>';
   }).join('');
   $('st').textContent='Scored '+ALL.length+' names · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
 }
@@ -426,6 +482,7 @@ function go(n){
 function choose(i){PICK=ALL[i];try{localStorage.setItem('kActive',PICK.tk);}catch(e){}buildGauntlet(true);go(2);}
 
 /* ---------- step 2: the gauntlet ---------- */
+function runInfo(on){document.getElementById('runModal').style.display=on?'block':'none';}
 function atrInfo(on){document.getElementById('atrModal').classList.toggle('on',!!on);}
 
 
@@ -549,7 +606,8 @@ function ticketFrom(){
     f+='<div class="fo c"><div class="ft">Ticket 2 — THE STOP (Red 3) · within 60s of the fill</div><div class="fg">'+fld('Where','Positions → Trade')+fld('Action','Sell to Close')+fld('Quantity',nC+' (all)')+fld('Order type',fast?'Stop Loss':'Stop Limit',true)+fld('Stop price',st2!=null?'$'+n2(st2):'E − '+n2(stopDist)+'×Δ',true)+(fast?fld('',''):fld('Limit price',st2!=null?'$'+n2(st2-0.20):'stop − 0.20',true))+'</div></div>';
     f+='<div class="fo b"><div class="ft">Take profit — by hand (Green 2) · when the Officer says permit #2</div><div class="fg">'+fld('Action','Sell to Close')+fld('Quantity',half+' (half)',true)+fld('Order type','Limit')+fld('Limit price',tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ',true)+fld('Then','Modify the stop → qty '+(nC-half)+', price E')+fld('Or trail','$'+n2(trail))+'</div></div>';
     $('fidBody').innerHTML=f;
-    $('fidNote').innerHTML='<b>Two tickets, sixty seconds.</b> Buy at the limit; the moment it fills, put the stop on it (Ticket 2). Estimated value for Ticket 1 should be about <b>$'+(E!=null?(E*100*nC).toFixed(0):'—')+'</b> — a few dollars means the wrong strike. The take-profit is a spoken cue you act on by hand, then modify the stop to breakeven for the rest. No resting stop within a minute = close the trade. (True OTOCO brackets need Active Trader Pro.)';
+    {const rm=runMeter(A,PICK.L);if(rm.phase==='LATE'||rm.phase==='EXHAUSTED'){$('fidNote').innerHTML='<b style="color:var(--red)">RUN '+rm.phase+' — do not place this order now.</b> '+rm.advice+' If the setup comes back via a pullback that holds, use the 0.70 vehicle at half size.<br><br>';}else if(rm.phase==='RUNNING'){$('fidNote').innerHTML='<b style="color:var(--amber)">RUN RUNNING — pullback entries only, half size.</b><br><br>';}else{$('fidNote').innerHTML='';}}
+  $('fidNote').innerHTML+='<b>Two tickets, sixty seconds.</b> Buy at the limit; the moment it fills, put the stop on it (Ticket 2). Estimated value for Ticket 1 should be about <b>$'+(E!=null?(E*100*nC).toFixed(0):'—')+'</b> — a few dollars means the wrong strike. The take-profit is a spoken cue you act on by hand, then modify the stop to breakeven for the rest. No resting stop within a minute = close the trade. (True OTOCO brackets need Active Trader Pro.)';
   }catch(e){}
 }
 function setSide(callSide){
@@ -578,6 +636,11 @@ async function buildGauntlet(fresh){
   const gates=[];
   const g=(state,txt,sub)=>gates.push({state,txt,sub});
   g(PICK.sc.score>=70?'pass':(PICK.sc.score>=60?'warn2':'fail'),'<b>Score '+PICK.sc.score+'/100</b> — pass line is 70',PICK.sc.det.map(d=>(d.ok?'✓ ':'✗ ')+d.lbl).join(' · '));
+  {const rm=runMeter(A,L);
+   g(rm.phase==='FRESH'||rm.phase==='EARLY'?'pass':rm.phase==='RUNNING'?'warn2':'fail',
+     '<b>Where in its run: '+rm.phase+' — '+rm.score+'/100 spent</b> <span class="qi" onclick="runInfo(true)" style="display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border:1px solid var(--gold);border-radius:50%;color:var(--gold-soft);font-size:9px;font-weight:800;cursor:pointer;margin-left:4px">i</span>',
+     rm.lines.join(' · ')+'<br><b>'+rm.advice+'</b>');}
+  {const vs=A.volState||'STEADY';g(vs==='RISING'?'pass':vs==='FADING'?'warn2':'pass','<b>Volume '+(vs==='RISING'?'▲ RISING':vs==='FADING'?'▼ FADING':'▬ STEADY')+'</b> — last 3 bars vs prior 6: '+(A.volTrend||1).toFixed(2)+'× · this bar '+(A.rv||1).toFixed(2)+'× avg',vs==='FADING'?'The move is losing fuel. A trigger needs its OWN fat bar (≥1.2×) — do not buy a tired candle; wait for the pullback-and-push.':vs==='RISING'?'Participation building — a trigger candle here has a real chance to follow through.':'Normal participation. The trigger candle must still bring ≥1.2× on its own.');}
   g('pass','<b>'+PLAN.kind+' trigger $'+n2(PLAN.trig)+'</b> — 5-min CLOSE '+(L?'above':'below')+', volume ≥1.2× prior bars',
     (PLAN.fired?'FIRED on the last closed candle':'not fired — do nothing until it prints')+' · breakout '+n2(PLAN.brk)+' / reclaim '+n2(PLAN.rec)+' — the nearer one is live'+(PLAN.kind==='RECLAIM'?' (stock is bouncing; the old high is too far to be the entry)':''));
   g('pass','<b>Stop $'+n2(PLAN.stop)+'</b> — structural, '+(L?'under':'over')+' the 9 EMA/VWAP shelf','T1 $'+n2(PLAN.t1)+' (2.2 ATR) · half off there, stop to breakeven');
@@ -698,17 +761,20 @@ async function huntOne(i,tk){
   const fired=L?(A.cClose>P.trig&&A.cVol>=1.2*A.avgVol):(A.cClose<P.trig&&A.cVol>=1.2*A.avgVol);
   const thin=(L?A.cClose>P.trig:A.cClose<P.trig)&&!fired;
   let cls,v,w;
-  if(fired){cls='fired';v='⚡ FIRED — '+tk+' '+(L?'CALLS':'PUTS');w='5-min close '+(L?'above':'below')+' $'+n2(P.trig)+' with '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Trade now.';}
+  const rmH=runMeter(A,L);
+  if(fired&&(rmH.phase==='LATE'||rmH.phase==='EXHAUSTED')){cls='thin';v='fired — but '+rmH.phase+', pass';w='Trigger closed, but the run is '+rmH.score+'% spent ('+rmH.lines[0]+'). This is the entry that reverses on you. No claxon. Wait for the pullback or tomorrow.';}
+  else if(fired){cls='fired';v='⚡ FIRED — '+tk+' '+(L?'CALLS':'PUTS');w='5-min close '+(L?'above':'below')+' $'+n2(P.trig)+' with '+(A.cVol/A.avgVol).toFixed(1)+'× volume · RUN '+rmH.score+' '+rmH.phase+'. Trade now.';}
   else if(thin){cls='thin';v='close beyond — volume thin';w='$'+n2(A.px)+' · closed past $'+n2(P.trig)+' but only '+(A.cVol/A.avgVol).toFixed(1)+'× volume. Veto holds.';}
   else if(near){cls='near';v='◆ APPROACHING — '+tk;w='$'+n2(A.px)+' · within '+(Math.abs(A.px-P.trig)/atr).toFixed(1)+' ATR of the trigger $'+n2(P.trig)+'. Get to the desk.';}
   else{cls='wait';v='watching · '+sc.score+'/100';w='$'+n2(A.px)+' · '+n2(Math.abs(A.px-P.trig))+' from trigger $'+n2(P.trig);}
   card.className='hcard '+cls;
   $('hcs'+i).textContent=L?'CALLS':'PUTS';$('hcs'+i).style.color=L?'var(--green)':'var(--red)';
-  $('hcv'+i).textContent=v;$('hcw'+i).textContent=w;
+  $('hcv'+i).textContent=v;$('hcw'+i).textContent='RUN '+rmH.score+' '+rmH.phase+' · VOL '+(A.volState==='RISING'?'▲':A.volState==='FADING'?'▼':'▬')+' · '+w;
   const go=$('hcg'+i);go.onclick=()=>{PICK={tk,A,L,sc,sC,sP};buildGauntlet(true);go2();};
   /* alarm on a fresh fire */
   const key=tk+'|'+A.ci;
-  if(fired&&HUNT.fired[tk]!==A.ci){
+  if(fired&&(rmH.phase==='LATE'||rmH.phase==='EXHAUSTED')&&HUNT.fired['late_'+tk]!==A.ci){HUNT.fired['late_'+tk]=A.ci;huntSay(tk+' triggered, but the run is '+rmH.phase.toLowerCase()+'. Passing. Do not chase.');}
+  else if(fired&&HUNT.fired[tk]!==A.ci){
     HUNT.fired[tk]=A.ci;
     fireClaxon(tk,L,A,P,sc);
   } else if(near&&HUNT.fired['near_'+tk]!==A.ci){
@@ -888,7 +954,9 @@ async function watchOne(i,w){
   }
   card.className='slot '+cls;
   const label=w.tk+' '+(L?'CALLS':'PUTS');
-  $('sv'+i).textContent=v+' — '+label+(w.E?' (your position)':' (stalking)');$('sw'+i).innerHTML='<b>$'+n2(A.px)+'</b> · '+acc.toLowerCase()+' — '+why;
+  $('sv'+i).textContent=v+' — '+label+(w.E?' (your position)':' (stalking)');
+  {const rm=runMeter(A,L);const cur=$('sw'+i).innerHTML;$('sw'+i).innerHTML='<span style="color:'+rm.color+';font-weight:800">RUN '+rm.score+' '+rm.phase+'</span> · '+cur;}
+  const vsw=A.volState||'STEADY';$('sw'+i).innerHTML=(A.volState?'<span style="color:'+(vsw==='RISING'?'var(--green)':vsw==='FADING'?'var(--red)':'var(--dim)')+';font-weight:800">VOL '+(vsw==='RISING'?'▲':vsw==='FADING'?'▼':'▬')+'</span> · ':'')+$('sw'+i).innerHTML;$('sw'+i).innerHTML='<b>$'+n2(A.px)+'</b> · '+acc.toLowerCase()+' — '+why;
   const stamp=ctn.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   $('sm'+i).textContent='ruled '+stamp+' CT · next at the 5-min close'+(slots().some(x=>x.E)&&!w.E?' · observation only — bullet spent':'');
   /* speech: armed slots drum every candle; stalking slots speak fired/dead/changes */
@@ -981,5 +1049,26 @@ function closeWatch(){}
   </div>
   <p style="font-size:11px;color:var(--dim)">Rule of thumb: stops beyond one ATR, targets a few ATRs out, trails about 1.5 ATR behind. Watch it change through the day — rising ATR means the stock is getting wild; size down.</p>
   <button class="close" onclick="atrInfo(false)">GOT IT</button>
+</div></div>
+<div id="runModal" onclick="if(event.target.id==='runModal')runInfo(false)" style="display:none;position:fixed;inset:0;background:rgba(4,6,10,.82);z-index:200;padding:20px 14px;overflow-y:auto"><div id="atrBox">
+  <h3>THE RUN METER — where is the stock in its run?</h3>
+  <p>The problem it solves: <b>being right on the stock and wrong on the clock.</b> A stock can be strong (high score) and its move already spent (late). Entering a spent move is the trade that reverses the moment you're in — you bought the top of the cycle. The Run Meter answers one question, 0–100: <b>how much of this run has already happened?</b></p>
+  <div class="ex">
+    <b>DAY RANGE USED (40%)</b> — today's high-to-low versus a normal day (the average of recent sessions). At 35% the day has room; at 80% it's nearing the end; past 100% the day has already delivered more than usual and every further push is an outlier. A breakout after 90% of the range is spent needs the day to do something abnormal to pay you.<br><br>
+    <b>STRETCH FROM VWAP (30%)</b> — how many standard deviations price sits from the day's volume-weighted fair value, in your direction. ±1σ is normal. ±2σ is extended — where chasers get hurt. ±3σ is exhaustion — a fade zone, not an entry.<br><br>
+    <b>LEG TRAVEL (20%)</b> — how far price has moved since the last 9EMA/20SMA cross, in ATRs. Under 2 = a young leg. Over 5 = an old one that has already paid the early buyers.<br><br>
+    <b>RSI (10%)</b> — over 70 (or under 30 for puts) = stretched. Context: on a trend day it's a mile marker, not a stop sign — which is why it's weighted lightly.
+  </div>
+  <p><b>The phases and what to do:</b></p>
+  <div class="ex">
+    <b>EARLY (0–29)</b> — coiling near fair value, little range used. Don't front-run. Wait for the trigger.<br>
+    <b>FRESH (30–49)</b> — the sweet spot. A fired trigger here has most of the day ahead of it. <b>Enter on the trigger.</b><br>
+    <b>RUNNING (50–69)</b> — mid-life. Only a PULLBACK entry: price returns to the 9 EMA / VWAP, holds, pushes off on volume. Never the breakout candle. Half size, closer target.<br>
+    <b>LATE (70–84)</b> — you'd be buying the top of the cycle. No chase. Wait for the reversion or tomorrow. The Hunt will not sound the alarm here even if a trigger fires.<br>
+    <b>EXHAUSTED (85+)</b> — reversal risk. Only the fade is a trade, and that isn't your playbook. Pass.
+  </div>
+  <p><b>Worked example — SMCI, Friday 10:28 AM:</b> up 6% on the day, range used 92% of a normal day, +2.4σ above VWAP, leg 5.8 ATR old, RSI 74 → <b>RUN 86, EXHAUSTED.</b> The score was 78 (strong stock) — and the Meter said the move was spent. That combination — high score, late run — is exactly the trade that reverses on entry. The right play: wait for a pullback to VWAP that holds, and enter the <i>next</i> leg fresh.</p>
+  <p style="font-size:11px;color:var(--dim)">The Meter also feeds selection: LATE costs a stock 15 score points, EXHAUSTED costs 30 — so a spent move can't top your board just because the stock is strong. Market forces and the choice are now the same calculation.</p>
+  <button class="close" onclick="runInfo(false)">GOT IT</button>
 </div></div>
 </body></html>

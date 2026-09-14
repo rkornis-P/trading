@@ -664,6 +664,33 @@ function drawRead(){
   /* Momentum */
   {const v=BARS.mom[n];if(v!=null){const ok=L?v>0:v<0;
    rows.push(['MOM 12',ok?'g':'r',(v>=0?'+':'')+v.toFixed(2)+' over the last hour',ok?'The last hour is net in your favor — thrust confirms the tape.':'The last hour is net against you even if the current candle looks fine — slow bleeds start here.']);}}
+  /* RUN METER — where is the stock in its run (side-aware) */
+  try{
+    const T=BARS.T,H=BARS.H,Lo=BARS.L,C=BARS.C,V=BARS.V;const nn=C.length-1;
+    const days=[];let cur=[],d0=null;
+    for(let i=0;i<T.length;i++){const d=new Date(T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});if(d0!==null&&d!==d0){days.push(cur);cur=[];}d0=d;cur.push(i);}
+    days.push(cur);
+    const today=days[days.length-1];const prior=days.slice(0,-1).filter(dd=>dd.length>10);
+    const adr=prior.length?prior.reduce((s,dd)=>s+(Math.max(...dd.map(i=>H[i]))-Math.min(...dd.map(i=>Lo[i]))),0)/prior.length:null;
+    const adrUsed=(adr&&today)?(Math.max(...today.map(i=>H[i]))-Math.min(...today.map(i=>Lo[i])))/adr:null;
+    let wv=0,ws=0;if(today){for(const i of today){const tp=(H[i]+Lo[i]+C[i])/3;const w=V[i]||1;wv+=w*Math.pow(tp-BARS.vw[i],2);ws+=w;}}
+    const vsig=ws?Math.sqrt(wv/ws):null;const vz=(vsig>0)?(px-BARS.vw[nn])/vsig:null;const dirZ=vz==null?0:(L?vz:-vz);
+    let legStart=nn;for(let i=nn;i>0;i--){const a=(BARS.e9[i]||0)-(BARS.s20[i]||0),bb=(BARS.e9[i-1]||0)-(BARS.s20[i-1]||0);if(a===0||bb===0)continue;if((a>0)!==(bb>0)){legStart=i;break;}legStart=i;}
+    const legATR=BARS.atr?Math.abs(px-C[legStart])/BARS.atr:0;
+    const rsiv=BARS.rsi[nn]||50;
+    const cAdr=adrUsed==null?0.4:Math.min(1,adrUsed/1.1),cZ=Math.max(0,Math.min(1,dirZ/3)),cLeg=Math.max(0,Math.min(1,legATR/6)),rs=L?Math.max(0,Math.min(1,(rsiv-55)/25)):Math.max(0,Math.min(1,(45-rsiv)/25));
+    const rsc=Math.round(100*(0.40*cAdr+0.30*cZ+0.20*cLeg+0.10*rs));
+    const ph=rsc<30?'EARLY':rsc<50?'FRESH':rsc<70?'RUNNING':rsc<85?'LATE':'EXHAUSTED';
+    const col=ph==='FRESH'?'g':ph==='EARLY'?'n':ph==='RUNNING'?'a':'r';
+    const why=ph==='FRESH'?'The sweet spot — most of the day is still ahead. A fired trigger here is the entry.':ph==='EARLY'?'The run hasn\'t started. Don\'t front-run; wait for the trigger.':ph==='RUNNING'?'Mid-life. Pullback entries only (to the 9 EMA/VWAP that holds), half size. Holding: fine while structure holds.':ph==='LATE'?'You\'d be buying the top of the cycle — the entry that reverses on you. No new entries. Holding: tighten; expect reversion.':'The day has delivered more than a normal day and price is stretched from fair value. Reversal risk. Holding: take profit into strength.';
+    rows.push(['RUN METER',col,rsc+'/100 spent — '+ph+' · range used '+(adrUsed!=null?(adrUsed*100).toFixed(0)+'%':'?')+' · '+(vz!=null?(dirZ>=0?'+':'')+dirZ.toFixed(1)+'σ from VWAP':'')+' · leg '+legATR.toFixed(1)+' ATR',why]);
+  }catch(e){}
+  /* VOLUME — level and direction */
+  {const V=BARS.V;if(V&&V.length>10){const n2i=BARS.C.length-1;const nowS=Date.now()/1000;const ci=(BARS.T&&nowS-BARS.T[n2i]<90&&n2i>0)?n2i-1:n2i;
+    let r3=0,p6=0,av=0,ac=0;for(let k=Math.max(0,ci-2);k<=ci;k++)r3+=V[k];for(let k=Math.max(0,ci-8);k<=ci-3;k++)p6+=V[k];for(let k=Math.max(0,ci-5);k<ci;k++){av+=V[k];ac++;}
+    const tr=p6>0?(r3/3)/(p6/6):1;const rvv=ac?V[ci]/(av/ac):1;const vs=tr>=1.15?'RISING':tr<=0.85?'FADING':'STEADY';
+    rows.push(['VOLUME',vs==='RISING'?'g':vs==='FADING'?'r':'a',(vs==='RISING'?'▲ ':vs==='FADING'?'▼ ':'▬ ')+vs+' — last 3 bars '+tr.toFixed(2)+'× the prior 6 · this bar '+rvv.toFixed(2)+'× avg',
+      vs==='FADING'?'The move is running on fumes — fewer hands pushing each candle. Breakouts on fading volume fail; entries need their own fat bar. Holding: fine while structure holds, but stop adding.':vs==='RISING'?'Participation is building — more hands on each candle. Breakouts here follow through; this is the fuel the trigger wants.':'Ordinary participation. The trigger candle must bring ≥1.2× on its own to count.']);}}
   /* ADX */
   {const A=BARS.adx;if(A){const v=A.adx[n],p=A.pdi[n],q=A.ndi[n];if(v!=null){const s=v>=25?'g':v>=20?'a':'r';const dom=p>q?'+DI leads (buyers)':'−DI leads (sellers)';
    rows.push(['ADX 14',s,v.toFixed(0)+' · '+dom,v>=25?'A real trend exists — trend-following rules apply; trail the 9 EMA and let winners run.':v>=20?'A trend is forming — breakouts are starting to stick; be ready, not early.':'Chop — breakouts fail and theta wins; no new trend trades until this rises.']);}}}
