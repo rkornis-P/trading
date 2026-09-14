@@ -557,9 +557,9 @@ function buildTicket(){
   const sym=b.tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(T.L?'CALL':'PUT');
   const legs=[
    ['ENTRY','TICKET 1 (Options ticket): Buy to Open '+n+' contract'+(n>1?'s':'')+' of '+sym+' at $'+E.toFixed(2)+' limit, Day.'],
-   ['STOP','TICKET 2 (within 60s of the fill): Sell to Close '+n+' at $'+st.toFixed(2)+' stop / $'+stL.toFixed(2)+' limit — Stop Loss (market) on fast names, Day.'],
+   ['STOP','TICKET 2 (within 60s of the fill): Sell to Close '+n+' · Trailing Stop Loss ($), trail $'+(stopDist*d).toFixed(2)+' — floor at ~$'+st.toFixed(2)+', ratchets up as the option rises. Day.'],
    ['TAKE PROFIT','By hand when the Officer says permit #2: Sell to Close '+half+' at $'+tpS.toFixed(2)+' limit.'],
-   ['AFTER T1','Modify the stop: qty '+(n-half)+', price $'+E.toFixed(2)+' (breakeven), or trail $'+(t1Dist*0.5*d).toFixed(2)+'.']
+   ['AFTER T1','Orders → the trail → Attempt to Cancel and Replace → qty '+(n-half)+', same trail.']
   ];
   document.getElementById('tkLegs').innerHTML=legs.map(l=>kLeg(l[0],l[1])).join('');
 }

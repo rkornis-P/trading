@@ -576,9 +576,9 @@ function buildOck(){
   const fastc=(atr&&trig&&atr/trig>0.004);
   const legs=[
     ['ENTRY','g','TICKET 1 (Options ticket): Buy to Open '+nC+' contract'+(nC>1?'s':'')+' of '+tkm+' at '+(E!=null?'$'+n2(E):'the mid')+' limit, Day.'],
-    ['STOP','r','TICKET 2 (within 60s of the fill — Positions → Trade): Sell to Close '+nC+' at '+(st!=null?(fastc?'$'+n2(st)+' (Stop Loss)':'$'+n2(st)+' stop / $'+n2(st-0.20)+' limit'):'E − '+n2(stopDist)+'×Δ')+', Day.'],
+    ['STOP','r','TICKET 2 (within 60s of the fill — Positions → Trade): Sell to Close '+nC+' · '+(fastc?'Trailing Stop Loss':'Trailing Stop Limit')+' ($), trail $'+n2(stopDist*d)+' — floor at ~'+(st!=null?'$'+n2(st):'E − trail')+', ratchets up. Day.'],
     ['TAKE PROFIT','g','By hand when the Officer says permit #2: Sell to Close '+half+' at '+(tp!=null?'$'+n2(tp):'E + '+n2(t1Dist)+'×Δ')+' limit. (T1 '+n2(t1)+')'],
-    ['AFTER T1','gold','Modify the stop: qty '+(nC-half)+', price '+(E!=null?'$'+n2(E):'E')+' (breakeven), or trail $'+n2(1.5*(atr||0.4)*d)+'.']
+    ['AFTER T1','gold','Orders → the trail → Attempt to Cancel and Replace → qty '+(nC-half)+', same trail. (Fidelity won\'t convert a plain stop to a trail — that\'s why Ticket 2 is a trail from the start.)']
   ];
   document.getElementById('ockLegs').innerHTML=legs.map(l=>kLeg(l[0],l[2])).join('');
 }
