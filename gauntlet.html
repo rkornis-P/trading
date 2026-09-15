@@ -469,11 +469,13 @@ function chosenC(){return (VEHICLE==='60'&&CONTRACT2)?CONTRACT2:CONTRACT;}
 /* ================= SECTOR CHOICES ================= */
 /* The dozen, by engine. tier: 'bullet' = sized by the law; 'second' = 0.60 vehicle, 1-2 contracts, A+ only; 'tell' = never traded, read beside its names. */
 const SECTORS=[
- {name:'TECH · SEMIS',engine:'NQ · semis tone',names:[{tk:'SMCI',tier:'bullet'},{tk:'NVDA',tier:'second'},{tk:'AMD',tier:'second'},{tk:'MU',tier:'tell'}]},
- {name:'HIGH-BETA GROWTH',engine:'risk appetite · NQ',names:[{tk:'SPCX',tier:'bullet'},{tk:'IONQ',tier:'bullet'},{tk:'PLTR',tier:'second'},{tk:'TSLA',tier:'tell'}]},
+ {name:'TECH · SEMIS',engine:'NQ · semis tone',names:[{tk:'SMCI',tier:'bullet'},{tk:'INTC',tier:'bullet'},{tk:'NVDA',tier:'second'},{tk:'AMD',tier:'second'},{tk:'MU',tier:'tell'}]},
+ {name:'HIGH-BETA GROWTH · SPACE',engine:'risk appetite · NQ',names:[{tk:'SPCX',tier:'bullet'},{tk:'RKLB',tier:'bullet'},{tk:'IONQ',tier:'bullet'},{tk:'PLTR',tier:'second'},{tk:'TSLA',tier:'tell'}]},
+ {name:'AI POWER · DATACENTERS',engine:'AI buildout · policy',names:[{tk:'OKLO',tier:'bullet'},{tk:'APLD',tier:'bullet'},{tk:'BE',tier:'bullet'},{tk:'CORZ',tier:'bullet'}]},
  {name:'ENERGY',engine:'crude · Hormuz · OPEC',names:[{tk:'OXY',tier:'bullet'},{tk:'USO',tier:'tell'}]},
- {name:'RATES · FINTECH',engine:'the 10-year · jobs',names:[{tk:'SOFI',tier:'bullet'}]},
+ {name:'RATES · FINTECH',engine:'the 10-year · jobs',names:[{tk:'SOFI',tier:'bullet'},{tk:'NU',tier:'bullet'}]},
  {name:'CRYPTO BETA',engine:'bitcoin overnight',names:[{tk:'RIOT',tier:'bullet'}]},
+ {name:'CONSUMER · HEALTH',engine:'the consumer · sector news',names:[{tk:'UBER',tier:'bullet'},{tk:'HIMS',tier:'bullet'}]},
 ];
 let SEC={scores:{},checked:new Set()};
 async function loadSectors(force){
@@ -1097,7 +1099,7 @@ function closeWatch(){}
   var el=document.getElementById('ktape'); if(!el) return;
   el.innerHTML='<div id="ktapeTrack"></div><div id="ktapeEdit" onclick="kTapeEdit()">＋ EDIT</div>';
   var track=document.getElementById('ktapeTrack');
-  function defBoard(){return ['SPCX','MU','PLTR','XOM','TSLA','NVDA','SMCI','AMD'];}
+  function defBoard(){return ['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','OKLO','INTC','HIMS','RKLB','CORZ','NVDA'];}
   function board(){try{var b=JSON.parse(localStorage.getItem('kTapeList'));if(Array.isArray(b)&&b.length)return b;}catch(e){}
     try{var k=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(k)&&k.length)return k;}catch(e){}return defBoard();}
   function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}

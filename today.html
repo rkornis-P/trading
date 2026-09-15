@@ -83,7 +83,7 @@ const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 const $=id=>document.getElementById(id);const n2=x=>x==null?'—':(+x).toFixed(2);const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
 function say(t){try{if(!$('voice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}}
-const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR'];
+const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={};
 function save(){localStorage.setItem('kToday',JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked}));}
@@ -120,7 +120,12 @@ function analyze(b){
   let wv=0,ws=0;if(today){for(const i of today){const tp=(b.H[i]+b.L[i]+b.C[i])/3;const w=b.V[i]||1;wv+=w*Math.pow(tp-vw[i],2);ws+=w;}}
   const vsig=ws?Math.sqrt(wv/ws):null;const vz=(vsig>0)?(px-vw[n])/vsig:null;
   let legStart=n;for(let i=n;i>0;i--){const a=(e9[i]||0)-(s20[i]||0),bb=(e9[i-1]||0)-(s20[i-1]||0);if(a===0||bb===0)continue;if((a>0)!==(bb>0)){legStart=i;break;}legStart=i;}
-  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),bars:b};
+  /* behavior: 9/20 crosses per session (fewer = cleaner, more predictable trends) */
+  let crosses=0;for(let i=1;i<n;i++){const a=(e9[i]||0)-(s20[i]||0),bb=(e9[i-1]||0)-(s20[i-1]||0);if(a&&bb&&(a>0)!==(bb>0))crosses++;}
+  const sess=Math.max(1,days.length);const xPer=crosses/sess;
+  const behave=xPer<=2.5?'CLEAN':xPer<=4.5?'MIXED':'CHOPPY';
+  const adrP=adr&&px?adr/px*100:null;
+  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,bars:b};
 }
 function runMeter(A,L){
   const dirZ=A.vz==null?0:(L?A.vz:-A.vz);const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);const cZ=Math.max(0,Math.min(1,dirZ/3));
@@ -178,11 +183,15 @@ function sideHTML(tk,L,d){
 function cardHTML(tk){
   const d=DATA[tk];if(!d)return '<div class="tc"><div class="hd"><span class="tk">'+tk+'</span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div><div style="color:var(--dim);font-size:11px">loading…</div></div>';
   const isPos=POS&&POS.tk===tk;
-  return '<div class="tc'+(isPos?' pos':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+
+  const A=d.A;const rb=A.adrP!=null?(A.adrP>=4?'BIG':A.adrP>=2?'GOOD':'SMALL'):'';const rc=rb==='BIG'?'var(--green)':rb==='GOOD'?'var(--gold-soft)':'var(--red)';
+  const bc=A.behave==='CLEAN'?'var(--green)':A.behave==='MIXED'?'var(--amber)':'var(--red)';
+  const badges='<div style="font-size:9px;letter-spacing:.06em;margin-top:2px"><span style="color:'+rc+';font-weight:800">RANGE '+(A.adrP!=null?A.adrP.toFixed(1)+'%':'—')+(A.adr?' ($'+n2(A.adr)+'/day)':'')+' '+rb+'</span> · <span style="color:'+bc+';font-weight:800">'+A.behave+'</span> <span style="color:var(--dim)">'+(A.behave==='CLEAN'?'trends hold, respects the ride line':A.behave==='MIXED'?'some whipsaw — demand volume':'whipsaws — reclaim entries only, half size')+'</span></div>';
+  return '<div class="tc'+(isPos?' pos':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+badges+
    '<div class="sides">'+sideHTML(tk,true,d)+sideHTML(tk,false,d)+'</div>'+(isPos?posHTML():'')+'</div>';
 }
 function render(){
-  const order=[...LIST].sort((a,b)=>{const da=DATA[a],db=DATA[b];const sa=da?Math.max(da.sC.score,da.sP.score):-1,sb=db?Math.max(db.sC.score,db.sP.score):-1;return sb-sa;});
+  const q=d=>d?(Math.max(d.sC.score,d.sP.score)+(d.A.adrP>=2?4:0)+(d.A.behave==='CLEAN'?4:d.A.behave==='CHOPPY'?-6:0)):-1;
+  const order=[...LIST].sort((a,b)=>q(DATA[b])-q(DATA[a]));
   $('cards').innerHTML=order.map(cardHTML).join('');
 }
 async function toggleTicket(id){

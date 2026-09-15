@@ -184,7 +184,7 @@ boot();
   var el=document.getElementById('ktape'); if(!el) return;
   el.innerHTML='<div id="ktapeTrack"></div><div id="ktapeEdit" onclick="kTapeEdit()">＋ EDIT</div>';
   var track=document.getElementById('ktapeTrack');
-  function defBoard(){return ['SPCX','MU','PLTR','XOM','TSLA','NVDA','SMCI','AMD'];}
+  function defBoard(){return ['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','OKLO','INTC','HIMS','RKLB','CORZ','NVDA'];}
   function board(){try{var b=JSON.parse(localStorage.getItem('kTapeList'));if(Array.isArray(b)&&b.length)return b;}catch(e){}
     try{var k=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(k)&&k.length)return k;}catch(e){}return defBoard();}
   function phase(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));var m=n.getHours()*60+n.getMinutes();var wd=n.getDay()>=1&&n.getDay()<=5;if(!wd)return 'WKND';if(m<8*60+30)return 'PRE';if(m<15*60)return 'OPEN';return 'AFTER';}
