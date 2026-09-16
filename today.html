@@ -82,7 +82,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 const $=id=>document.getElementById(id);const n2=x=>x==null?'—':(+x).toFixed(2);const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
-function say(t){try{if(!$('voice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}}
+function say(t,repeat){try{if(!$('voice').checked||!('speechSynthesis' in window))return;
+  const u=new SpeechSynthesisUtterance(t);u.rate=0.55;u.pitch=1.0;speechSynthesis.speak(u);
+  if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.55;u2.pitch=1.0;setTimeout(()=>speechSynthesis.speak(u2),600);}
+}catch(e){}}
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={};
@@ -218,7 +221,7 @@ async function toggleTicket(id){
 function imIn(tk,L,E,d,stop,t1,n){
   const v=prompt('Your actual fill price for the '+tk+' '+(L?'call':'put')+' (E):',E?E.toFixed(2):'');const fill=parseFloat(v);if(!fill)return;
   POS={tk,L,E:fill,d,stop,t1,n,ts:Date.now(),last:null};save();render();
-  say('You are in. '+tk+' '+(L?'calls':'puts')+' at '+fill.toFixed(2)+'. Place the trailing stop now. I will rule every candle.');
+  say('You are in. '+tk+', '+(L?'calls':'puts')+', at '+fill.toFixed(2).replace('.',' point ')+'. Place the trailing stop now. I will rule every candle.',true);
 }
 function posHTML(){
   const p=POS;return '<div class="posbar" id="posbar"><div style="font-size:9px;letter-spacing:.12em;color:var(--gold-soft)">YOUR POSITION · '+p.tk+' '+(p.L?'CALLS':'PUTS')+' · E $'+n2(p.E)+'</div><div class="pv" id="pv">ruling…</div><div class="pw" id="pw">—</div><button class="out" onclick="event.stopPropagation();imOut()">✔ I\'M OUT — stand down</button></div>';
@@ -237,13 +240,13 @@ function officer(){
   else if(d0<0&&d0<d1){cls='tighten';v='TIGHTEN';w='Thrust fading. No selling — only permit 3 sells. The trail is behind you.';}
   else{cls='hold';v='HOLD';w='Structure intact. Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.';}
   const pv=$('pv'),pw=$('pw');if(pv){pv.className='pv '+cls;pv.textContent=v;pw.textContent=w;}
-  const key=v+'|'+ci;if(POS.last!==key){say(POS.tk+' '+(L?'calls':'puts')+'. '+v.replace('—',',')+'. '+w.split('.')[0]+'.');POS.last=key;save();}
+  const key=v+'|'+ci;if(POS.last!==key){const imp=(cls==='exit'||v.startsWith('BANK'));say(POS.tk+', '+(L?'calls':'puts')+'. '+v.replace('—',',').replace('#','number ')+'. '+w.split('.')[0]+'.',imp);POS.last=key;save();}
 }
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{const b=await pull(tk);const A=analyze(b);const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
-      if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;say(tk+' '+(L?'calls':'puts')+' fired. Five-minute close '+(L?'above':'below')+' '+n2(P.trig)+' with volume. Run '+rm.phase.toLowerCase()+'.');}}}
+      if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;say(tk+', '+(L?'calls':'puts')+', fired. Five minute close '+(L?'above':'below')+' '+n2(P.trig).replace('.',' point ')+', with volume. Run is '+rm.phase.toLowerCase()+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
 async function refreshAll(force){

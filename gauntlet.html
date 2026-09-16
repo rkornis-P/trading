@@ -345,7 +345,7 @@ const $=id=>document.getElementById(id);
 const n2=x=>x==null?'—':(+x).toFixed(2);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
-function say(t){try{if(!$('wVoice')||!$('wVoice').checked)return;if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.68;speechSynthesis.speak(u);}catch(e){}}
+function say(t,repeat){try{if(!$('wVoice')||!$('wVoice').checked)return;if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.55;speechSynthesis.speak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.55;setTimeout(()=>speechSynthesis.speak(u2),600);}}catch(e){}}
 function board(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
 
 /* ---------- indicators ---------- */
@@ -524,7 +524,7 @@ function secAuto(n){
   const cands=SECTORS.map(s=>({s,b:secBest(s)})).filter(x=>x.b&&x.b.val>0).sort((a,b)=>b.b.val-a.b.val).slice(0,n);
   SEC.checked=new Set(cands.map(x=>x.b.tk));renderSectors();
   $('secSt').textContent='Auto-picked '+cands.map(x=>x.b.tk+' ('+x.s.name.split(' ')[0]+')').join(' · ')+' — '+n+' different engines. Uncheck/check to adjust, then ARM or PRINT.';
-  say&&say('Sector choices: '+cands.map(x=>x.b.tk+', '+(x.b.d.L?'calls':'puts')).join('. ')+'.');
+  say&&say('Sector choices. '+cands.map(x=>x.b.tk+', '+(x.b.d.L?'calls':'puts')).join('. ')+'.',true);
 }
 async function secArmSelected(){
   const picks=[...SEC.checked];if(!picks.length){alert('Check up to three names first (or AUTO-PICK).');return;}
@@ -827,7 +827,7 @@ function coachSpeak(){
   let box=document.getElementById('cxCoach');
   if(!box){box=document.createElement('div');box.id='cxCoach';box.style.cssText='max-width:520px;width:100%;font-size:11.5px;line-height:1.6;color:#cfd6e2;background:#0E1117;border:1px solid #242B36;border-radius:10px;padding:11px;margin:6px 0';document.getElementById('cxOtoco').after(box);}
   box.textContent=s;
-  try{if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.rate=0.66;speechSynthesis.speak(u);}}catch(e){}
+  try{if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.rate=0.55;speechSynthesis.speak(u);}}catch(e){}
 }
 function printClaxon(){
   if(!CLAXON_CTX)return;const c=CLAXON_CTX;
@@ -857,7 +857,7 @@ function toggleHunt(){
   if(HUNT.on){rebuildHuntList();huntScan();HUNT.timer=setInterval(huntScan,60000);huntSay('The hunt is on. Watching '+HUNT.list.length+' names.');}
   else{if(HUNT.timer)clearInterval(HUNT.timer);HUNT.timer=null;$('huntSt').textContent='Hunt stopped.';}
 }
-function huntSay(t){try{if(!$('huntVoice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.7;speechSynthesis.speak(u);}catch(e){}}
+function huntSay(t,repeat){try{if(!$('huntVoice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.55;speechSynthesis.speak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.55;setTimeout(()=>speechSynthesis.speak(u2),600);}}catch(e){}}
 function renderHunt(){
   $('huntCards').innerHTML=HUNT.list.map((tk,i)=>'<div class="hcard wait" id="hc'+i+'"><div class="hh"><span class="htk">'+tk+'</span><span class="hsd" id="hcs'+i+'"></span></div><div class="hv" id="hcv'+i+'">—</div><div class="hw" id="hcw'+i+'">tap START HUNT to begin</div><button class="hgo" id="hcg'+i+'">⚡ GO — SHOW OTOCO</button></div>').join('');
 }
@@ -931,7 +931,7 @@ async function fireClaxon(tk,L,A,P,sc){
   CLAXON_CTX={tk:tk,L:L,A:A,P:P,sc:sc};
   $('claxon').classList.add('on');
   startAlarm();
-  huntSay('Setup fired. '+tk+' '+(L?'calls':'puts')+'. Close '+(L?'above':'below')+' '+n2(P.trig)+' with volume. Come to the desk.');
+  huntSay('Setup fired. '+tk+', '+(L?'calls':'puts')+'. Close '+(L?'above':'below')+' '+n2(P.trig).replace('.',' point ')+', with volume. Come to the desk.',true);
 }
 function startAlarm(){
   HUNT.alarming=true;

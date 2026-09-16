@@ -642,8 +642,7 @@ function officerRun(){
   const plain=why.replace(/<[^>]+>/g,'').split('.').slice(0,2).join('. ');
   if(OF.ci!==ci||OF.verdict!==verdict){
     try{if(document.getElementById('voiceOn').checked&&'speechSynthesis' in window){
-      const u=new SpeechSynthesisUtterance('Exit officer. '+oflabel+'. '+verdict.replace('—',',').replace('#','number ')+'. '+plain);
-      u.rate=0.68;speechSynthesis.speak(u);}}catch(e){}
+      const u=new SpeechSynthesisUtterance('Exit officer. '+oflabel+'. '+verdict.replace('—',',').replace('#','number ')+'. '+plain);u.rate=0.55;speechSynthesis.speak(u);}}catch(e){}
     OF.spokeAt=new Date();
   }
   OF.verdict=verdict;OF.ci=ci;
@@ -816,7 +815,7 @@ function fire(kind,msg,key){
 function speak2(kind,msg){
   if(!document.getElementById('voiceOn').checked||!('speechSynthesis' in window))return;
   try{
-    const mk=t=>{const u=new SpeechSynthesisUtterance(t);u.rate=0.88;u.pitch=kind==='bad'?0.9:1;return u;};
+    const mk=t=>{const u=new SpeechSynthesisUtterance(t);u.rate=0.55;u.pitch=kind==='bad'?0.9:1;return u;};
     speechSynthesis.speak(mk(msg));
     speechSynthesis.speak(mk('I repeat. '+msg));
   }catch(e){}
@@ -838,7 +837,7 @@ function drawVLog(){
 }
 function replayV(i){
   const L=getVLog();if(!L[i])return;
-  try{const u=new SpeechSynthesisUtterance(L[i].msg);u.rate=0.88;speechSynthesis.speak(u);}catch(e){}
+  try{const u=new SpeechSynthesisUtterance(L[i].msg);u.rate=0.55;speechSynthesis.speak(u);}catch(e){}
 }
 function clearVLog(){localStorage.removeItem('kVoiceLog');drawVLog();}
 drawVLog();

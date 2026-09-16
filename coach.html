@@ -562,16 +562,16 @@ function speak(verdict,txt){
   const pos=tk+' '+(strike?strike+' ':'')+(side==='PUT'?'puts':'calls');
   const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;u.pitch=(verdict==='EXIT'?0.9:1);speechSynthesis.speak(u);}catch(e){}};
   /* full briefing, slow and sectioned — each utterance creates a natural pause */
-  say('Coach briefing, on your '+pos+'.',0.68);
-  if(sit)say('The situation. '+sit,0.68);
-  say('Verdict. '+verdict+'.',0.62);
-  if(why)say('Because. '+why+'.',0.68);
-  if(lv)say('Levels. '+lv,0.68);
-  if(od)say('Your orders. '+od,0.66);
-  if(ls)say('The lesson. '+ls,0.68);
-  if(nx)say('Watch next. '+nx,0.68);
+  say('Coach briefing, on your '+pos+'.', 0.55);
+  if(sit)say('The situation. '+sit, 0.55);
+  say('Verdict. '+verdict+'.', 0.55);
+  if(why)say('Because. '+why+'.', 0.55);
+  if(lv)say('Levels. '+lv, 0.55);
+  if(od)say('Your orders. '+od, 0.55);
+  if(ls)say('The lesson. '+ls, 0.55);
+  if(nx)say('Watch next. '+nx, 0.55);
   /* short echo so the verdict and orders land twice */
-  say('Again. Verdict '+verdict+' on the '+pos+'. '+(od?('Orders: '+od):nx),0.65);
+  say('Again. Verdict '+verdict+' on the '+pos+'. '+(od?('Orders: '+od):nx), 0.55);
 }
 
 /* ---------- log ---------- */

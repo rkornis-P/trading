@@ -359,12 +359,12 @@ function speakG(){
   const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
   let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
   const inTk=pos&&(pos.tk||'').toUpperCase()===G.tk;
-  say('Gauge reading, '+G.tk+'.',0.7);
-  say('Trend force '+(G.tf>0?'plus ':'minus ')+Math.abs(G.tf)+'. '+document.getElementById('s1').textContent+'.',0.68);
-  say('Fuel '+G.fuel+'. '+document.getElementById('s2').textContent+'.',0.68);
-  if(G.tw!=null)say('Theta war '+(G.tw>0?'plus ':'minus ')+Math.abs(G.tw)+'. '+document.getElementById('s3').textContent+'.',0.68);
-  if(inTk){const dv=document.getElementById('tDev').textContent;if(dv)say(dv,0.68);
-    const pl=document.getElementById('tPL').textContent;if(pl&&pl!=='—')say('Position '+pl+'.',0.68);}
+  say('Gauge reading, '+G.tk+'.', 0.55);
+  say('Trend force '+(G.tf>0?'plus ':'minus ')+Math.abs(G.tf)+'. '+document.getElementById('s1').textContent+'.', 0.55);
+  say('Fuel '+G.fuel+'. '+document.getElementById('s2').textContent+'.', 0.55);
+  if(G.tw!=null)say('Theta war '+(G.tw>0?'plus ':'minus ')+Math.abs(G.tw)+'. '+document.getElementById('s3').textContent+'.', 0.55);
+  if(inTk){const dv=document.getElementById('tDev').textContent;if(dv)say(dv, 0.55);
+    const pl=document.getElementById('tPL').textContent;if(pl&&pl!=='—')say('Position '+pl+'.', 0.55);}
 }
 /* ---------- diary ---------- */
 function getGLog(){try{return JSON.parse(localStorage.getItem('kGaugeLog'))||[];}catch(e){return[];}}
