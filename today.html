@@ -117,6 +117,20 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .ticket .fid b{color:var(--ink)}
 .posbar .fid{margin-top:6px;font-size:10px;color:var(--dim);line-height:1.5;border-top:1px dashed var(--line);padding-top:6px}
 .posbar .fid b{color:var(--ink)}
+
+/* ===== London lesson popup ===== */
+#lonModal{display:none;position:fixed;inset:0;background:rgba(4,6,10,.85);z-index:300;padding:18px 12px;overflow-y:auto}
+#lonModal.on{display:block}
+#lonBox{max-width:600px;margin:12px auto;background:var(--card);border:2px solid #5B9BFF;border-radius:16px;padding:16px 16px 20px}
+#lonBox h3{font-family:Georgia,serif;font-size:16px;color:#5B9BFF;letter-spacing:.04em;margin-bottom:8px}
+#lonBox p{font-size:12px;line-height:1.65;color:var(--ink);margin-bottom:9px}
+#lonBox p b{color:var(--gold-soft)}
+#lonBox .ex{background:var(--card2);border-left:3px solid #5B9BFF;border-radius:0 9px 9px 0;padding:9px 12px;font-size:11.5px;line-height:1.6;margin:9px 0}
+#lonBox .ex b{color:#5B9BFF}
+#lonBox .gl{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:10.5px;line-height:1.5;background:#1B222D;border:1px solid var(--gold);border-radius:9px;padding:9px 11px;margin:8px 0}
+#lonBox .gl b{color:var(--gold-soft)}
+#lonBox .close{margin-top:8px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:11px;font-weight:800;font-size:11px;width:100%;cursor:pointer}
+.lonI{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border:1px solid #5B9BFF;border-radius:50%;color:#5B9BFF;font-size:9px;font-weight:800;cursor:pointer;margin-left:5px;vertical-align:middle}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
@@ -129,7 +143,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 </div>
 <div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
 <div id="feedBar"></div>
-<div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button></div>
+<div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div>
 <div id="mkt"></div>
 <div id="st">—</div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
@@ -232,8 +246,9 @@ function score(A,L){
 function compose(A,L){
   let brk,rec,useRec,trig,kind;
   if(A.firstBar&&A.pdh&&A.pdl){
-    /* 8:35 — the opening candle. The trigger is yesterday's range: a close above PDH (calls) / below PDL (puts). */
-    trig=L?A.pdh:A.pdl;kind='OPEN';brk=trig;rec=trig;useRec=false;
+    /* 8:35 — the opening candle. Trigger = the stronger of yesterday's high and the PRE-MARKET high (calls) / the lower of the lows (puts). */
+    const p=PM[A.tk];
+    trig=L?Math.max(A.pdh,p?p.pmH:0):Math.min(A.pdl,p?p.pmL:1e9);kind='OPEN';brk=trig;rec=trig;useRec=false;
   }else{
     brk=L?Math.max(A.prevHi||0,A.orH||0):Math.min(A.prevLo||1e9,A.orL||1e9);rec=L?Math.max(A.vw||0,A.orH||0):Math.min(A.vw||1e9,A.orL||1e9);
     useRec=(L?rec<brk:rec>brk)&&Math.abs(rec-A.px)<Math.abs(brk-A.px);trig=useRec?rec:brk;kind=useRec?'RECLAIM':'BREAKOUT';
@@ -312,6 +327,7 @@ function cardHTML(tk){
   const badges='<div style="font-size:9px;letter-spacing:.06em;margin-top:2px"><span style="color:'+rc+';font-weight:800">RANGE '+(A.adrP!=null?A.adrP.toFixed(1)+'%':'—')+(A.adr?' ($'+n2(A.adr)+'/day)':'')+' '+rb+'</span> · <span style="color:'+bc+';font-weight:800">'+A.behave+'</span> <span style="color:var(--dim)">'+(A.behave==='CLEAN'?'trends hold, respects the ride line':A.behave==='MIXED'?'some whipsaw — demand volume':'whipsaws — reclaim entries only, half size')+'</span></div>';
   const stale=isStale(A);const fl='<div class="fresh'+(stale?' stale':'')+'">'+freshLabel(A)+(stale?' — numbers below are OLD':'')+'</div>';
   return '<div class="tc'+(isPos?' pos':'')+(stale?' stale':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+fl+badges+
+   ((()=>{const n=ctNow();const m=n.getHours()*60+n.getMinutes();return (m<9*60)?pmLine(tk,A):'';})())+
    ((window._AIREAD&&window._AIREAD[tk])?'<div class="airead">🧠 '+window._AIREAD[tk].replace(/^[A-Z.\-]{1,7}\s*[—-]\s*/,'')+'</div>':'')+
    '<div class="sides">'+sideHTML(tk,true,d)+sideHTML(tk,false,d)+'</div>'+(isPos?posHTML():'')+'</div>';
 }
@@ -424,6 +440,40 @@ function scalp(tk){
 function paintScalps(){SCALPS.forEach(t=>{const el=$('sc_'+t);if(el)el.className='schip'+(LIST.includes(t)?' on':'');});}
 
 
+
+function lonInfo(on){document.getElementById('lonModal').classList.toggle('on',!!on);}
+/* ===== LONDON READ — the stock's own pre-market session (3:00–8:30 CT) ===== */
+let PM={};
+async function pmRead(tk){
+  try{
+    const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=1d&pp=1');const j=await r.json();
+    const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)return null;
+    const q=res.indicators.quote[0],ts=res.timestamp||[];
+    const bars=[];for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;const d=new Date(ts[i]*1000);const ct=new Date(d.toLocaleString('en-US',{timeZone:'America/Chicago'}));const m=ct.getHours()*60+ct.getMinutes();
+      if(m>=3*60&&m<8*60+30)bars.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i],v:q.volume[i]||0});}
+    if(bars.length<2)return null;
+    const pmH=Math.max(...bars.map(b=>b.h)),pmL=Math.min(...bars.map(b=>b.l)),last=bars[bars.length-1].c,first=bars[0].o;
+    const vol=bars.reduce((s,b)=>s+b.v,0);const nowS=Date.now()/1000;const hr=bars.filter(b=>b.t>=nowS-3600);const h1=hr.length>1?(last-hr[0].o)/hr[0].o*100:null;
+    const pos=(last-pmL)/((pmH-pmL)||1);
+    const out={pmH,pmL,last,first,vol,h1,pos,chg:(last-first)/first*100,bars:bars.length};PM[tk]=out;return out;
+  }catch(e){return null;}
+}
+function pmLine(tk,A){
+  const p=PM[tk];if(!p)return '';
+  const gap=A.pdc?(p.last-A.pdc)/A.pdc*100:null;
+  const where=p.pos>0.75?'at the top of its pre-market range':p.pos<0.25?'at the bottom of its pre-market range':'mid pre-market range';
+  const mom=p.h1==null?'':(p.h1>0.25?', still pressing higher into the bell':p.h1<-0.25?', fading into the bell':', flat into the bell');
+  const vsPD=A.pdh&&A.pdl?(p.last>A.pdh?' · above yesterday\'s high':p.last<A.pdl?' · below yesterday\'s low':' · inside yesterday\'s range'):'';
+  let verdict='';
+  if(gap!=null&&gap>0.8&&p.pos>0.7&&(p.h1||0)>0)verdict='Gap-and-go shape: calls if the first candle closes above the pre-market high $'+n2(p.pmH)+'.';
+  else if(gap!=null&&gap>0.8&&(p.h1||0)<-0.25)verdict='Gap that\'s fading: the failed-gap put is the trade if 8:35 closes back inside yesterday\'s range.';
+  else if(gap!=null&&gap<-0.8&&p.pos<0.3&&(p.h1||0)<0)verdict='Gap-down-and-go: puts if the first candle closes below the pre-market low $'+n2(p.pmL)+'.';
+  else if(gap!=null&&gap<-0.8&&(p.h1||0)>0.25)verdict='Gap down being bought: the reclaim call is the trade if 8:35 closes back inside yesterday\'s range.';
+  else verdict='No conviction overnight — the 8:35 candle decides.';
+  const gapTxt=(gap!=null)?(((gap>=0)?'+':'')+gap.toFixed(1)+'% gap · '):'';
+  return '<div class="airead" style="border-left-color:#5B9BFF">🌍 <b>LONDON</b><span class="lonI" onclick="event.stopPropagation();lonInfo(true)">i</span>: '+gapTxt+'pre-mkt $'+n2(p.pmL)+' to $'+n2(p.pmH)+', now $'+n2(p.last)+' '+where+mom+vsPD+'. '+verdict+'</div>';
+}
+
 /* ===== AI MORNING READ (via the relay's Anthropic passthrough) ===== */
 async function pmQuote(tk){try{const r=await fetch(RELAY+'/?pm='+encodeURIComponent(tk));const j=await r.json();if(j&&j.last!=null)return j;}catch(e){}return null;}
 async function morningRead(){
@@ -433,7 +483,8 @@ async function morningRead(){
     const hi=Math.max(...ON.map(i=>b.H[i])),lo=Math.min(...ON.map(i=>b.L[i]));const h1i=b.T.findIndex(x=>x>=b.T[n]-3600);const h1=h1i>0?(last-b.C[h1i])/b.C[h1i]*100:null;
     mk[k]={chg:b.pc?(last-b.pc)/b.pc*100:null,pos:(last-lo)/((hi-lo)||1),h1};}catch(e){mk[k]=null;}await sleep(300);}
   const names=LIST.slice(0,10);const rows=[];
-  for(const tk of names){const d=DATA[tk];if(!d)continue;const q=await pmQuote(tk);
+  for(const tk of names){const d=DATA[tk];if(!d)continue;const q=await pmQuote(tk);const p=await pmRead(tk);
+    if(p)rows.push(tk+' PRE-MARKET SESSION: range '+n2(p.pmL)+'-'+n2(p.pmH)+', now '+n2(p.last)+' ('+(p.pos*100).toFixed(0)+'% of range), last hour '+(p.h1==null?'?':p.h1.toFixed(2)+'%')+', pm volume '+p.vol);
     rows.push(tk+': yesterday close '+n2(d.A.pdc)+', PDH '+n2(d.A.pdh)+', PDL '+n2(d.A.pdl)+', 5m ATR '+n2(d.A.atr)+', ADR% '+(d.A.adrP||0).toFixed(1)+(q?', PRE-MARKET now '+n2(q.last)+' gap '+(q.gapPct>=0?'+':'')+(q.gapPct||0).toFixed(2)+'%':'')+', behavior '+d.A.behave);await sleep(250);}
   const f=x=>x==null?'?':((x>=0?'+':'')+x.toFixed(2)+'%');
   const mline=Object.entries(mk).map(([k,v])=>k+' '+(v?f(v.chg)+' (overnight range pos '+(v.pos*100).toFixed(0)+'%, last hour '+f(v.h1)+')':'n/a')).join('; ');
@@ -451,7 +502,8 @@ async function morningRead(){
 
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
-  try{const b=await pull(tk);const A=analyze(b);const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
+  try{{const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<8*60+40){await pmRead(tk);await sleep(150);}}
+    const b=await pull(tk);const A=analyze(b);A.tk=tk;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
@@ -493,4 +545,29 @@ refreshAll(false);
 let LASTSLOT=null;
 setInterval(()=>{const s=Math.floor(Date.now()/1000);const inMin=s%300;const slot=Math.floor(s/300)+(inMin>=150?0.5:0);if(slot!==LASTSLOT&&(inMin>=12&&inMin<40||inMin>=150&&inMin<180)){LASTSLOT=slot;refreshAll(false);}},5000);
 </script>
+<div id="lonModal" onclick="if(event.target.id==='lonModal')lonInfo(false)"><div id="lonBox">
+  <h3>🌍 THE LONDON READ — what the overnight session tells you about the open</h3>
+  <p><b>The idea.</b> A U.S. stock does not wake up at 8:30. It has been trading since 3:00 AM Central — the hours when London is open — in the pre-market session. By the time the bell rings, that stock has already printed a high, a low, a direction, and a volume. Those five and a half hours are the London read for the stock itself, and they are the best predictor of the first fifteen minutes that exists. The disconnect you felt — the program picking a side at 8:35 as if the day began there — is closed by reading what the stock already did.</p>
+  <div class="gl">
+    <b>Pre-market</b><span>The trading session before the 8:30 open (3:00–8:30 CT). Thinner than the regular session, but real prices, real orders.</span>
+    <b>Pre-market high / low</b><span>The highest and lowest price reached in that session. They act as walls at the open.</span>
+    <b>Gap</b><span>How far the pre-market price sits from yesterday's close, in percent. A gap is a verdict made overnight.</span>
+    <b>PDH / PDL</b><span>Prior-Day High / Low — yesterday's highest and lowest price. The other set of walls.</span>
+    <b>"Into the bell"</b><span>The last hour before 8:30 (7:30–8:30). Is the stock still pressing in the gap's direction, or fading back?</span>
+    <b>OPEN trigger</b><span>The 8:35 trigger: the first 5-minute candle closing above BOTH yesterday's high and the pre-market high (calls), or below both lows (puts).</span>
+  </div>
+  <p><b>Why the pre-market high matters more than yesterday's high.</b> Yesterday's high is old news; the pre-market high is the price the stock could not get through <i>this morning</i>. A stock that gaps up and then closes its first candle above the pre-market high has beaten every seller who showed up overnight — that is the real gap-and-go. One that clears yesterday's high but stalls under the pre-market high is a gap already losing its fight, and it will not fire.</p>
+  <p><b>The four shapes, and the one thing each tells you to wait for:</b></p>
+  <div class="ex">
+    <b>GAP-AND-GO</b> — gapping up, sitting at the top of its pre-market range, still pressing higher into the bell. The overnight buyers are winning. <b>Wait for:</b> 8:35 closes above the pre-market high → CALLS on the OPEN trigger.<br><br>
+    <b>GAP THAT'S FADING</b> — gapped up, but the last hour is sliding back. The gap is being sold before the bell. <b>Wait for:</b> 8:35 closes back INSIDE yesterday's range → the failed-gap PUT. Never buy the gap itself.<br><br>
+    <b>GAP-DOWN-AND-GO</b> — the mirror: gapping down, at the bottom of its range, still sliding. <b>Wait for:</b> 8:35 closes below the pre-market low → PUTS.<br><br>
+    <b>GAP DOWN BEING BOUGHT</b> — gapped down, but the last hour is climbing. Buyers are absorbing it. <b>Wait for:</b> 8:35 closes back inside yesterday's range → the reclaim CALL.<br><br>
+    <b>NO CONVICTION</b> — small gap, mid-range, flat into the bell. Nothing was decided overnight. <b>Wait for:</b> the 8:35 candle. It decides.
+  </div>
+  <p><b>Why "still pressing into the bell" is the tell.</b> A gap is a headline's first reaction, made in thin trading at 4 AM. The last hour before the open is when the real desks arrive and vote on it. A gap still pressing at 8:15 has been ratified; a gap fading at 8:15 has been rejected. That one hour separates the gap-and-go from the fade — and the two are opposite trades on the same stock.</p>
+  <p><b>What the card does with it.</b> From 3:00 AM until 9:00 AM each card carries a blue LONDON line: the gap, the pre-market range, where price sits in it, the direction into the bell, and the shape's verdict. The 8:35 OPEN trigger uses the pre-market high and low as its walls. And the 🧠 Morning Read feeds the same session to the AI, so its opening plan is built on what the stock actually did overnight — not on yesterday's chart alone.</p>
+  <p><b>The rule underneath all of it, unchanged:</b> the London read tells you which side to <i>expect</i> and which level to <i>watch</i>. It never tells you to buy. Only a 5-minute CLOSE beyond the level, with volume, does that. The overnight session is the argument; the 8:35 candle is the verdict.</p>
+  <button class="close" onclick="lonInfo(false)">GOT IT</button>
+</div></div>
 </body></html>
