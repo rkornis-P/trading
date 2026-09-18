@@ -87,11 +87,50 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #flash .sub{font-size:16px;color:#fff;margin:10px 0 18px;line-height:1.5;max-width:460px}
 #flash button{background:var(--gold);color:#000;border:none;border-radius:12px;padding:16px 36px;font-weight:800;font-size:15px;cursor:pointer;margin:5px}
 #flash .dis{background:transparent;color:var(--dim);border:1px solid var(--line);font-size:12px;padding:10px 22px}
+
+/* ===== consistent scalps chips ===== */
+#scalpBar{display:flex;gap:6px;align-items:center;margin:0 0 10px;padding:8px 10px;background:var(--card2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+#scalpBar .lb{font-size:9px;letter-spacing:.14em;color:var(--gold-soft);font-weight:800;text-transform:uppercase;margin-right:4px}
+.schip{background:var(--card);border:1.5px solid var(--gold);border-radius:8px;padding:8px 12px;font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--gold-soft);cursor:pointer;letter-spacing:.03em}
+.schip.on{background:var(--gold);color:#000}
+.schip small{display:block;font-family:-apple-system,sans-serif;font-size:8px;color:var(--dim);letter-spacing:.06em;font-weight:600}
+.schip.on small{color:#333}
+
+/* ===== freshness ===== */
+#feedBar{display:none;border-radius:10px;padding:9px 11px;margin-bottom:10px;font-size:11.5px;font-weight:800;text-align:center}
+#feedBar.stale{display:block;background:#3a0f0a;border:2px solid var(--red);color:#ffb3a8;animation:fp .9s ease-in-out infinite alternate}
+.tc .fresh{font-size:9px;color:var(--dim);letter-spacing:.06em}
+.tc .fresh.stale{color:var(--red);font-weight:800}
+.tc.stale .sides{opacity:.35;pointer-events:none}
+/* range turn */
+.side.turn{border-color:#C08BE6;background:#1B1424}
+.side .status.turn{color:#C08BE6}
+.side .flip{font-size:9.5px;color:var(--red);font-weight:800;margin-top:2px}
+/* AI read */
+#aiBar{display:flex;gap:6px;margin-bottom:10px}
+#aiBar button{flex:1;padding:11px 4px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;background:var(--card2);color:var(--gold-soft);border:1px solid var(--gold)}
+#mkt{font-size:11px;line-height:1.55;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 11px;margin-bottom:10px;display:none}
+#mkt b{color:var(--gold-soft)}
+.tc .airead{font-size:10.5px;line-height:1.5;color:#cfd6e2;background:#0E1117;border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:6px 9px;margin:6px 0 2px}
+/* fidelity steps */
+.ticket .fid{margin-top:8px;border-top:1px dashed var(--line);padding-top:7px;font-size:10px;color:var(--dim);line-height:1.5}
+.ticket .fid b{color:var(--ink)}
+.posbar .fid{margin-top:6px;font-size:10px;color:var(--dim);line-height:1.5;border-top:1px dashed var(--line);padding-top:6px}
+.posbar .fid b{color:var(--ink)}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
 <div id="addRow"><input id="addTk" placeholder="type a ticker · enter" autocapitalize="characters" onkeydown="if(event.key==='Enter')addTk()"><button onclick="addTk()">＋ ADD</button></div>
+<div id="scalpBar"><span class="lb">Consistent scalps</span>
+  <span class="schip" id="sc_TQQQ" onclick="scalp('TQQQ')">TQQQ<small>3× Nasdaq · the market's clock</small></span>
+  <span class="schip" id="sc_SOXL" onclick="scalp('SOXL')">SOXL<small>3× semis · chips' clock</small></span>
+  <span class="schip" id="sc_SPY" onclick="scalp('SPY')">SPY<small>the index itself</small></span>
+  <span class="schip" id="sc_QQQ" onclick="scalp('QQQ')">QQQ<small>Nasdaq-100</small></span>
+</div>
 <div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
+<div id="feedBar"></div>
+<div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button></div>
+<div id="mkt"></div>
 <div id="st">—</div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
 <div id="cards"></div>
@@ -116,6 +155,20 @@ const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={};
 function save(){localStorage.setItem('kToday',JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked}));}
 function load(){try{const s=JSON.parse(localStorage.getItem('kToday'));if(s){LIST=s.list||[];POS=s.pos||null;if(s.auto===false)$('autoTop').checked=false;}}catch(e){}}
+
+
+/* ===== freshness ===== */
+function marketOpen(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();return n.getDay()>=1&&n.getDay()<=5&&m>=8*60+30&&m<15*60;}
+function ageSec(A){return A&&A.lastT?Math.max(0,Date.now()/1000-A.lastT):null;}
+function isStale(A){const a=ageSec(A);return marketOpen()&&a!=null&&a>7*60;}   /* a 5-min bar older than 7 minutes during market hours = stale */
+function freshLabel(A){const a=ageSec(A);if(a==null)return '';const t=new Date(A.lastT*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'});
+  return (isStale(A)?'STALE FEED · ':'')+'candle '+t+' · '+(a<90?Math.round(a)+'s':Math.round(a/60)+' min')+' ago';}
+function feedCheck(){
+  const names=LIST.filter(t=>DATA[t]);const stale=names.filter(t=>isStale(DATA[t].A));
+  const bar=$('feedBar');
+  if(marketOpen()&&names.length&&stale.length>=Math.ceil(names.length*0.5)){bar.className='stale';bar.textContent='⚠ FEED STALE — '+stale.length+' of '+names.length+' names are showing old candles. DO NOT TRADE ON THIS SCREEN until it clears. (The data source is throttling; tap ↻ in a minute.)';}
+  else{bar.className='';bar.textContent='';}
+}
 
 /* ---------- indicators ---------- */
 function emaAll(c,p){const k=2/(p+1);let e=null;return c.map(x=>{e=e==null?x:x*k+e*(1-k);return e;});}
@@ -143,7 +196,7 @@ function analyze(b){
   const firstBar=!!(today&&today.length&&ci===today[0]);   /* the 8:30–8:35 candle just closed */
   const prevHi=tIdx.length?Math.max(...tIdx.map(i=>b.H[i])):(orH||b.H[ci]);
   const prevLo=tIdx.length?Math.min(...tIdx.map(i=>b.L[i])):(orL||b.L[ci]);
-  const pClose=ci>0?b.C[ci-1]:b.C[ci];
+  const pClose=ci>0?b.C[ci-1]:b.C[ci];const ppClose=ci>1?b.C[ci-2]:pClose;const e9p=e9[Math.max(0,ci-1)];const dayHi=today?Math.max(...today.map(i=>b.H[i])):px,dayLo=today?Math.min(...today.map(i=>b.L[i])):px;
   let atr=0;for(let i=Math.max(1,n-13);i<=n;i++)atr+=Math.max(b.H[i]-b.L[i],Math.abs(b.H[i]-b.C[i-1]),Math.abs(b.L[i]-b.C[i-1]));atr/=Math.min(14,n);
   const rv=avgVol?b.V[ci]/avgVol:1;
   let r3=0,p6=0;for(let k=Math.max(0,ci-2);k<=ci;k++)r3+=b.V[k];for(let k=Math.max(0,ci-8);k<=ci-3;k++)p6+=b.V[k];const volTrend=p6>0?(r3/3)/(p6/6):1;
@@ -158,7 +211,7 @@ function analyze(b){
   const sess=Math.max(1,days.length);const xPer=crosses/sess;
   const behave=xPer<=2.5?'CLEAN':xPer<=4.5?'MIXED':'CHOPPY';
   const adrP=adr&&px?adr/px*100:null;
-  return {px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,bars:b};
+  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,bars:b};
 }
 function runMeter(A,L){
   const dirZ=A.vz==null?0:(L?A.vz:-A.vz);const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);const cZ=Math.max(0,Math.min(1,dirZ/3));
@@ -195,6 +248,22 @@ function compose(A,L){
   const missed=beyond&&!crossed&&pastATR>0.8;                                           /* it fired earlier and ran — you are late */
   return {trig,stop,t1,fired,thin,missed,pastATR,kind};
 }
+
+/* ===== RANGE TURN — the reversal trade after an extended run =====
+   For PUTS: the up-run is spent (calls' RUN LATE/EXHAUSTED), the last two closed candles fell, this one closed under the 9 EMA.
+   For CALLS: mirror. Stop = the extreme + 0.2 ATR. T1 = VWAP (or 1.5 ATR). Half size — it's a scalp against the trend. */
+function rangeTurn(A,L){
+  const runOpp=runMeter(A,!L);                       /* how spent is the OTHER side's run */
+  if(runOpp.phase!=='LATE'&&runOpp.phase!=='EXHAUSTED')return null;
+  const twoDown=L?(A.cClose>A.pClose&&A.pClose>A.ppClose):(A.cClose<A.pClose&&A.pClose<A.ppClose);
+  const thru=L?(A.cClose>A.e9c&&A.pClose<=A.e9p):(A.cClose<A.e9c&&A.pClose>=A.e9p);
+  const vol=A.cVol>=1.0*A.avgVol;
+  if(!(twoDown&&thru))return {near:true,runOpp};
+  const stop=L?A.dayLo-0.2*A.atr:A.dayHi+0.2*A.atr;
+  const t1=L?Math.max(A.vw,A.px+1.5*A.atr):Math.min(A.vw,A.px-1.5*A.atr);
+  return {fired:vol,thin:!vol,stop,t1,trig:A.cClose,kind:'TURN',runOpp};
+}
+
 /* ---------- vehicle from the chain (cached slim) ---------- */
 async function vehicle(tk,L,A){
   let opts=null;try{const c=JSON.parse(localStorage.getItem('kChain_'+tk));if(c&&Date.now()-c.ts<10*60000)opts=c.cj.data.options;}catch(e){}
@@ -218,15 +287,21 @@ function statusOf(P,rm){
   return ['wait','WAIT'];
 }
 function sideHTML(tk,L,d){
-  const sc=L?d.sC:d.sP;const P=compose(d.A,L);const rm=sc.rm;const [cls,txt]=statusOf(P,rm);
+  const sc=L?d.sC:d.sP;let P=compose(d.A,L);const rm=sc.rm;let [cls,txt]=statusOf(P,rm);
+  const T=rangeTurn(d.A,L);
+  if(T&&T.fired){cls='turn';txt='↩ TURN — range trade · '+(L?'bounce':'rollover')+' after a spent run';P=Object.assign({},P,{trig:T.trig,stop:T.stop,t1:T.t1,kind:'TURN',fired:true,missed:false});}
+  else if(T&&T.thin){cls='thin';txt='turning — volume thin, wait one candle';}
+  else if(T&&T.near){if(cls==='wait')txt='WAIT · the other side\'s run is '+T.runOpp.phase.toLowerCase()+' — a turn may set up (two closes against + through the 9 EMA)';}
+  const flip=(rm.phase==='LATE'||rm.phase==='EXHAUSTED')&&(rangeTurn(d.A,!L)||{}).fired?'<div class="flip">TURNED — the other side just fired. Do not buy this side.</div>':'';
   const st=cls==='wait'?('WAIT · '+(P.kind==='OPEN'?'8:35: needs a close '+(L?'above yesterday\'s high':'below yesterday\'s low')+' $':P.kind.toLowerCase()+' trigger $')+n2(P.trig)+' · '+n2(Math.abs(P.trig-d.A.px))+' away'):txt;
   const top=sc.det.filter(x=>x.ok).slice(0,3).map(x=>x.l).join(' · ');
   const id=tk+'_'+(L?'C':'P');
-  return '<div class="side '+(L?'c':'p')+(cls==='fired'?' fired':'')+(cls==='late'?' late':'')+'" onclick="toggleTicket(\''+id+'\')">'+
+  window._PLAN=window._PLAN||{};window._PLAN[id]=P;
+  return '<div class="side '+(L?'c':'p')+(cls==='fired'?' fired':'')+(cls==='turn'?' turn':'')+(cls==='late'?' late':'')+'" onclick="toggleTicket(\''+id+'\')">'+
    '<div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div>'+
    '<div class="status '+cls+'">'+st+'</div>'+
    '<div><span class="run '+rm.phase+'">RUN '+rm.score+' '+rm.phase+'</span> <span class="why">· VOL '+(d.A.volTrend>=1.15?'▲':d.A.volTrend<=0.85?'▼':'▬')+'</span></div>'+
-   '<div class="why">'+top+'</div>'+
+   '<div class="why">'+top+'</div>'+flip+
    '<div class="ticket" id="tk_'+id+'"><div style="font-size:10px;color:var(--dim)">tap to load the ticket…</div></div></div>';
 }
 function cardHTML(tk){
@@ -235,7 +310,9 @@ function cardHTML(tk){
   const A=d.A;const rb=A.adrP!=null?(A.adrP>=4?'BIG':A.adrP>=2?'GOOD':'SMALL'):'';const rc=rb==='BIG'?'var(--green)':rb==='GOOD'?'var(--gold-soft)':'var(--red)';
   const bc=A.behave==='CLEAN'?'var(--green)':A.behave==='MIXED'?'var(--amber)':'var(--red)';
   const badges='<div style="font-size:9px;letter-spacing:.06em;margin-top:2px"><span style="color:'+rc+';font-weight:800">RANGE '+(A.adrP!=null?A.adrP.toFixed(1)+'%':'—')+(A.adr?' ($'+n2(A.adr)+'/day)':'')+' '+rb+'</span> · <span style="color:'+bc+';font-weight:800">'+A.behave+'</span> <span style="color:var(--dim)">'+(A.behave==='CLEAN'?'trends hold, respects the ride line':A.behave==='MIXED'?'some whipsaw — demand volume':'whipsaws — reclaim entries only, half size')+'</span></div>';
-  return '<div class="tc'+(isPos?' pos':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+badges+
+  const stale=isStale(A);const fl='<div class="fresh'+(stale?' stale':'')+'">'+freshLabel(A)+(stale?' — numbers below are OLD':'')+'</div>';
+  return '<div class="tc'+(isPos?' pos':'')+(stale?' stale':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+fl+badges+
+   ((window._AIREAD&&window._AIREAD[tk])?'<div class="airead">🧠 '+window._AIREAD[tk].replace(/^[A-Z.\-]{1,7}\s*[—-]\s*/,'')+'</div>':'')+
    '<div class="sides">'+sideHTML(tk,true,d)+sideHTML(tk,false,d)+'</div>'+(isPos?posHTML():'')+'</div>';
 }
 function render(){
@@ -249,8 +326,8 @@ async function toggleTicket(id){
   box.classList.add('on');
   const [tk,s]=id.split('_');const L=s==='C';const d=DATA[tk];if(!d)return;
   box.innerHTML='<div style="font-size:10px;color:var(--dim)">pulling the contract…</div>';
-  const c=await vehicle(tk,L,d.A);const P=compose(d.A,L);
-  const risk=parseFloat(localStorage.getItem('kRisk'))||500;const dl=c?c.d:0.70;const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
+  const c=await vehicle(tk,L,d.A);const P=(window._PLAN&&window._PLAN[id])||compose(d.A,L);
+  const risk=(parseFloat(localStorage.getItem('kRisk'))||500)*(P.kind==='TURN'?0.5:1);const dl=c?c.d:0.70;const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
   const per=stopDist*dl*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
   const E=c?c.mid:null;const trail=stopDist*dl;const tp=E!=null?E+t1Dist*dl-0.05:null;
   const sym=c?(tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')):'no liquid contract found — pick at the broker';
@@ -260,6 +337,7 @@ async function toggleTicket(id){
    '<div class="tl"><span class="k">Ticket 1</span><span><span class="v b">Buy to Open '+nC+' at $'+(E!=null?n2(E):'mid')+' limit</span><div class="n">Options ticket · Day · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Ticket 2</span><span><span class="v r">'+(fast?'Trailing Stop Loss':'Trailing Stop Limit')+' · trail $'+n2(trail)+'</span><div class="n">within 60s of the fill · all '+nC+' · Day · floor ≈ $'+(E!=null?n2(E-trail):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Take half</span><span><span class="v g">Sell '+half+' at $'+(tp!=null?n2(tp):'—')+' limit</span><div class="n">when the voice says "bank half" · stock T1 $'+n2(P.t1)+' · stock stop $'+n2(P.stop)+'</div></span></div>'+
+   '<div class="fid"><b>ENTER:</b> Fidelity → Trade → <b>Options</b> tab → symbol → Calls&amp;Puts → pick the contract above from the chain → Buy to Open · '+nC+' · <b>Limit</b> '+(E!=null?n2(E):'mid')+' · Day → Preview → Place. Wait for Filled.<br><b>PROTECT (within 60s):</b> Portfolio → Positions → this option → Trade → Sell to Close · '+nC+' · <b>Trailing Stop Loss ($)</b> · Trail '+n2(trail)+' · <b>Day</b> → Place. One resting sell only.</div>'+
    '<div class="row"><button class="in" onclick="event.stopPropagation();imIn(\''+tk+'\','+L+','+(E||0)+','+dl+','+P.stop.toFixed(2)+','+P.t1.toFixed(2)+','+nC+')">✔ I\'M IN</button><button class="pr" onclick="event.stopPropagation();printOne(\''+tk+'\','+L+')">🖨 PRINT</button></div>';
   box.onclick=e=>e.stopPropagation();
 }
@@ -280,7 +358,9 @@ function imIn(tk,L,E,d,stop,t1,n){
   say('You are in. '+tk+', '+(L?'calls':'puts')+', at '+fill.toFixed(2).replace('.',' point ')+'. Stock stop '+n2(POS.stop).replace('.',' point ')+', target '+n2(POS.t1).replace('.',' point ')+'. Place the trailing stop now.'+late,true);
 }
 function posHTML(){
-  const p=POS;return '<div class="posbar" id="posbar"><div style="font-size:9px;letter-spacing:.12em;color:var(--gold-soft)">YOUR POSITION · '+p.tk+' '+(p.L?'CALLS':'PUTS')+' · E $'+n2(p.E)+'</div><div class="pv" id="pv">ruling…</div><div class="pw" id="pw">—</div><button class="out" onclick="event.stopPropagation();imOut()">✔ I\'M OUT — stand down</button></div>';
+  const p=POS;return '<div class="posbar" id="posbar"><div style="font-size:9px;letter-spacing:.12em;color:var(--gold-soft)">YOUR POSITION · '+p.tk+' '+(p.L?'CALLS':'PUTS')+' · E $'+n2(p.E)+' · stock stop '+n2(p.stop)+' · T1 '+n2(p.t1)+'</div><div class="pv" id="pv">ruling…</div><div class="pw" id="pw">—</div>'+
+   '<div class="fid"><b>BANK HALF:</b> Positions → this option → Trade → Sell to Close · '+Math.max(1,Math.floor(p.n/2))+' · Limit at the bid → Place. Then Orders → the trailing stop → Attempt to Cancel and Replace → qty '+(p.n-Math.max(1,Math.floor(p.n/2)))+'.<br><b>CLOSE ALL:</b> Positions → this option → Trade → Sell to Close · all · Limit at the bid (Market if it\'s moving against you) → Place. Then Orders → cancel the trailing stop. <b>Ignore the app\'s P/L number on a wide-spread contract — it uses the last trade, not the mid; the chart is the truth.</b></div>'+
+   '<button class="out" onclick="event.stopPropagation();imOut()">✔ I\'M OUT — stand down</button></div>';
 }
 function imOut(){say('Out. Log it.');POS=null;save();render();}
 function officer(){
@@ -331,22 +411,62 @@ function jumpTo(tk,L){
 function flashGo(){$('flash').classList.remove('on');if(FLASH_CTX)jumpTo(FLASH_CTX.tk,FLASH_CTX.L);}
 function flashOff(){$('flash').classList.remove('on');}
 
+
+/* ===== consistent scalps: tap a chip → a card, same as any stock ===== */
+const SCALPS=['TQQQ','SOXL','SPY','QQQ'];
+function scalp(tk){
+  const on=LIST.includes(tk);
+  if(on){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();paintScalps();return;}
+  LIST=[tk,...LIST];save();render();paintScalps();
+  refreshOne(tk,true).then(()=>{render();$('st').textContent=tk+' scored — both sides. Scalp its VWAP test 9:30–10:30 and the 2:00 trend.';
+    const c=$('card_'+tk);if(c)c.scrollIntoView({behavior:'smooth',block:'start'});});
+}
+function paintScalps(){SCALPS.forEach(t=>{const el=$('sc_'+t);if(el)el.className='schip'+(LIST.includes(t)?' on':'');});}
+
+
+/* ===== AI MORNING READ (via the relay's Anthropic passthrough) ===== */
+async function pmQuote(tk){try{const r=await fetch(RELAY+'/?pm='+encodeURIComponent(tk));const j=await r.json();if(j&&j.last!=null)return j;}catch(e){}return null;}
+async function morningRead(){
+  $('st').textContent='Reading the overnight tape…';$('mkt').style.display='block';$('mkt').innerHTML='Working — futures, crude, then each name (30–60 seconds)…';
+  const feeds=[['ES=F','ES'],['NQ=F','NQ'],['CL=F','crude'],['JPY=X','USDJPY'],['^VIX','VIX']];const mk={};
+  for(const [t,k] of feeds){try{const b=await pull(t);const n=b.C.length-1;const last=b.C[n];const cut=b.T[n]-16*3600;const ON=[];for(let i=0;i<b.T.length;i++)if(b.T[i]>=cut)ON.push(i);
+    const hi=Math.max(...ON.map(i=>b.H[i])),lo=Math.min(...ON.map(i=>b.L[i]));const h1i=b.T.findIndex(x=>x>=b.T[n]-3600);const h1=h1i>0?(last-b.C[h1i])/b.C[h1i]*100:null;
+    mk[k]={chg:b.pc?(last-b.pc)/b.pc*100:null,pos:(last-lo)/((hi-lo)||1),h1};}catch(e){mk[k]=null;}await sleep(300);}
+  const names=LIST.slice(0,10);const rows=[];
+  for(const tk of names){const d=DATA[tk];if(!d)continue;const q=await pmQuote(tk);
+    rows.push(tk+': yesterday close '+n2(d.A.pdc)+', PDH '+n2(d.A.pdh)+', PDL '+n2(d.A.pdl)+', 5m ATR '+n2(d.A.atr)+', ADR% '+(d.A.adrP||0).toFixed(1)+(q?', PRE-MARKET now '+n2(q.last)+' gap '+(q.gapPct>=0?'+':'')+(q.gapPct||0).toFixed(2)+'%':'')+', behavior '+d.A.behave);await sleep(250);}
+  const f=x=>x==null?'?':((x>=0?'+':'')+x.toFixed(2)+'%');
+  const mline=Object.entries(mk).map(([k,v])=>k+' '+(v?f(v.chg)+' (overnight range pos '+(v.pos*100).toFixed(0)+'%, last hour '+f(v.h1)+')':'n/a')).join('; ');
+  const sys='You are the pre-open strategist for a disciplined options scalper (deep ITM 0.60-0.75 delta, 5-10 DTE, entries only on a 5-minute CLOSE beyond structure with volume, never buy a gap, flat by 2:45 CT). Given the overnight futures/crude/yen/VIX read and each stock\'s prior-day structure plus pre-market price, write the OPENING PLAN. Format exactly: MARKET: two sentences (risk on/off, what the London session did in the last hour, what kind of open to expect). Then one line per stock: TICKER — side to favor (CALLS/PUTS/NEITHER) — the expected first move at 8:30 (gap up/down/flat vs PDH/PDL) — the one trigger to wait for — the trap. Under 20 words per stock line. Plain language, no markdown.';
+  try{
+    const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,system:sys,messages:[{role:'user',content:'Time: '+ctNow().toLocaleString('en-US',{weekday:'long',hour:'numeric',minute:'2-digit'})+' CT\nOvernight: '+mline+'\nStocks:\n'+rows.join('\n')}]})});
+    const j=await resp.json();const txt=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();if(!txt)throw new Error('no reply');
+    const lines=txt.split('\n').filter(Boolean);const mk_=lines.filter(l=>/^MARKET/i.test(l)).join(' ');
+    $('mkt').innerHTML='<b>MORNING READ · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT</b><br>'+(mk_||lines[0]);
+    window._AIREAD={};lines.forEach(l=>{const m=l.match(/^([A-Z.\-]{1,7})\s*[—-]/);if(m)window._AIREAD[m[1]]=l;});
+    render();$('st').textContent='Morning read done — each card carries its opening plan. Then: hands off 8:30–8:35.';
+    try{const u=new SpeechSynthesisUtterance('Morning read. '+(mk_||'').replace(/MARKET:?/i,''));u.rate=0.55;speechSynthesis.speak(u);}catch(e){}
+  }catch(e){$('mkt').innerHTML='Morning read failed: '+(e.message||e)+'. Check health.html (AI route).';}
+}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{const b=await pull(tk);const A=analyze(b);const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
-    if(speak){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
+    if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
+      const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
 async function refreshAll(force){
   $('st').textContent='Scoring '+LIST.length+' names…';
-  for(const tk of LIST){await refreshOne(tk,true);await sleep(120);}
-  render();officer();renderFired();
+  for(const tk of LIST){await refreshOne(tk,true);await sleep(350);}
+  render();officer();renderFired();feedCheck();
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const v=($('addTk').value||'').trim().toUpperCase();if(!/^[A-Z.\-]{1,7}$/.test(v))return;$('addTk').value='';if(!LIST.includes(v))LIST.unshift(v);save();render();refreshOne(v,true).then(()=>{render();$('st').textContent=v+' added and scored.';});}
-function rm(tk){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();}
-function tick(){$('clk').textContent=ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';}
+function rm(tk){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();paintScalps();}
+function tick(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();$('clk').textContent=n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+  if(n.getDay()>=1&&n.getDay()<=5&&m<8*60+30&&!window._chk){window._chk=1;$('st').innerHTML='<b style="color:var(--amber)">Before the open:</b> Fidelity → Accounts &amp; Trade → Orders → cancel any stop or trailing stop left from yesterday. A leftover order can sell your new position or block a new one. Then tap 🧠 MORNING READ.';}}
 /* ---------- print one side's order ---------- */
 async function printOne(tk,L){
   const d=DATA[tk];if(!d)return;const c=await vehicle(tk,L,d.A);const P=compose(d.A,L);
@@ -367,7 +487,10 @@ async function printOne(tk,L){
 /* ---------- boot ---------- */
 load();
 if(!LIST.length||$('autoTop').checked){DOZEN.forEach(t=>{if(!LIST.includes(t))LIST.push(t);});}
-save();render();tick();setInterval(tick,30000);
-refreshAll(false);TIMER=setInterval(()=>refreshAll(false),20000);
+save();render();paintScalps();tick();setInterval(tick,30000);
+refreshAll(false);
+/* refresh right after each 5-minute close (+12s) and once mid-candle (+150s); never faster — throttling is what made the feed stale */
+let LASTSLOT=null;
+setInterval(()=>{const s=Math.floor(Date.now()/1000);const inMin=s%300;const slot=Math.floor(s/300)+(inMin>=150?0.5:0);if(slot!==LASTSLOT&&(inMin>=12&&inMin<40||inMin>=150&&inMin<180)){LASTSLOT=slot;refreshAll(false);}},5000);
 </script>
 </body></html>
