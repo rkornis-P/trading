@@ -155,6 +155,10 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <span class="schip" id="sc_SOXL" onclick="scalp('SOXL')">SOXL<small>3× semis · chips' clock</small></span>
   <span class="schip" id="sc_SPY" onclick="scalp('SPY')">SPY<small>the index itself</small></span>
   <span class="schip" id="sc_QQQ" onclick="scalp('QQQ')">QQQ<small>Nasdaq-100</small></span>
+  <span class="schip" id="sc_SPXL" onclick="scalp('SPXL')">SPXL<small>3× S&amp;P · morning breakouts</small></span>
+  <span class="schip" id="sc_IWM" onclick="scalp('IWM')">IWM<small>small caps · rates engine</small></span>
+  <span class="schip" id="sc_TNA" onclick="scalp('TNA')">TNA<small>3× small caps</small></span>
+  <span class="schip" id="sc_IBIT" onclick="scalp('IBIT')">IBIT<small>bitcoin ETF · crypto engine</small></span>
 </div>
 <div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div>
 <div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
@@ -200,6 +204,26 @@ function feedCheck(){
   else{bar.className='';bar.textContent='';}
 }
 
+
+/* ===== daily bars: 20-day average daily range + beta to NQ (cached 12h) ===== */
+let DAILY={},NQD=null;
+async function dailyBars(tk){
+  try{const c=JSON.parse(localStorage.getItem('kDaily_'+tk));if(c&&Date.now()-c.ts<12*3600000)return c.d;}catch(e){}
+  try{const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=1d&r=2mo');const j=await r.json();const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)return null;
+    const q=res.indicators.quote[0],ts=res.timestamp||[];const d=[];for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;d.push({t:ts[i],o:q.open[i],h:q.high[i],l:q.low[i],c:q.close[i]});}
+    const out={bars:d.slice(-25)};
+    const rng=out.bars.slice(0,-1).slice(-20).map(b=>b.h-b.l);out.adr20=rng.length?rng.reduce((a,b)=>a+b,0)/rng.length:null;
+    try{localStorage.setItem('kDaily_'+tk,JSON.stringify({ts:Date.now(),d:out}));}catch(e){}
+    return out;}catch(e){return null;}
+}
+function betaTo(stock,index){ /* daily-return beta, aligned by date */
+  if(!stock||!index)return null;const S={};stock.bars.forEach(b=>S[new Date(b.t*1000).toDateString()]=b.c);const I={};index.bars.forEach(b=>I[new Date(b.t*1000).toDateString()]=b.c);
+  const days=Object.keys(S).filter(k=>I[k]).sort((a,b)=>new Date(a)-new Date(b));const rs=[],ri=[];
+  for(let i=1;i<days.length;i++){rs.push(S[days[i]]/S[days[i-1]]-1);ri.push(I[days[i]]/I[days[i-1]]-1);}
+  if(rs.length<8)return null;const mx=ri.reduce((a,b)=>a+b,0)/ri.length,my=rs.reduce((a,b)=>a+b,0)/rs.length;let cov=0,vx=0;
+  for(let i=0;i<rs.length;i++){cov+=(ri[i]-mx)*(rs[i]-my);vx+=(ri[i]-mx)*(ri[i]-mx);}return vx?cov/vx:null;
+}
+
 /* ---------- indicators ---------- */
 function emaAll(c,p){const k=2/(p+1);let e=null;return c.map(x=>{e=e==null?x:x*k+e*(1-k);return e;});}
 function smaAll(c,p){return c.map((x,i)=>{if(i<p-1)return null;let s=0;for(let j=i-p+1;j<=i;j++)s+=c[j];return s/p;});}
@@ -207,7 +231,7 @@ function vwapAll(T,H,L,C,V){const out=[];let d0=null,pv=0,vv=0;for(let i=0;i<C.l
 function macdHist(c){const f=emaAll(c,12),s=emaAll(c,26);const m=c.map((_,i)=>f[i]-s[i]);const sig=emaAll(m,9);return m.map((x,i)=>x-sig[i]);}
 function rsiAll(c,p){let g=0,l=0;const out=[];for(let i=0;i<c.length;i++){if(i===0){out.push(null);continue;}const ch=c[i]-c[i-1];const up=ch>0?ch:0,dn=ch<0?-ch:0;if(i<=p){g+=up;l+=dn;out.push(i===p?100-100/(1+(g/p)/((l/p)||1e-9)):null);}else{g=(g*(p-1)+up)/p;l=(l*(p-1)+dn)/p;out.push(100-100/(1+g/(l||1e-9)));}}return out;}
 async function pull(tk){
-  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=5d');const j=await r.json();
+  const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=10d');const j=await r.json();
   const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
   const q=res.indicators.quote[0],ts=res.timestamp||[];const T=[],H=[],L=[],C=[],V=[];
   for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;T.push(ts[i]);H.push(q.high[i]);L.push(q.low[i]);C.push(q.close[i]);V.push(q.volume[i]||0);}
@@ -229,6 +253,11 @@ function analyze(b){
   const pClose=ci>0?b.C[ci-1]:b.C[ci];const ppClose=ci>1?b.C[ci-2]:pClose;const e9p=e9[Math.max(0,ci-1)];const dayHi=today?Math.max(...today.map(i=>b.H[i])):px,dayLo=today?Math.min(...today.map(i=>b.L[i])):px;
   let atr=0;for(let i=Math.max(1,n-13);i<=n;i++)atr+=Math.max(b.H[i]-b.L[i],Math.abs(b.H[i]-b.C[i-1]),Math.abs(b.L[i]-b.C[i-1]));atr/=Math.min(14,n);
   const rv=avgVol?b.V[ci]/avgVol:1;
+  /* TIME-OF-DAY relative volume: this candle vs the same minute-of-day across prior sessions */
+  const slotOf=i=>{const d=new Date(b.T[i]*1000);const c=new Date(d.toLocaleString('en-US',{timeZone:'America/Chicago'}));return c.getHours()*60+c.getMinutes();};
+  const mySlot=slotOf(ci);let tv=0,tc=0;
+  for(const dd of days.slice(0,-1)){for(const i of dd){if(slotOf(i)===mySlot){tv+=b.V[i];tc++;break;}}}
+  const todBase=tc?tv/tc:null;const rvolTOD=todBase?b.V[ci]/todBase:rv;
   let r3=0,p6=0;for(let k=Math.max(0,ci-2);k<=ci;k++)r3+=b.V[k];for(let k=Math.max(0,ci-8);k<=ci-3;k++)p6+=b.V[k];const volTrend=p6>0?(r3/3)/(p6/6):1;
   const priorDays=days.slice(0,-1).filter(dd=>dd.length>10);
   const adr=priorDays.length?priorDays.reduce((s,dd)=>s+(Math.max(...dd.map(i=>b.H[i]))-Math.min(...dd.map(i=>b.L[i]))),0)/priorDays.length:null;
@@ -241,7 +270,7 @@ function analyze(b){
   const sess=Math.max(1,days.length);const xPer=crosses/sess;
   const behave=xPer<=2.5?'CLEAN':xPer<=4.5?'MIXED':'CHOPPY';
   const adrP=adr&&px?adr/px*100:null;
-  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,bars:b};
+  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,rvolTOD,todBase,slotOf,days,bars:b};
 }
 function runMeter(A,L){
   const dirZ=A.vz==null?0:(L?A.vz:-A.vz);const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);const cZ=Math.max(0,Math.min(1,dirZ/3));
@@ -254,7 +283,8 @@ function runMeter(A,L){
 function score(A,L){
   let sc=0;const S=[];const add=(ok,p,l)=>{if(ok)sc+=p;S.push({ok,l});};
   add(L?A.e9>A.s20:A.e9<A.s20,18,'9/20 aligned');add(L?A.px>A.vw:A.px<A.vw,18,'right side of VWAP');add(L?(A.rsi>=45&&A.rsi<=72):(A.rsi>=28&&A.rsi<=55),12,'RSI healthy');
-  add(A.rv>=1.05,14,'volume alive');add(L?A.px>A.pdc:A.px<A.pdc,12,'winning vs yesterday');add(L?(A.px>=A.orH*0.998):(A.px<=A.orL*1.002),14,'at the range edge');add(A.atr/A.px>=0.0018,12,'it can travel');
+  add((A.rvolTOD||A.rv)>=1.05,14,'volume alive (vs this time of day)');add(L?A.px>A.pdc:A.px<A.pdc,12,'winning vs yesterday');add(L?(A.px>=A.orH*0.998):(A.px<=A.orL*1.002),14,'at the range edge');add(A.atr/A.px>=0.0018,12,'it can travel');
+  {const ev=evidence(A,L);if(ev&&ev.n>=3){add(ev.rate>=0.55,10,'triggers have worked here ('+(ev.rate*100).toFixed(0)+'%)');if(ev.rate<0.35)sc=Math.max(0,sc-10);}}
   const P0=compose(A,L);A._pastATR=P0.pastATR;
   const rm=runMeter(A,L);if(rm.phase==='LATE')sc=Math.max(0,sc-15);if(rm.phase==='EXHAUSTED')sc=Math.max(0,sc-30);
   return {score:sc,det:S,rm};
@@ -272,7 +302,7 @@ function compose(A,L){
   const stop=L?Math.min(A.e9,A.vw,trig)-0.15*A.atr:Math.max(A.e9,A.vw,trig)+0.15*A.atr;const t1=L?trig+2.2*A.atr:trig-2.2*A.atr;
   const beyond=L?(A.cClose>trig):(A.cClose<trig);
   const crossed=L?(A.pClose<=trig&&A.cClose>trig):(A.pClose>=trig&&A.cClose<trig);   /* THIS candle crossed it */
-  const vol=A.cVol>=1.2*A.avgVol;
+  const vol=(A.rvolTOD||A.rv)>=1.2;   /* vs the same time of day on prior sessions */
   const pastATR=A.atr?Math.abs(A.px-trig)/A.atr:0;                                   /* how far price already ran past the trigger */
   const fired=crossed&&vol&&pastATR<=(A.firstBar?1.2:0.8);                                              /* fresh cross, with volume, still near the level */
   const thin=crossed&&!vol;
@@ -288,11 +318,55 @@ function rangeTurn(A,L){
   if(runOpp.phase!=='LATE'&&runOpp.phase!=='EXHAUSTED')return null;
   const twoDown=L?(A.cClose>A.pClose&&A.pClose>A.ppClose):(A.cClose<A.pClose&&A.pClose<A.ppClose);
   const thru=L?(A.cClose>A.e9c&&A.pClose<=A.e9p):(A.cClose<A.e9c&&A.pClose>=A.e9p);
-  const vol=A.cVol>=1.0*A.avgVol;
+  const vol=(A.rvolTOD||A.rv)>=1.0;
   if(!(twoDown&&thru))return {near:true,runOpp};
   const stop=L?A.dayLo-0.2*A.atr:A.dayHi+0.2*A.atr;
   const t1=L?Math.max(A.vw,A.px+1.5*A.atr):Math.min(A.vw,A.px-1.5*A.atr);
   return {fired:vol,thin:!vol,stop,t1,trig:A.cClose,kind:'TURN',runOpp};
+}
+
+
+/* ===== Black-Scholes: solve implied volatility from the mid, then the real delta ===== */
+function _N(x){const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;const s=x<0?-1:1;const ax=Math.abs(x)/Math.SQRT2;const t=1/(1+p*ax);const y=1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-ax*ax);return .5*(1+s*y);}
+function _bs(S,K,T,sg,isC){if(T<=0)T=1/365;const st=Math.sqrt(T);const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*T)/(sg*st);const d2=d1-sg*st;return isC?S*_N(d1)-K*Math.exp(-0.05*T)*_N(d2):K*Math.exp(-0.05*T)*_N(-d2)-S*_N(-d1);}
+function realDelta(S,K,dte,mid,isC){
+  const T=Math.max(1,dte)/365;let lo=0.05,hi=3.0;
+  for(let i=0;i<40;i++){const m=(lo+hi)/2;if(_bs(S,K,T,m,isC)>mid)hi=m;else lo=m;}
+  const sg=(lo+hi)/2;const d1=(Math.log(S/K)+(0.05+.5*sg*sg)*T)/(sg*Math.sqrt(T));
+  const d=isC?_N(d1):_N(d1)-1;return {d:Math.abs(d),iv:sg};
+}
+
+
+/* ===== EVIDENCE — back-run the triggers on this stock's own prior sessions ===== */
+function evidence(A,L){
+  const b=A.bars,days=A.days;if(!days||days.length<3)return null;
+  const atr=A.atr||0.5;let n=0,win=0,mfeSum=0,openN=0,openWin=0;
+  for(let s=1;s<days.length-1;s++){
+    const dd=days[s],prev=days[s-1];if(dd.length<15||prev.length<10)continue;
+    const pdh=Math.max(...prev.map(i=>b.H[i])),pdl=Math.min(...prev.map(i=>b.L[i]));
+    let runHi=-1e9,runLo=1e9,firedOnce=false;
+    for(let k=0;k<dd.length;k++){
+      const i=dd[k];const slot=A.slotOf(i);
+      let tv=0,tc=0;for(let s2=0;s2<days.length-1;s2++){if(s2===s)continue;for(const j of days[s2]){if(A.slotOf(j)===slot){tv+=b.V[j];tc++;break;}}}
+      const rv=tc?b.V[i]/(tv/tc):1;
+      let fire=false,kind='';
+      if(k===0){if(L?(b.C[i]>pdh):(b.C[i]<pdl)){fire=rv>=1.2;kind='OPEN';}}
+      else{const prevC=b.C[dd[k-1]];const lvl=L?runHi:runLo;if(L?(prevC<=lvl&&b.C[i]>lvl):(prevC>=lvl&&b.C[i]<lvl)){fire=rv>=1.2;kind='BREAK';}}
+      runHi=Math.max(runHi,b.H[i]);runLo=Math.min(runLo,b.L[i]);
+      if(!fire||firedOnce)continue;firedOnce=true;
+      const e=b.C[i];let best=0,hit=null;
+      for(let m=1;m<=12&&k+m<dd.length;m++){const j=dd[k+m];const fav=L?(b.H[j]-e):(e-b.L[j]);const adv=L?(e-b.L[j]):(b.H[j]-e);best=Math.max(best,fav);
+        if(adv>=1.0*atr){hit=false;break;}if(fav>=1.5*atr){hit=true;break;}}
+      n++;if(hit)win++;mfeSum+=best/atr;if(kind==='OPEN'){openN++;if(hit)openWin++;}
+    }
+  }
+  if(!n)return {n:0,sessions:days.length-1};
+  return {n,win,rate:win/n,mfe:mfeSum/n,openN,openWin,sessions:days.length-1};
+}
+function evLine(A,L){
+  const ev=evidence(A,L);if(!ev||!ev.n)return '<div class="why" style="color:var(--dim)">evidence: no triggers in the last '+(ev?ev.sessions:'—')+' sessions</div>';
+  const col=ev.rate>=0.55?'var(--green)':ev.rate>=0.4?'var(--amber)':'var(--red)';
+  return '<div class="why" style="color:'+col+'">evidence: '+ev.n+' trigger'+(ev.n>1?'s':'')+' in '+ev.sessions+' sessions · '+ev.win+' followed through ('+(ev.rate*100).toFixed(0)+'%) · avg best +'+ev.mfe.toFixed(1)+' ATR'+(ev.openN?' · open '+ev.openWin+'/'+ev.openN:'')+'</div>';
 }
 
 /* ---------- vehicle from the chain (cached slim) ---------- */
@@ -305,8 +379,9 @@ async function vehicle(tk,L,A){
   for(const o of opts){const s=o.option||'';const m=s.match(/(\d{6})([CP])(\d{8})$/);if(!m||m[2]!==want)continue;
     const exp=new Date(2000+ +m[1].slice(0,2),+m[1].slice(2,4)-1,+m[1].slice(4,6));const dte=Math.round((exp-now)/86400000);if(dte<3||dte>12)continue;
     const K=+m[3]/1000;const bid=+o.bid||0,ask=+o.ask||0;if(!bid&&!ask)continue;const dist=(L?A.px-K:K-A.px);if(dist<=0||dist>A.px*0.12)continue;
-    const oi=+o.open_interest||0;if(oi<50)continue;const d=Math.max(0.50,Math.min(0.90,0.50+(dist/A.px)*4.0));
-    const c={K,exp,dte,bid,ask,mid:(bid+ask)/2,d,oi};if(!best||Math.abs(d-0.70)<Math.abs(best.d-0.70))best=c;}
+    const oi=+o.open_interest||0;if(oi<50)continue;const mid=(bid+ask)/2;
+    const rd=realDelta(A.px,K,dte,mid,L);const d=rd.d;                      /* the real delta, not a moneyness guess */
+    const c={K,exp,dte,bid,ask,mid,d,iv:rd.iv,oi};if(!best||Math.abs(d-0.70)<Math.abs(best.d-0.70))best=c;}
   return best;
 }
 /* ---------- render ---------- */
@@ -331,7 +406,8 @@ function sideHTML(tk,L,d){
   return '<div class="side '+(L?'c':'p')+(cls==='fired'?' fired':'')+(cls==='turn'?' turn':'')+(cls==='late'?' late':'')+'" onclick="toggleTicket(\''+id+'\')">'+
    '<div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div>'+
    '<div class="status '+cls+'">'+st+'</div>'+
-   '<div><span class="run '+rm.phase+'">RUN '+rm.score+' '+rm.phase+'</span> <span class="why">· VOL '+(d.A.volTrend>=1.15?'▲':d.A.volTrend<=0.85?'▼':'▬')+'</span></div>'+
+   '<div><span class="run '+rm.phase+'">RUN '+rm.score+' '+rm.phase+'</span> <span class="why">· VOL '+(d.A.volTrend>=1.15?'▲':d.A.volTrend<=0.85?'▼':'▬')+' '+(d.A.rvolTOD?d.A.rvolTOD.toFixed(1)+'× this hour':'')+'</span></div>'+
+   evLine(d.A,L)+
    '<div class="why">'+top+'</div>'+flip+
    '<div class="ticket" id="tk_'+id+'"><div style="font-size:10px;color:var(--dim)">tap to load the ticket…</div></div></div>';
 }
@@ -365,7 +441,7 @@ async function toggleTicket(id){
   const sym=c?(tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')):'no liquid contract found — pick at the broker';
   const fast=d.A.atr/d.A.px>0.004;
   box.innerHTML=
-   '<div class="tl"><span class="k">Contract</span><span><span class="v b">'+sym+'</span>'+(c?'<div class="n">bid $'+n2(c.bid)+' · ask $'+n2(c.ask)+' · Δ'+dl.toFixed(2)+' · OI '+c.oi+'</div>':'')+'</span></div>'+
+   '<div class="tl"><span class="k">Contract</span><span><span class="v b">'+sym+'</span>'+(c?'<div class="n">bid $'+n2(c.bid)+' · ask $'+n2(c.ask)+' · Δ'+dl.toFixed(2)+' (Black-Scholes) · IV '+(c.iv*100).toFixed(0)+'% · OI '+c.oi+'</div>':'')+'</span></div>'+
    '<div class="tl"><span class="k">Ticket 1</span><span><span class="v b">Buy to Open '+nC+' at $'+(E!=null?n2(E):'mid')+' limit</span><div class="n">Options ticket · Day · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Ticket 2</span><span><span class="v r">'+(fast?'Trailing Stop Loss':'Trailing Stop Limit')+' · trail $'+n2(trail)+'</span><div class="n">within 60s of the fill · all '+nC+' · Day · floor ≈ $'+(E!=null?n2(E-trail):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Take half</span><span><span class="v g">Sell '+half+' at $'+(tp!=null?n2(tp):'—')+' limit</span><div class="n">when the voice says "bank half" · stock T1 $'+n2(P.t1)+' · stock stop $'+n2(P.stop)+'</div></span></div>'+
@@ -445,7 +521,7 @@ function flashOff(){$('flash').classList.remove('on');}
 
 
 /* ===== consistent scalps: tap a chip → a card, same as any stock ===== */
-const SCALPS=['TQQQ','SOXL','SPY','QQQ'];
+const SCALPS=['TQQQ','SOXL','SPY','QQQ','SPXL','IWM','TNA','IBIT'];
 function scalp(tk){
   const on=LIST.includes(tk);
   if(on){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();paintScalps();return;}
@@ -474,9 +550,14 @@ async function pmRead(tk){
     const out={pmH,pmL,last,first,vol,h1,pos,chg:(last-first)/first*100,bars:bars.length};PM[tk]=out;return out;
   }catch(e){return null;}
 }
+let NQPM=null;
+async function nqOvernight(){try{const b=await pull('NQ=F');const n=b.C.length-1;NQPM={chg:b.pc?(b.C[n]-b.pc)/b.pc*100:null};}catch(e){NQPM=null;}}
 function pmLine(tk,A){
   const p=PM[tk];if(!p)return '';
   const gap=A.pdc?(p.last-A.pdc)/A.pdc*100:null;
+  let rel='';
+  if(gap!=null&&A.beta!=null&&NQPM&&NQPM.chg!=null){const exp=A.beta*NQPM.chg;const diff=gap-exp;
+    rel=' <b>Beta '+A.beta.toFixed(2)+'</b>: NQ implies '+(exp>=0?'+':'')+exp.toFixed(1)+'%, actual '+(gap>=0?'+':'')+gap.toFixed(1)+'% = '+(diff>0.6?'<span style="color:var(--green)">stronger than the tape (own buyers)</span>':diff<-0.6?'<span style="color:var(--red)">weaker than the tape (own sellers)</span>':'in line with the tape')+'.';}
   const where=p.pos>0.75?'at the top of its pre-market range':p.pos<0.25?'at the bottom of its pre-market range':'mid pre-market range';
   const mom=p.h1==null?'':(p.h1>0.25?', still pressing higher into the bell':p.h1<-0.25?', fading into the bell':', flat into the bell');
   const vsPD=A.pdh&&A.pdl?(p.last>A.pdh?' · above yesterday\'s high':p.last<A.pdl?' · below yesterday\'s low':' · inside yesterday\'s range'):'';
@@ -487,7 +568,7 @@ function pmLine(tk,A){
   else if(gap!=null&&gap<-0.8&&(p.h1||0)>0.25)verdict='Gap down being bought: the reclaim call is the trade if 8:35 closes back inside yesterday\'s range.';
   else verdict='No conviction overnight — the 8:35 candle decides.';
   const gapTxt=(gap!=null)?(((gap>=0)?'+':'')+gap.toFixed(1)+'% gap · '):'';
-  return '<div class="airead" style="border-left-color:#5B9BFF">🌍 <b>LONDON</b><span class="lonI" onclick="event.stopPropagation();lonInfo(true)">i</span>: '+gapTxt+'pre-mkt $'+n2(p.pmL)+' to $'+n2(p.pmH)+', now $'+n2(p.last)+' '+where+mom+vsPD+'. '+verdict+'</div>';
+  return '<div class="airead" style="border-left-color:#5B9BFF">🌍 <b>LONDON</b><span class="lonI" onclick="event.stopPropagation();lonInfo(true)">i</span>: '+gapTxt+'pre-mkt $'+n2(p.pmL)+' to $'+n2(p.pmH)+', now $'+n2(p.last)+' '+where+mom+vsPD+'.'+rel+' '+verdict+'</div>';
 }
 
 /* ===== AI MORNING READ (via the relay's Anthropic passthrough) ===== */
@@ -532,15 +613,18 @@ function renderRange(){
       rows.push({tk,L,st,cls,txt,d:'<b>'+opp+' is '+T.runOpp.phase.toLowerCase()+'</b> ('+T.runOpp.score+'/100 spent) · range used '+(A.adrUsed!=null?(A.adrUsed*100).toFixed(0)+'%':'?')+' · ADR '+A.adrP.toFixed(1)+'% · '+(T.fired?'stop $'+n2(T.stop)+' · T1 $'+n2(T.t1):'watch the day '+(L?'low':'high')+' $'+n2(L?A.dayLo:A.dayHi)),order:T.fired?0:T.thin?1:2});
     }}
   rows.sort((a,b)=>a.order-b.order);
-  const bar=$('rangeBar');if(!rows.length){bar.classList.remove('on');return;}
-  bar.classList.add('on');
+  const bar=$('rangeBar');bar.classList.add('on');
+  if(!rows.length){$('rangeList').innerHTML='<div style="font-size:10.5px;color:var(--dim);padding:4px 2px">'+(marketOpen()?'No extended runs yet — nothing to turn. This fills mid-morning once a big-range name has run hard (one side LATE or EXHAUSTED).':'Market closed — fills during the session once a big-range name has run hard.')+'</div>';return;}
   $('rangeList').innerHTML=rows.map(r=>'<div class="rr'+(r.st==='fired'?' fired':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="rk">'+r.tk+'</div><div class="rd">'+r.d+'</div><div class="rs '+r.cls+'">'+r.txt+'</div></div>').join('');
 }
 
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{{const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<8*60+40){await pmRead(tk);await sleep(150);}}
-    const b=await pull(tk);const A=analyze(b);A.tk=tk;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
+    const b=await pull(tk);const A=analyze(b);A.tk=tk;
+    if(!DAILY[tk])DAILY[tk]=await dailyBars(tk);
+    if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
+    if(!NQD)NQD=await dailyBars('NQ=F');A.beta=betaTo(DAILY[tk],NQD);const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
@@ -548,6 +632,7 @@ async function refreshOne(tk,speak){
 }
 async function refreshAll(force){
   $('st').textContent='Scoring '+LIST.length+' names…';
+  {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60&&!NQPM)await nqOvernight();}
   for(const tk of LIST){await refreshOne(tk,true);await sleep(350);}
   render();officer();renderFired();renderRange();feedCheck();
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
