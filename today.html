@@ -131,6 +131,21 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #lonBox .gl b{color:var(--gold-soft)}
 #lonBox .close{margin-top:8px;background:var(--gold);color:#000;border:none;border-radius:9px;padding:11px;font-weight:800;font-size:11px;width:100%;cursor:pointer}
 .lonI{display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;border:1px solid #5B9BFF;border-radius:50%;color:#5B9BFF;font-size:9px;font-weight:800;cursor:pointer;margin-left:5px;vertical-align:middle}
+
+/* ===== RANGE TRADES section ===== */
+#rangeBar{display:none;margin:0 0 10px;padding:9px 10px;background:#1B1424;border:1.5px solid #7B3FA0;border-radius:12px}
+#rangeBar.on{display:block}
+#rangeBar .rh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+#rangeBar .rt{font-size:9px;letter-spacing:.14em;color:#C08BE6;font-weight:800;text-transform:uppercase}
+#rangeBar .ri{font-size:9px;color:var(--dim)}
+.rr{display:grid;grid-template-columns:70px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border-radius:9px;background:#12161D;border:1px solid var(--line);margin-bottom:5px;cursor:pointer}
+.rr:last-child{margin-bottom:0}
+.rr.fired{border-color:#C08BE6;animation:fp .9s ease-in-out infinite alternate}
+.rr .rk{font-family:Georgia,serif;font-size:15px;font-weight:700}
+.rr .rd{font-size:10px;color:var(--dim);line-height:1.4}
+.rr .rd b{color:var(--ink)}
+.rr .rs{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-align:right;white-space:nowrap}
+.rr .rs.set{color:var(--amber)}.rr .rs.thin{color:var(--amber)}.rr .rs.fired{color:#C08BE6}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
@@ -141,6 +156,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
   <span class="schip" id="sc_SPY" onclick="scalp('SPY')">SPY<small>the index itself</small></span>
   <span class="schip" id="sc_QQQ" onclick="scalp('QQQ')">QQQ<small>Nasdaq-100</small></span>
 </div>
+<div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div>
 <div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
 <div id="feedBar"></div>
 <div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div>
@@ -500,6 +516,27 @@ async function morningRead(){
   }catch(e){$('mkt').innerHTML='Morning read failed: '+(e.message||e)+'. Check health.html (AI route).';}
 }
 
+
+/* ===== RANGE TRADES — gather the names whose run is spent and a turn is setting up ===== */
+function renderRange(){
+  const rows=[];
+  for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;const A=d.A;
+    if(!(A.adrP>=2.5))continue;                                   /* only names that actually range */
+    for(const L of [true,false]){                                  /* L = the side that would TURN (opposite of the spent run) */
+      const T=rangeTurn(A,L);if(!T)continue;
+      const opp=L?'up-run':'down-run';
+      let st,cls,txt;
+      if(T.fired){st='fired';cls='fired';txt='TURN FIRED — '+(L?'CALLS':'PUTS');}
+      else if(T.thin){st='thin';cls='thin';txt='turning · volume thin';}
+      else{st='set';cls='set';txt='setting up · needs 2 closes '+(L?'up':'down')+' + 9 EMA';}
+      rows.push({tk,L,st,cls,txt,d:'<b>'+opp+' is '+T.runOpp.phase.toLowerCase()+'</b> ('+T.runOpp.score+'/100 spent) · range used '+(A.adrUsed!=null?(A.adrUsed*100).toFixed(0)+'%':'?')+' · ADR '+A.adrP.toFixed(1)+'% · '+(T.fired?'stop $'+n2(T.stop)+' · T1 $'+n2(T.t1):'watch the day '+(L?'low':'high')+' $'+n2(L?A.dayLo:A.dayHi)),order:T.fired?0:T.thin?1:2});
+    }}
+  rows.sort((a,b)=>a.order-b.order);
+  const bar=$('rangeBar');if(!rows.length){bar.classList.remove('on');return;}
+  bar.classList.add('on');
+  $('rangeList').innerHTML=rows.map(r=>'<div class="rr'+(r.st==='fired'?' fired':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="rk">'+r.tk+'</div><div class="rd">'+r.d+'</div><div class="rs '+r.cls+'">'+r.txt+'</div></div>').join('');
+}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{{const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<8*60+40){await pmRead(tk);await sleep(150);}}
@@ -512,7 +549,7 @@ async function refreshOne(tk,speak){
 async function refreshAll(force){
   $('st').textContent='Scoring '+LIST.length+' names…';
   for(const tk of LIST){await refreshOne(tk,true);await sleep(350);}
-  render();officer();renderFired();feedCheck();
+  render();officer();renderFired();renderRange();feedCheck();
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const v=($('addTk').value||'').trim().toUpperCase();if(!/^[A-Z.\-]{1,7}$/.test(v))return;$('addTk').value='';if(!LIST.includes(v))LIST.unshift(v);save();render();refreshOne(v,true).then(()=>{render();$('st').textContent=v+' added and scored.';});}
