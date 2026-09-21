@@ -205,7 +205,9 @@ function say(t,repeat){if(!$('voice').checked||!('speechSynthesis' in window))re
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={};
-function save(){localStorage.setItem('kToday',JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked}));}
+function save(){const v=JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked});
+  try{localStorage.setItem('kToday',v);}
+  catch(e){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&/^k(Chain_|Daily_|Tape_|DeskS_|Scan4_|GntS_)/.test(k))localStorage.removeItem(k);}localStorage.setItem('kToday',v);}catch(e2){}}}
 function load(){try{const s=JSON.parse(localStorage.getItem('kToday'));if(s){LIST=s.list||[];POS=s.pos||null;if(s.auto===false)$('autoTop').checked=false;}}catch(e){}}
 
 
@@ -547,7 +549,7 @@ const SCALPS=['TQQQ','SOXL','SPY','QQQ','SPXL','IWM','TNA','IBIT'];
 function scalp(tk){
   const on=LIST.includes(tk);
   if(on){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();paintScalps();return;}
-  LIST=[tk,...LIST];save();render();paintScalps();
+  LIST=[tk,...LIST];try{render();}catch(e){}try{save();}catch(e){}paintScalps();
   refreshOne(tk,true).then(()=>{render();$('st').textContent=tk+' scored — both sides. Scalp its VWAP test 9:30–10:30 and the 2:00 trend.';
     const c=$('card_'+tk);if(c)c.scrollIntoView({behavior:'smooth',block:'start'});});
 }
@@ -734,7 +736,13 @@ async function refreshAll(force){
   render();officer();renderFired();renderRange();feedCheck();BUSY=false;setTimeout(enrich,500);
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
-function addTk(){const v=($('addTk').value||'').trim().toUpperCase();if(!/^[A-Z.\-]{1,7}$/.test(v))return;$('addTk').value='';if(!LIST.includes(v))LIST.unshift(v);save();render();refreshOne(v,true).then(()=>{render();$('st').textContent=v+' added and scored.';});}
+function addTk(){const raw=($('addTk').value||'');const v=raw.trim().toUpperCase().replace(/^\$/,'');
+  if(!/^[A-Z.\-]{1,7}$/.test(v)){$('st').textContent='Ticker not accepted: "'+raw+'" — letters only (OXY, BRK.B).';return;}
+  $('addTk').value='';if(!LIST.includes(v))LIST.unshift(v);
+  try{render();}catch(e){}
+  $('st').textContent=v+' added — scoring…';
+  try{save();}catch(e){}
+  refreshOne(v,true).then(()=>{render();$('st').textContent=v+' added and scored.';}).catch(e=>{$('st').textContent=v+' added but could not be scored: '+(e.message||e);});}
 function rm(tk){LIST=LIST.filter(x=>x!==tk);if(POS&&POS.tk===tk)POS=null;save();render();paintScalps();}
 function tick(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();$('clk').textContent=n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
   if(n.getDay()>=1&&n.getDay()<=5&&m<8*60+30&&!window._chk){window._chk=1;$('st').innerHTML='<b style="color:var(--amber)">Before the open:</b> Fidelity → Accounts &amp; Trade → Orders → cancel any stop or trailing stop left from yesterday. A leftover order can sell your new position or block a new one. Then tap 🧠 MORNING READ.';}}
