@@ -146,6 +146,21 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 .rr .rd b{color:var(--ink)}
 .rr .rs{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-align:right;white-space:nowrap}
 .rr .rs.set{color:var(--amber)}.rr .rs.thin{color:var(--amber)}.rr .rs.fired{color:#C08BE6}
+
+/* ===== London currency read ===== */
+#fx{display:none;background:var(--card2);border:1px solid #5B9BFF;border-radius:10px;padding:9px 11px;margin-bottom:10px;font-size:11px;line-height:1.55}
+#fx.on{display:block}
+#fx .fh{font-size:9px;letter-spacing:.14em;color:#5B9BFF;font-weight:800;text-transform:uppercase;margin-bottom:5px;display:flex;justify-content:space-between}
+#fx .cells{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+#fx .c{flex:1;min-width:100px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+#fx .c .l{font-size:8px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+#fx .c .v{font-family:Georgia,serif;font-size:14px;font-weight:700}
+#fx .c .s{font-size:9px;color:var(--dim)}
+#fx .up{color:var(--green)}#fx .dn{color:var(--red)}
+#fx .sec{display:grid;grid-template-columns:110px 1fr;gap:3px 8px;font-size:10.5px}
+#fx .sec b{color:var(--gold-soft)}
+.tc .fxline{font-size:10px;color:#9fb4d8;margin:2px 0 4px}
+.tc .fxline b{color:#5B9BFF}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
@@ -164,6 +179,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 <div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
 <div id="feedBar"></div>
 <div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div>
+<div id="fx"><div class="fh"><span>🌍 London currencies → what they mean for the open</span><span id="fxT"></span></div><div class="cells" id="fxCells"></div><div class="sec" id="fxSec"></div></div>
 <div id="mkt"></div>
 <div id="st">—</div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
@@ -175,6 +191,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 
 <script>
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
+const _fetch=window.fetch.bind(window);
+window.fetch=(u,o)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);return _fetch(u,Object.assign({},o||{},{signal:c.signal})).finally(()=>clearTimeout(t));};
 const $=id=>document.getElementById(id);const n2=x=>x==null?'—':(+x).toFixed(2);const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
 const SPEAK_Q=[];let SPEAKING=false;
@@ -254,9 +272,12 @@ function analyze(b){
   let atr=0;for(let i=Math.max(1,n-13);i<=n;i++)atr+=Math.max(b.H[i]-b.L[i],Math.abs(b.H[i]-b.C[i-1]),Math.abs(b.L[i]-b.C[i-1]));atr/=Math.min(14,n);
   const rv=avgVol?b.V[ci]/avgVol:1;
   /* TIME-OF-DAY relative volume: this candle vs the same minute-of-day across prior sessions */
-  const slotOf=i=>{const d=new Date(b.T[i]*1000);const c=new Date(d.toLocaleString('en-US',{timeZone:'America/Chicago'}));return c.getHours()*60+c.getMinutes();};
-  const mySlot=slotOf(ci);let tv=0,tc=0;
-  for(const dd of days.slice(0,-1)){for(const i of dd){if(slotOf(i)===mySlot){tv+=b.V[i];tc++;break;}}}
+  /* minute-of-day per bar, computed once: offset from each session's first bar (5-minute bars) */
+  const SLOT=new Array(b.T.length);for(const dd of days){const t0=b.T[dd[0]];for(const i of dd)SLOT[i]=Math.round((b.T[i]-t0)/60);}
+  const slotOf=i=>SLOT[i];
+  /* per prior session: slot -> volume */
+  const SV=days.slice(0,-1).map(dd=>{const m={};for(const i of dd)m[SLOT[i]]=b.V[i];return m;});
+  const mySlot=SLOT[ci];let tv=0,tc=0;for(const m of SV){if(m[mySlot]!=null){tv+=m[mySlot];tc++;}}
   const todBase=tc?tv/tc:null;const rvolTOD=todBase?b.V[ci]/todBase:rv;
   let r3=0,p6=0;for(let k=Math.max(0,ci-2);k<=ci;k++)r3+=b.V[k];for(let k=Math.max(0,ci-8);k<=ci-3;k++)p6+=b.V[k];const volTrend=p6>0?(r3/3)/(p6/6):1;
   const priorDays=days.slice(0,-1).filter(dd=>dd.length>10);
@@ -270,7 +291,7 @@ function analyze(b){
   const sess=Math.max(1,days.length);const xPer=crosses/sess;
   const behave=xPer<=2.5?'CLEAN':xPer<=4.5?'MIXED':'CHOPPY';
   const adrP=adr&&px?adr/px*100:null;
-  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,rvolTOD,todBase,slotOf,days,bars:b};
+  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,rvolTOD,todBase,slotOf,SLOT,SV,days,bars:b};
 }
 function runMeter(A,L){
   const dirZ=A.vz==null?0:(L?A.vz:-A.vz);const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);const cZ=Math.max(0,Math.min(1,dirZ/3));
@@ -339,6 +360,7 @@ function realDelta(S,K,dte,mid,isC){
 
 /* ===== EVIDENCE — back-run the triggers on this stock's own prior sessions ===== */
 function evidence(A,L){
+  const ck=(A.tk||'')+'|'+(L?'C':'P')+'|'+A.ci;if(A._evc&&A._evc[ck])return A._evc[ck];
   const b=A.bars,days=A.days;if(!days||days.length<3)return null;
   const atr=A.atr||0.5;let n=0,win=0,mfeSum=0,openN=0,openWin=0;
   for(let s=1;s<days.length-1;s++){
@@ -346,8 +368,8 @@ function evidence(A,L){
     const pdh=Math.max(...prev.map(i=>b.H[i])),pdl=Math.min(...prev.map(i=>b.L[i]));
     let runHi=-1e9,runLo=1e9,firedOnce=false;
     for(let k=0;k<dd.length;k++){
-      const i=dd[k];const slot=A.slotOf(i);
-      let tv=0,tc=0;for(let s2=0;s2<days.length-1;s2++){if(s2===s)continue;for(const j of days[s2]){if(A.slotOf(j)===slot){tv+=b.V[j];tc++;break;}}}
+      const i=dd[k];const slot=A.SLOT[i];
+      let tv=0,tc=0;for(let s2=0;s2<A.SV.length;s2++){if(s2===s)continue;const v=A.SV[s2][slot];if(v!=null){tv+=v;tc++;}}
       const rv=tc?b.V[i]/(tv/tc):1;
       let fire=false,kind='';
       if(k===0){if(L?(b.C[i]>pdh):(b.C[i]<pdl)){fire=rv>=1.2;kind='OPEN';}}
@@ -360,8 +382,8 @@ function evidence(A,L){
       n++;if(hit)win++;mfeSum+=best/atr;if(kind==='OPEN'){openN++;if(hit)openWin++;}
     }
   }
-  if(!n)return {n:0,sessions:days.length-1};
-  return {n,win,rate:win/n,mfe:mfeSum/n,openN,openWin,sessions:days.length-1};
+  const res=!n?{n:0,sessions:days.length-1}:{n,win,rate:win/n,mfe:mfeSum/n,openN,openWin,sessions:days.length-1};
+  (A._evc=A._evc||{})[ck]=res;return res;
 }
 function evLine(A,L){
   const ev=evidence(A,L);if(!ev||!ev.n)return '<div class="why" style="color:var(--dim)">evidence: no triggers in the last '+(ev?ev.sessions:'—')+' sessions</div>';
@@ -412,14 +434,14 @@ function sideHTML(tk,L,d){
    '<div class="ticket" id="tk_'+id+'"><div style="font-size:10px;color:var(--dim)">tap to load the ticket…</div></div></div>';
 }
 function cardHTML(tk){
-  const d=DATA[tk];if(!d)return '<div class="tc"><div class="hd"><span class="tk">'+tk+'</span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div><div style="color:var(--dim);font-size:11px">loading…</div></div>';
+  const d=DATA[tk];if(!d)return '<div class="tc"><div class="hd"><span class="tk">'+tk+'</span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div><div style="color:var(--dim);font-size:11px">scoring… (first load pulls ten sessions per name)</div></div>';
   const isPos=POS&&POS.tk===tk;
   const A=d.A;const rb=A.adrP!=null?(A.adrP>=4?'BIG':A.adrP>=2?'GOOD':'SMALL'):'';const rc=rb==='BIG'?'var(--green)':rb==='GOOD'?'var(--gold-soft)':'var(--red)';
   const bc=A.behave==='CLEAN'?'var(--green)':A.behave==='MIXED'?'var(--amber)':'var(--red)';
   const badges='<div style="font-size:9px;letter-spacing:.06em;margin-top:2px"><span style="color:'+rc+';font-weight:800">RANGE '+(A.adrP!=null?A.adrP.toFixed(1)+'%':'—')+(A.adr?' ($'+n2(A.adr)+'/day)':'')+' '+rb+'</span> · <span style="color:'+bc+';font-weight:800">'+A.behave+'</span> <span style="color:var(--dim)">'+(A.behave==='CLEAN'?'trends hold, respects the ride line':A.behave==='MIXED'?'some whipsaw — demand volume':'whipsaws — reclaim entries only, half size')+'</span></div>';
   const stale=isStale(A);const fl='<div class="fresh'+(stale?' stale':'')+'">'+freshLabel(A)+(stale?' — numbers below are OLD':'')+'</div>';
   return '<div class="tc'+(isPos?' pos':'')+(stale?' stale':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+fl+badges+
-   ((()=>{const n=ctNow();const m=n.getHours()*60+n.getMinutes();return (m<9*60)?pmLine(tk,A):'';})())+
+   ((()=>{const n=ctNow();const m=n.getHours()*60+n.getMinutes();return (m<9*60)?(fxLine(tk)+pmLine(tk,A)):'';})())+
    ((window._AIREAD&&window._AIREAD[tk])?'<div class="airead">🧠 '+window._AIREAD[tk].replace(/^[A-Z.\-]{1,7}\s*[—-]\s*/,'')+'</div>':'')+
    '<div class="sides">'+sideHTML(tk,true,d)+sideHTML(tk,false,d)+'</div>'+(isPos?posHTML():'')+'</div>';
 }
@@ -571,6 +593,58 @@ function pmLine(tk,A){
   return '<div class="airead" style="border-left-color:#5B9BFF">🌍 <b>LONDON</b><span class="lonI" onclick="event.stopPropagation();lonInfo(true)">i</span>: '+gapTxt+'pre-mkt $'+n2(p.pmL)+' to $'+n2(p.pmH)+', now $'+n2(p.last)+' '+where+mom+vsPD+'.'+rel+' '+verdict+'</div>';
 }
 
+
+/* ===== LONDON CURRENCY READ — dollar, yen, euro, crude during London hours (3:00–8:30 CT) and what it means by sector ===== */
+let FX=null;
+const SECTOR_OF={SMCI:'tech',NVDA:'tech',AMD:'tech',INTC:'tech',MU:'tech',TQQQ:'tech',SOXL:'tech',QQQ:'tech',TECL:'tech',
+  SPCX:'highbeta',IONQ:'highbeta',PLTR:'highbeta',RKLB:'highbeta',TSLA:'highbeta',OKLO:'highbeta',APLD:'highbeta',BE:'highbeta',CORZ:'highbeta',
+  OXY:'energy',USO:'energy',UCO:'energy',XOM:'energy',DVN:'energy',APA:'energy',
+  SOFI:'rates',NU:'rates',IWM:'rates',TNA:'rates',HIMS:'consumer',UBER:'consumer',RIOT:'crypto',IBIT:'crypto',SPY:'index',SPXL:'index'};
+async function fxOne(sym){
+  try{const r=await fetch(RELAY+'/?hist='+encodeURIComponent(sym)+'&i=15m&r=2d');const j=await r.json();const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)return null;
+    const q=res.indicators.quote[0],ts=res.timestamp||[];const B=[];for(let i=0;i<ts.length;i++){if(q.close[i]!=null)B.push({t:ts[i],c:q.close[i]});}
+    if(B.length<4)return null;const last=B[B.length-1].c;const pc=res.meta.chartPreviousClose||null;
+    const ct0=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));ct0.setHours(3,0,0,0);const lonStart=Math.floor(Date.now()/1000-(new Date()-ct0)/1000);
+    const LON=B.filter(b=>b.t>=lonStart);const lonChg=LON.length>1?(last-LON[0].c)/LON[0].c*100:null;
+    const nowS=B[B.length-1].t;const h1=B.filter(b=>b.t<=nowS-3600);const h1c=h1.length?h1[h1.length-1].c:null;const hr=h1c?(last-h1c)/h1c*100:null;
+    return {last,chg:pc?(last-pc)/pc*100:null,lonChg,hr};}catch(e){return null;}
+}
+async function fxRead(){
+  const out={};for(const [s,k] of [['DX-Y.NYB','DXY'],['JPY=X','USDJPY'],['EURUSD=X','EURUSD'],['CL=F','CRUDE']]){out[k]=await fxOne(s);await sleep(250);}
+  FX=out;renderFX();
+}
+function fxVerdicts(){
+  const f=FX||{};const d=f.DXY,y=f.USDJPY,c=f.CRUDE;const v={};
+  const dxy=d?(d.lonChg!=null?d.lonChg:d.chg):null;const jpy=y?(y.lonChg!=null?y.lonChg:y.chg):null;const cru=c?(c.lonChg!=null?c.lonChg:c.chg):null;
+  /* ENERGY: oil is priced in dollars — a strong dollar is a headwind; crude's own move dominates */
+  v.energy=cru!=null&&Math.abs(cru)>=1?(cru>0?'tailwind — crude +'+cru.toFixed(1)+'% in London; energy names gap with it (never buy the gap; trade the range)':'headwind — crude '+cru.toFixed(1)+'% in London; puts favored on failed bounces')
+    :(dxy!=null&&Math.abs(dxy)>=0.4?(dxy>0?'mild headwind — dollar +'+dxy.toFixed(2)+'% (oil priced in dollars)':'mild tailwind — dollar '+dxy.toFixed(2)+'%'):'neutral — crude and the dollar quiet overnight');
+  /* TECH / HIGH-BETA: yen surging (USDJPY falling fast) = carry unwind = risk-off; yen sliding = risk-on */
+  v.highbeta=jpy!=null&&jpy<=-0.5?'RISK-OFF — yen surging (USDJPY '+jpy.toFixed(2)+'%): carry-trade unwind; high-beta tech is the first casualty. Demand volume; favor fades.'
+    :jpy!=null&&jpy>=0.4?'risk-on — yen sliding (USDJPY +'+jpy.toFixed(2)+'%): carry comfortable; breakouts have a tailwind.'
+    :'neutral — the yen is quiet; the open decides.';
+  v.tech=v.highbeta;
+  /* RATES / SMALL CAPS: a strong dollar usually rides higher yields — headwind for rate-sensitive names */
+  v.rates=dxy!=null&&dxy>=0.4?'headwind — strong dollar overnight usually means firmer yields; fintech/small caps lag':dxy!=null&&dxy<=-0.4?'tailwind — softer dollar, easier yields':'neutral';
+  /* CRYPTO: dollar down + risk-on = bid; yen surge = risk-off hits crypto with tech */
+  v.crypto=(jpy!=null&&jpy<=-0.5)?'risk-off — crypto beta sells with tech on a carry unwind':(dxy!=null&&dxy<=-0.4?'tailwind — weaker dollar':'neutral');
+  v.consumer='mostly unaffected — trade the stock\'s own structure';v.index=v.highbeta;
+  return v;
+}
+function renderFX(){
+  const box=$('fx');if(!FX){box.classList.remove('on');return;}box.classList.add('on');
+  const f=x=>x==null?'—':((x>=0?'+':'')+x.toFixed(2)+'%');
+  const cell=(k,lab,note)=>{const x=FX[k];if(!x)return '';const m=x.lonChg!=null?x.lonChg:x.chg;return '<div class="c"><div class="l">'+lab+'</div><div class="v '+(m>=0?'up':'dn')+'">'+f(m)+'</div><div class="s">'+note+' · last hr '+f(x.hr)+'</div></div>';};
+  $('fxCells').innerHTML=cell('DXY','Dollar index','London move')+cell('USDJPY','USD/JPY (yen)','↓ = yen surging')+cell('EURUSD','EUR/USD','↑ = dollar weak')+cell('CRUDE','Crude','London move');
+  const v=fxVerdicts();
+  $('fxSec').innerHTML='<b>ENERGY</b><span>'+v.energy+'</span><b>TECH / HIGH-BETA</b><span>'+v.highbeta+'</span><b>RATES / SMALL CAPS</b><span>'+v.rates+'</span><b>CRYPTO</b><span>'+v.crypto+'</span>';
+  $('fxT').textContent=ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT';
+}
+function fxLine(tk){
+  if(!FX)return '';const s=SECTOR_OF[tk];if(!s)return '';const v=fxVerdicts()[s];if(!v||/^neutral/.test(v)||/unaffected/.test(v))return '';
+  return '<div class="fxline"><b>FX:</b> '+v+'</div>';
+}
+
 /* ===== AI MORNING READ (via the relay's Anthropic passthrough) ===== */
 async function pmQuote(tk){try{const r=await fetch(RELAY+'/?pm='+encodeURIComponent(tk));const j=await r.json();if(j&&j.last!=null)return j;}catch(e){}return null;}
 async function morningRead(){
@@ -584,7 +658,9 @@ async function morningRead(){
     if(p)rows.push(tk+' PRE-MARKET SESSION: range '+n2(p.pmL)+'-'+n2(p.pmH)+', now '+n2(p.last)+' ('+(p.pos*100).toFixed(0)+'% of range), last hour '+(p.h1==null?'?':p.h1.toFixed(2)+'%')+', pm volume '+p.vol);
     rows.push(tk+': yesterday close '+n2(d.A.pdc)+', PDH '+n2(d.A.pdh)+', PDL '+n2(d.A.pdl)+', 5m ATR '+n2(d.A.atr)+', ADR% '+(d.A.adrP||0).toFixed(1)+(q?', PRE-MARKET now '+n2(q.last)+' gap '+(q.gapPct>=0?'+':'')+(q.gapPct||0).toFixed(2)+'%':'')+', behavior '+d.A.behave);await sleep(250);}
   const f=x=>x==null?'?':((x>=0?'+':'')+x.toFixed(2)+'%');
-  const mline=Object.entries(mk).map(([k,v])=>k+' '+(v?f(v.chg)+' (overnight range pos '+(v.pos*100).toFixed(0)+'%, last hour '+f(v.h1)+')':'n/a')).join('; ');
+  if(!FX)await fxRead();const fv=fxVerdicts();
+  const mline=Object.entries(mk).map(([k,v])=>k+' '+(v?f(v.chg)+' (overnight range pos '+(v.pos*100).toFixed(0)+'%, last hour '+f(v.h1)+')':'n/a')).join('; ')+
+    '. CURRENCIES (London session): DXY '+(FX.DXY?f(FX.DXY.lonChg):'?')+', USDJPY '+(FX.USDJPY?f(FX.USDJPY.lonChg):'?')+', EURUSD '+(FX.EURUSD?f(FX.EURUSD.lonChg):'?')+'. Sector implications: energy: '+fv.energy+' | tech/high-beta: '+fv.highbeta+' | rates: '+fv.rates+' | crypto: '+fv.crypto;
   const sys='You are the pre-open strategist for a disciplined options scalper (deep ITM 0.60-0.75 delta, 5-10 DTE, entries only on a 5-minute CLOSE beyond structure with volume, never buy a gap, flat by 2:45 CT). Given the overnight futures/crude/yen/VIX read and each stock\'s prior-day structure plus pre-market price, write the OPENING PLAN. Format exactly: MARKET: two sentences (risk on/off, what the London session did in the last hour, what kind of open to expect). Then one line per stock: TICKER — side to favor (CALLS/PUTS/NEITHER) — the expected first move at 8:30 (gap up/down/flat vs PDH/PDL) — the one trigger to wait for — the trap. Under 20 words per stock line. Plain language, no markdown.';
   try{
     const resp=await fetch(RELAY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,system:sys,messages:[{role:'user',content:'Time: '+ctNow().toLocaleString('en-US',{weekday:'long',hour:'numeric',minute:'2-digit'})+' CT\nOvernight: '+mline+'\nStocks:\n'+rows.join('\n')}]})});
@@ -618,23 +694,44 @@ function renderRange(){
   $('rangeList').innerHTML=rows.map(r=>'<div class="rr'+(r.st==='fired'?' fired':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="rk">'+r.tk+'</div><div class="rd">'+r.d+'</div><div class="rs '+r.cls+'">'+r.txt+'</div></div>').join('');
 }
 
+
+/* ===== background enrichment: daily bars, beta, pre-market — after the cards are already on screen ===== */
+let ENRICHING=false;
+async function enrich(){
+  if(ENRICHING)return;ENRICHING=true;
+  try{
+    if(!NQD)NQD=await dailyBars('NQ=F');
+    const n=ctNow();const m=n.getHours()*60+n.getMinutes();const pre=n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60;
+    for(const tk of LIST){
+      if(DAILY[tk]===null||DAILY[tk]===undefined){DAILY[tk]=await dailyBars(tk);await sleep(200);}
+      if(pre&&!PM[tk]){await pmRead(tk);await sleep(200);}
+      const d=DATA[tk];if(d&&DAILY[tk]&&DAILY[tk].adr20){const A=d.A;A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;A.beta=betaTo(DAILY[tk],NQD);}
+    }
+    render();
+  }catch(e){}
+  ENRICHING=false;
+}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
-  try{{const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<8*60+40){await pmRead(tk);await sleep(150);}}
+  try{
     const b=await pull(tk);const A=analyze(b);A.tk=tk;
-    if(!DAILY[tk])DAILY[tk]=await dailyBars(tk);
+    if(DAILY[tk]===undefined)DAILY[tk]=null;   /* filled by the background pass */
     if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
-    if(!NQD)NQD=await dailyBars('NQ=F');A.beta=betaTo(DAILY[tk],NQD);const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
+    A.beta=(DAILY[tk]&&NQD)?betaTo(DAILY[tk],NQD):null;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
+let BUSY=false;
 async function refreshAll(force){
+  if(BUSY)return;BUSY=true;
   $('st').textContent='Scoring '+LIST.length+' names…';
-  {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60&&!NQPM)await nqOvernight();}
-  for(const tk of LIST){await refreshOne(tk,true);await sleep(350);}
-  render();officer();renderFired();renderRange();feedCheck();
+  {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60){if(!NQPM)nqOvernight();if(!FX||Date.now()-(FX._t||0)>10*60000){fxRead().then(()=>{if(FX)FX._t=Date.now();});}}}
+  let k=0;
+  for(const tk of LIST){await refreshOne(tk,true);k++;render();$('st').textContent='Scoring… '+k+' of '+LIST.length+' ('+tk+')';await sleep(250);}
+  render();officer();renderFired();renderRange();feedCheck();BUSY=false;setTimeout(enrich,500);
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const v=($('addTk').value||'').trim().toUpperCase();if(!/^[A-Z.\-]{1,7}$/.test(v))return;$('addTk').value='';if(!LIST.includes(v))LIST.unshift(v);save();render();refreshOne(v,true).then(()=>{render();$('st').textContent=v+' added and scored.';});}
