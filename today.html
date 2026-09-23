@@ -275,11 +275,20 @@ details.drawer>*:not(summary){margin-bottom:12px}
 .knav a{font-size:12px;letter-spacing:0;font-weight:600;padding:14px 0;color:var(--dim)}
 .knav a.on{color:var(--gold);border-bottom-color:var(--gold)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+#noonBar{display:none;border-radius:12px;padding:10px 12px;margin:0 0 10px;background:#241E12;border:1px solid var(--gold);color:var(--ink);font-size:13px}
+#noonBar.on{display:block}
+#noonBar b{color:var(--gold)}
+
+.ruler .bar{background:linear-gradient(90deg,#1e4a35 0%,#1e4a35 20%,#2a2f3a 20%,#2a2f3a 80%,#4a1e1e 80%,#4a1e1e 100%)}
+.ruler .zonev{margin-top:6px;padding:7px 9px;border-radius:8px;font-size:12.5px;font-weight:600;line-height:1.4}
+.ruler .zonev.top{background:#3a1a1a;color:#ffb3a8}.ruler .zonev.bot{background:#153a2a;color:#a8f0cc}.ruler .zonev.mid{background:#1B232E;color:var(--dim);font-weight:500}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span><span style="font-size:8px;color:var(--dim);letter-spacing:.1em;margin-left:6px">VOICE v5 · chime</span></div>
 <div id="addRow"><input id="addTk" placeholder="type a ticker · enter" autocapitalize="characters" onkeydown="if(event.key==='Enter')addTk()"><button onclick="addTk()">＋ ADD</button></div>
 <div id="feedBar"></div>
+<div id="noonBar"></div>
 <div id="st">—</div>
 <div id="sets"><div class="sh"><span class="st">Today's verdicts</span><span class="si" id="setsI">built before the bell · each one has its levels, contract and resting entry</span></div><div id="setsList"><div style="font-size:10.5px;color:var(--dim)">scoring…</div></div></div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
@@ -297,7 +306,7 @@ details.drawer>*:not(summary){margin-bottom:12px}
 </div></details>
 <details class="drawer" id="dRange"><summary>Range trades <small>spent runs likely to turn</small></summary><div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div></details>
 <details class="drawer" id="dGrade"><summary>Scorecard <small>the machine grades itself</small></summary><div id="grade"><b>THE MACHINE GRADES ITSELF</b> · <span id="gradeSum">no fires yet today</span><div id="gradeList"></div></div></details>
-<details class="drawer" id="dBoard" open><summary>The board <small>every name, both sides, tickets</small></summary><div id="ctl"><label><input type="checkbox" id="chime" checked> 🔔 chime on a fire</label><label><input type="checkbox" id="voice"> 🗣 voice (off by default)</label><span style="cursor:pointer;color:var(--red);font-weight:800" onclick="try{kFlushSoft();speechSynthesis.cancel();}catch(e){}">🔇 STOP TALKING</span><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div><div id="cards"></div></details>
+<details class="drawer" id="dBoard" open><summary>The board <small>every name, both sides, tickets</small></summary><div id="ctl"><label><input type="checkbox" id="noon" checked onchange="try{localStorage.setItem('kNoon',this.checked?'on':'off');}catch(e){}renderNoon();renderSets();"> ☀︎ done by noon</label><label><input type="checkbox" id="chime" checked> 🔔 chime on a fire</label><label><input type="checkbox" id="voice"> 🗣 voice (off by default)</label><span style="cursor:pointer;color:var(--red);font-weight:800" onclick="try{kFlushSoft();speechSynthesis.cancel();}catch(e){}">🔇 STOP TALKING</span><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div><div id="cards"></div></details>
 
 <div id="flash"><div class="big" id="flBig">⚡ TRIGGER</div><div class="sub" id="flSub">—</div><div><button onclick="flashGo()">SHOW ME THE TICKET</button><button class="dis" onclick="flashOff()">dismiss</button></div></div>
 <div id="printSheet"></div>
@@ -469,7 +478,9 @@ function compose(A,L){
   }
   let stop=L?Math.min(A.e9,A.vw,trig)-0.15*A.atr:Math.max(A.e9,A.vw,trig)+0.15*A.atr;
   if(Math.abs(trig-stop)<1.0*A.atr)stop=L?trig-1.0*A.atr:trig+1.0*A.atr;            /* a stop inside the noise is a donation */
-  const t1=L?trig+2.2*A.atr:trig-2.2*A.atr;
+  /* targets are the next real walls on the ruler, not an ATR guess */
+  let t1=L?trig+2.2*A.atr:trig-2.2*A.atr,t1n='2.2 ATR',t2=null,t2n='';
+  try{const W=nextWalls(A,A.tk,L,trig);if(W.t1){t1=W.t1.v;t1n=W.t1.n;}if(W.t2){t2=W.t2.v;t2n=W.t2.n;}}catch(e){}
   const beyond=L?(A.cClose>trig):(A.cClose<trig);
   const crossed=L?(A.pClose<=trig&&A.cClose>trig):(A.pClose>=trig&&A.cClose<trig);   /* THIS candle crossed it */
   const vol=(A.rvolTOD||A.rv)>=1.2;   /* vs the same time of day on prior sessions */
@@ -477,7 +488,7 @@ function compose(A,L){
   const fired=crossed&&vol&&pastATR<=(A.firstBar?1.2:0.8);                                              /* fresh cross, with volume, still near the level */
   const thin=crossed&&!vol;
   const missed=beyond&&!crossed&&pastATR>0.8;                                           /* it fired earlier and ran — you are late */
-  return {trig,stop,t1,fired,thin,missed,pastATR,kind};
+  return {trig,stop,t1,t1n,t2,t2n,fired,thin,missed,pastATR,kind};
 }
 
 
@@ -584,8 +595,10 @@ async function vehicle(tk,L,A){
 }
 /* ---------- render ---------- */
 function statusOf(P,rm,A,L){
+  if(A){const R=rangeInfo(A,A.tk);if((L&&R.pos>=0.8)||(!L&&R.pos<=0.2)){const g=rangeGate(A,A.tk,L,P.kind);if(!g.ok)return ['late','TURNAROUND ZONE — '+(L?'calls':'puts')+' off · watch the '+(L?'puts':'calls')+' fade'];}}
   if(A&&A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3))return ['late','EXHAUSTED — already '+A._dayMove.chgPct.toFixed(1)+'% today, a full normal day · no chase'];
   if(rm.phase==='LATE'||rm.phase==='EXHAUSTED')return ['late',(rm.phase==='LATE'?'LATE — no chase':'EXHAUSTED — pass')+((rm.lines&&rm.lines[0])?' · '+rm.lines[0]:'')];
+  if(P.fired&&A){const g=rangeGate(A,A.tk,L,P.kind);if(!g.ok)return ['late','FIRED but no room — '+g.why];}
   if(P.fired){const past=A?Math.abs(A.px-P.trig)/(A.atr||1):0;
     if(past>0.35)return ['late','FIRED but MISSED — already '+past.toFixed(1)+' ATR past the trigger · wait for a pullback to $'+n2(P.trig)];
     return ['fired','⚡ FIRED — go now (enter by $'+n2(L?P.trig+0.35*(A?A.atr:0):P.trig-0.35*(A?A.atr:0))+')'];}
@@ -608,7 +621,7 @@ function sideHTML(tk,L,d){
   if(CH&&CH.fired&&cls!=='turn'){cls='fired';txt='⚡ CHOP FADE FIRED — reversal off the '+(L?'lower':'upper')+' band $'+n2(CH.edge)+' · target VWAP';P=Object.assign({},P,{trig:CH.trig,stop:CH.stop,t1:CH.t1,kind:'CHOP',fired:true,missed:false});}
   else if(CH&&CH.thin&&cls!=='turn'){cls='thin';txt='band touched, reversal thin — wait one candle';}
   else if(CH&&CH.armed&&(cls==='wait'||cls==='late')){cls='thin';txt='◆ CHOP — at the '+(L?'lower':'upper')+' band $'+n2(CH.edge)+' · needs a reversal candle · fade to VWAP $'+n2(CH.t1);}
-  const PB=pullback(d.A,L);
+  let PB=pullback(d.A,L);if(PB&&!rangeGate(d.A,tk,L,'PULLBACK').ok)PB=null;
   if(PB&&PB.fired&&cls!=='turn'){cls='fired';txt='⚡ PULLBACK FIRED — held the '+(PB.line===d.A.e9c?'9 EMA':'VWAP')+' and pushed · retest $'+n2(PB.ext);P=Object.assign({},P,{trig:PB.trig,stop:PB.stop,t1:PB.t1,kind:'PULLBACK',fired:true,missed:false});}
   else if(PB&&PB.thin&&cls!=='turn'){cls='thin';txt='pullback pushed, volume thin — wait one candle';}
   else if(PB&&PB.ready&&(cls==='wait'||cls==='late')){cls='thin';txt='◆ PULLBACK SETTING UP — held $'+n2(PB.line)+' after the run · needs one close '+(L?'up':'down')+' with volume · pre-stage the ticket';}
@@ -664,7 +677,7 @@ async function openTicket(id){
    '<div class="tl"><span class="k">Contract</span><span><span class="v b">'+sym+'</span>'+(c?'<div class="n">bid $'+n2(c.bid)+' · ask $'+n2(c.ask)+' · Δ'+dl.toFixed(2)+' (Black-Scholes) · IV '+(c.iv*100).toFixed(0)+'% · OI '+c.oi+'</div>':'')+'</span></div>'+
    '<div class="tl"><span class="k">Ticket 1</span><span><span class="v b">Buy to Open '+nC+' at $'+(E!=null?n2(E):'mid')+' limit</span><div class="n">Options ticket · Day · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Ticket 2</span><span><span class="v r">'+(fast?'Trailing Stop Loss':'Trailing Stop Limit')+' · trail $'+n2(trail)+'</span><div class="n">within 60s of the fill · all '+nC+' · Day · floor ≈ $'+(E!=null?n2(E-trail):'—')+'</div></span></div>'+
-   '<div class="tl"><span class="k">Take half</span><span><span class="v g">Sell '+half+' at $'+(tp!=null?n2(tp):'—')+' limit</span><div class="n">when the voice says "bank half" · stock T1 $'+n2(P.t1)+' · stock stop $'+n2(P.stop)+'</div></span></div>'+
+   '<div class="tl"><span class="k">Take half</span><span><span class="v g">Sell '+half+' at $'+(tp!=null?n2(tp):'—')+' limit</span><div class="n">at the next wall: '+(P.t1n||'target')+' $'+n2(P.t1)+(P.t2?' · then '+P.t2n+' $'+n2(P.t2):'')+' · stock stop $'+n2(P.stop)+'</div></span></div>'+
    restingHTML(tk,L,d,P,c,dl,nC,E)+
    '<div class="fid"><b>PRE-STAGE at APPROACHING:</b> Fidelity → Trade → <b>Options</b> tab → symbol → Calls&amp;Puts → pick the contract above → Buy to Open · '+nC+' · <b>Limit</b> '+(E!=null?n2(E+0.02):'ask')+' · Day → <b>Preview, and stop there.</b><br><b>AT THE FIRE:</b> tap Place — only if the stock is still within a third of an ATR of the trigger (the card says "enter by $…"). Past that, it is a chase: wait for the pullback.<br><b>PROTECT (within 60s):</b> Portfolio → Positions → this option → Trade → Sell to Close · '+nC+' · <b>Trailing Stop Loss ($)</b> · Trail '+n2(trail)+' · <b>Day</b> → Place. One resting sell only.</div>'+
    '<div class="row"><button class="in" onclick="event.stopPropagation();imIn(\''+tk+'\','+L+','+(E||0)+','+dl+','+P.stop.toFixed(2)+','+P.t1.toFixed(2)+','+nC+')">✔ I\'M IN</button><button class="pr" onclick="event.stopPropagation();printOne(\''+tk+'\','+L+')">🖨 PRINT</button></div>';
@@ -725,7 +738,9 @@ function officer(){
   const brk=(L?A.cClose<A.e9c:A.cClose>A.e9c)&&A.cVol>=1.1*A.avgVol;
   const H=A.mh,ci=A.ci;const d0=(L?H[ci]:-H[ci])||0,d1=(L?H[ci-1]:-H[ci-1])||0;
   let cls,v,w;
-  if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — permit 5';w='2:45. Close it by hand; cancel the trailing stop.';}
+  if(noonMode()&&mm>=11*60+45&&mm<15*60){cls='exit';v='EXIT — permit 4';w='11:45. Done by noon: close it by hand, cancel the trailing stop, read the scorecard.';}
+  else if(noonMode()&&mm>=11*60+30&&mm<11*60+45&&!(L?A.px<=POS.stop:A.px>=POS.stop)){cls='tighten';v='CLOSE INTO STRENGTH';w='Fifteen minutes to the noon close. Sell into the next push, not the next dip.';}
+  else if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — permit 5';w='2:45. Close it by hand; cancel the trailing stop.';}
   else if(L?A.px<=POS.stop:A.px>=POS.stop){cls='exit';v='EXIT — permit 1';w='Your stop level traded. If the trail hasn\'t filled you, sell at market.';}
   else if(brk){cls='exit';v='EXIT — permit 3';w='5-minute close through the 9 EMA on volume. Structure broke. Leave.';}
   else if(L?A.cClose>=POS.t1:A.cClose<=POS.t1){cls='tighten';v='BANK HALF — permit 2';w='Target reached. Sell half by hand, then cancel-and-replace the trail\'s quantity.';}
@@ -986,10 +1001,45 @@ function rulerHTML(tk,A){
   const where=R.pos>=0.85?'at the TOP of the range':R.pos<=0.15?'at the BOTTOM of the range':R.pos>=0.6?'upper third':R.pos<=0.4?'lower third':'middle';
   const ends=R.used>=1?'the range is spent — expect reversion, not extension':'about $'+n2(R.rem)+' of a normal day left; likely ends near '+(R.lean==='up'?'$'+n2(R.projHi)+' (up)':'$'+n2(R.projLo)+' (down)');
   const zones=[];if(A.pdh)zones.push('PDH '+n2(A.pdh));if(A.pdl)zones.push('PDL '+n2(A.pdl));if(p)zones.push('pre-mkt '+n2(p.pmL)+'–'+n2(p.pmH));if(A.vsig)zones.push('VWAP bands '+n2(A.vw-2*A.vsig)+' / '+n2(A.vw+2*A.vsig));
-  return '<div class="ruler"><div class="rt"><span>RANGE RULER · '+(R.pos*100).toFixed(0)+'% · '+where+'</span><b>'+(R.used*100).toFixed(0)+'% of a normal day used</b></div>'+
+  const zone=R.pos>=0.8?'top':R.pos<=0.2?'bot':'mid';
+  const zv=zone==='top'?'<div class="zonev top">END OF RANGE — TURNAROUND ZONE. Calls are off here. The only trade is the fade: puts on a reversal candle, target VWAP $'+n2(A.vw)+'.'+(R.used>=1?' The day is spent — expect reversion.':' Room above only if it breaks the high on volume.')+'</div>'
+    :zone==='bot'?'<div class="zonev bot">END OF RANGE — TURNAROUND ZONE. Puts are off here. The only trade is the fade: calls on a reversal candle, target VWAP $'+n2(A.vw)+'.'+(R.used>=1?' The day is spent — expect reversion.':' Room below only if it breaks the low on volume.')+'</div>'
+    :'<div class="zonev mid">Middle of the range — trend entries need a wall to break; fades need an edge to touch. Neither is here yet.</div>';
+  return '<div class="ruler"><div class="rt"><span>Range ruler · '+(R.pos*100).toFixed(0)+'% · '+where+'</span><b>'+(R.used*100).toFixed(0)+'% of a normal day used</b></div>'+zv+
     '<div class="bar">'+mk(A.vw,'vw','VWAP')+mk(A.pdh,'pd','PDH')+mk(A.pdl,'pd','PDL')+(p?mk(p.pmH,'pm','pre-mkt high')+mk(p.pmL,'pm','pre-mkt low'):'')+mk(R.lo,'','day low')+mk(R.hi,'','day high')+'<div class="px" style="left:'+X(A.px).toFixed(1)+'%"></div></div>'+
     '<div class="lab"><span>likely low <b>$'+n2(R.projLo)+'</b></span><span>low $'+n2(R.lo)+' · <b>$'+n2(A.px)+'</b> · high $'+n2(R.hi)+'</span><span>likely high <b>$'+n2(R.projHi)+'</b></span></div>'+
     '<div class="zone"><b>Likely end:</b> '+ends+'. <b>Reversal zones:</b> '+zones.join(' · ')+'. Gold = yesterday, purple = pre-market, blue = VWAP.</div></div>';
+}
+
+
+/* ===== ruler-driven levels: targets and stops are the next real wall, not an ATR multiple ===== */
+function rulerLevels(A,tk){
+  const R=rangeInfo(A,tk);const p=PM[tk]||null;const L=[];
+  const add=(v,n)=>{if(v!=null&&isFinite(v))L.push({v,n});};
+  add(A.vw,'VWAP');add(A.pdh,'PDH');add(A.pdl,'PDL');add(R.lo,'day low');add(R.hi,'day high');add(R.projHi,'likely high');add(R.projLo,'likely low');
+  if(p){add(p.pmH,'pre-mkt high');add(p.pmL,'pre-mkt low');}
+  if(A.vsig){add(A.vw+2*A.vsig,'upper band');add(A.vw-2*A.vsig,'lower band');add(A.vw+A.vsig,'+1σ');add(A.vw-A.vsig,'-1σ');}
+  add((R.lo+R.hi)/2,'mid-range');
+  return {R,levels:L.sort((a,b)=>a.v-b.v)};
+}
+function nextWalls(A,tk,L,from){
+  /* the next two walls in the trade direction, at least 0.6 ATR away */
+  const {levels}=rulerLevels(A,tk);const atr=A.atr||0.5;
+  const ahead=levels.filter(x=>L?(x.v-from>=0.6*atr):(from-x.v>=0.6*atr)).sort((a,b)=>L?(a.v-b.v):(b.v-a.v));
+  const behind=levels.filter(x=>L?(from-x.v>=0.5*atr):(x.v-from>=0.5*atr)).sort((a,b)=>L?(b.v-a.v):(a.v-b.v));
+  return {t1:ahead[0]||null,t2:ahead[1]||null,wall:behind[0]||null};
+}
+/* where in the range is this entry allowed? calls need room above; puts need room below */
+function rangeGate(A,tk,L,kind){
+  const R=rangeInfo(A,tk);const pos=R.pos;
+  if(kind==='CHOP'||kind==='TURN')return {ok:true};                       /* range trades are SUPPOSED to be at the edges */
+  const freshBreak=L?(A.pClose<=R.hi&&A.cClose>R.hi&&(A.rvolTOD||A.rv)>=1.3):(A.pClose>=R.lo&&A.cClose<R.lo&&(A.rvolTOD||A.rv)>=1.3);
+  if(L&&pos>=0.8&&!freshBreak)return {ok:false,why:'TURNAROUND ZONE — top of the range; calls are off here'};
+  if(!L&&pos<=0.2&&!freshBreak)return {ok:false,why:'TURNAROUND ZONE — bottom of the range; puts are off here'};
+  if(L&&pos>=0.7&&A.px<R.hi)return {ok:false,why:'top of the range ('+(pos*100).toFixed(0)+'%) with the high still above — no room'};
+  if(!L&&pos<=0.3&&A.px>R.lo)return {ok:false,why:'bottom of the range ('+(pos*100).toFixed(0)+'%) with the low still below — no room'};
+  if(R.used>=1.0&&!freshBreak)return {ok:false,why:'the range is already spent ('+(R.used*100).toFixed(0)+'% of a normal day)'};
+  return {ok:true};
 }
 
 /* ================= THE CHOP SET — the consistent trade in a wide, sideways range ================= */
@@ -1002,7 +1052,7 @@ function chopRegime(A){
 function chopSet(A,L){
   if(!chopRegime(A)||!A.vsig)return null;
   const R=rangeInfo(A,A.tk);
-  const edge=L?Math.max(R.lo,A.vw-1.5*A.vsig):Math.min(R.hi,A.vw+1.5*A.vsig);   /* the band you fade */
+  const edge=L?Math.max(R.lo,Math.min(A.vw-1.5*A.vsig,R.lo+0.2*R.span)):Math.min(R.hi,Math.max(A.vw+1.5*A.vsig,R.hi-0.2*R.span));   /* the range edge zone you fade */
   const near=Math.abs(A.px-edge)/A.atr;
   const b=A.bars,ci=A.ci,prev=ci>0?ci-1:ci;
   const touched=L?(b.L[prev]<=edge+0.15*A.atr||b.L[ci]<=edge+0.15*A.atr):(b.H[prev]>=edge-0.15*A.atr||b.H[ci]>=edge-0.15*A.atr);
@@ -1014,16 +1064,67 @@ function chopSet(A,L){
   return {ready:true,edge,stop,t1,t2,kind:'CHOP'};
 }
 
+
+/* ===== overnight stress test — per strategy, per name: OPEN, BREAK, PULLBACK, TURN, CHOP replayed on the last sessions =====
+   Result: odds for each trigger type on THIS stock lately. Types with no edge are benched for the day (Holly's lesson). */
+function evidenceKinds(A){
+  const ck='K|'+(A.tk||'')+'|'+A.ci;if(A._evk&&A._evk[ck])return A._evk[ck];
+  const b=A.bars,days=A.days;const out={OPEN:{n:0,w:0},BREAK:{n:0,w:0},PULLBACK:{n:0,w:0},TURN:{n:0,w:0},CHOP:{n:0,w:0}};
+  if(!days||days.length<3){(A._evk=A._evk||{})[ck]=out;return out;}
+  const atr=A.atr||0.5;
+  const grade=(dd,k,e,L)=>{let hit=null;for(let m=1;m<=12&&k+m<dd.length;m++){const j=dd[k+m];const fav=L?(b.H[j]-e):(e-b.L[j]);const adv=L?(e-b.L[j]):(b.H[j]-e);if(adv>=1.0*atr){hit=false;break;}if(fav>=1.5*atr){hit=true;break;}}return hit;};
+  for(let s=1;s<days.length-1;s++){
+    const dd=days[s],prev=days[s-1];if(dd.length<15||prev.length<10)continue;
+    const pdh=Math.max(...prev.map(i=>b.H[i])),pdl=Math.min(...prev.map(i=>b.L[i]));
+    let runHi=-1e9,runLo=1e9,e9=b.C[dd[0]],fired={};const open0=b.O?b.O[dd[0]]:b.C[dd[0]];let ext=open0,extK=0;
+    for(let k=0;k<dd.length;k++){
+      const i=dd[k];const slot=A.SLOT[i];let tv=0,tc=0;for(let s2=0;s2<A.SV.length;s2++){if(s2===s)continue;const v=A.SV[s2][slot];if(v!=null){tv+=v;tc++;}}
+      const rv=tc?b.V[i]/(tv/tc):1;const c=b.C[i];const pC=k?b.C[dd[k-1]]:c;e9=k?c*(2/10)+e9*(8/10):c;
+      const range=runHi-runLo;
+      for(const L of [true,false]){
+        const key=k=>L?'L'+k:'S'+k;
+        /* OPEN */
+        if(k===0&&!fired[key('O')]&&(L?c>pdh:c<pdl)&&rv>=1.2){fired[key('O')]=1;const r=grade(dd,k,c,L);out.OPEN.n++;if(r)out.OPEN.w++;}
+        /* BREAK: first cross of the running high/low */
+        if(k>0&&!fired[key('B')]&&(L?(pC<=runHi&&c>runHi):(pC>=runLo&&c<runLo))&&rv>=1.2){fired[key('B')]=1;const r=grade(dd,k,c,L);out.BREAK.n++;if(r)out.BREAK.w++;}
+        /* PULLBACK: impulse >=1.5 ATR from open, came back to e9, closes back in trend direction with volume */
+        if(k>3&&!fired[key('P')]){const imp=L?(runHi-open0):(open0-runLo);const nearE=L?(b.L[dd[k-1]]<=e9*1.002&&pC>=e9*0.995):(b.H[dd[k-1]]>=e9*0.998&&pC<=e9*1.005);const push=L?(c>pC):(c<pC);
+          if(imp>=1.5*atr&&nearE&&push&&rv>=1.0){fired[key('P')]=1;const r=grade(dd,k,c,L);out.PULLBACK.n++;if(r)out.PULLBACK.w++;}}
+        /* TURN: the OTHER side ran >=2.5 ATR from open; two closes against it and through e9 */
+        if(k>3&&!fired[key('T')]){const oppRun=L?(open0-runLo):(runHi-open0);const two=L?(c>pC&&pC>b.C[dd[k-2]]):(c<pC&&pC<b.C[dd[k-2]]);const thru=L?(c>e9&&pC<=e9):(c<e9&&pC>=e9);
+          if(oppRun>=2.5*atr&&two&&thru&&rv>=1.0){fired[key('T')]=1;const r=grade(dd,k,c,L);out.TURN.n++;if(r)out.TURN.w++;}}
+        /* CHOP: touch of the bottom/top 20% of the session range (range >= 2 ATR), reversal candle */
+        if(k>6&&!fired[key('C')]&&range>=2*atr){const edge=L?(runLo+0.2*range):(runHi-0.2*range);const touch=L?(b.L[dd[k-1]]<=edge):(b.H[dd[k-1]]>=edge);const rev=L?(c>b.H[dd[k-1]]):(c<b.L[dd[k-1]]);
+          if(touch&&rev&&rv>=0.9){fired[key('C')]=1;const r=grade(dd,k,c,L);out.CHOP.n++;if(r)out.CHOP.w++;}}
+      }
+      runHi=Math.max(runHi,b.H[i]);runLo=Math.min(runLo,b.L[i]);
+    }
+  }
+  (A._evk=A._evk||{})[ck]=out;return out;
+}
+function kindKey(kind){return kind==='BREAKOUT'||kind==='RECLAIM'?'BREAK':kind;}
+function oddsFor(A,kind){const e=evidenceKinds(A)[kindKey(kind)];if(!e||!e.n)return null;return {n:e.n,w:e.w,rate:e.w/e.n};}
+function boardOdds(kind){let n=0,w=0;for(const tk of LIST){const d=DATA[tk];if(!d)continue;const e=evidenceKinds(d.A)[kindKey(kind)];if(e){n+=e.n;w+=e.w;}}return n?{n,w,rate:w/n}:null;}
+function benched(A,kind){
+  /* bench a strategy on this name if it has failed here lately, or board-wide if it's failing everywhere */
+  const o=oddsFor(A,kind);if(o&&o.n>=4&&o.rate<0.4)return 'benched on this stock ('+o.w+'/'+o.n+' lately)';
+  const bo=boardOdds(kind);if(bo&&bo.n>=10&&bo.rate<0.35)return 'benched board-wide ('+Math.round(bo.rate*100)+'% of '+bo.n+' this stretch)';
+  return null;
+}
+
 /* ================= READY SETS — everything pre-built, marked READY / ARMED / LIVE ================= */
 function setsFor(tk,d){
-  const A=d.A,out=[];
+  const A=d.A,out0=[];if(noonPhase()==='close'||noonPhase()==='done')return out0;
+  const out={push:s=>{const b=benched(A,s.kind);if(b)return;const o=oddsFor(A,s.kind);const bo=boardOdds(s.kind);
+    s.d+=' · odds '+(o?o.w+'/'+o.n+' here':'no history here')+(bo?', '+Math.round(bo.rate*100)+'% board':'');out0.push(s);},get length(){return out0.length;}};
   for(const L of [true,false]){
     const sc=L?d.sC:d.sP;const rm=sc.rm;const P=compose(A,L);const late=rm.phase==='LATE'||rm.phase==='EXHAUSTED';
     const side=L?'CALLS':'PUTS';const dist=Math.abs(P.trig-A.px)/(A.atr||1);
     const spentDay=A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3);
     /* OPEN / BREAKOUT / RECLAIM — never on a day that has already moved a full normal day in that direction */
-    if(!late&&!spentDay){const st=P.fired?'live':(dist<=0.6?'armed':'ready');
-      out.push({tk,L,kind:P.kind,cls:'open',status:st,d:'<b>'+side+'</b> · '+P.kind.toLowerCase()+' trigger <b>$'+n2(P.trig)+'</b> ('+n2(Math.abs(P.trig-A.px))+' away) · stop $'+n2(P.stop)+' · T1 $'+n2(P.t1)+' · run '+rm.phase.toLowerCase()});}
+    const g=rangeGate(A,tk,L,P.kind);
+    if(!late&&!spentDay&&g.ok){const st=P.fired?'live':(dist<=0.6?'armed':'ready');
+      out.push({tk,L,kind:P.kind,cls:'open',status:st,d:'<b>'+side+'</b> · '+P.kind.toLowerCase()+' trigger <b>$'+n2(P.trig)+'</b> ('+n2(Math.abs(P.trig-A.px))+' away) · stop $'+n2(P.stop)+' · target '+(P.t1n||'')+' $'+n2(P.t1)+(P.t2?' then '+P.t2n+' $'+n2(P.t2):'')+' · '+(rangeInfo(A,tk).pos*100).toFixed(0)+'% of range'});}
     /* CHOP */
     const C=chopSet(A,L);if(C){const st=C.fired?'live':C.armed?'armed':'ready';
       out.push({tk,L,kind:'CHOP',cls:'chop',status:st,d:'<b>'+side+'</b> · fade the '+(L?'lower':'upper')+' band <b>$'+n2(C.edge)+'</b> on a reversal candle · stop $'+n2(C.stop)+' · target VWAP $'+n2(C.t1)+' → $'+n2(C.t2)+' · half size'});}
@@ -1031,22 +1132,30 @@ function setsFor(tk,d){
     const T=rangeTurn(A,L);if(T&&(T.fired||T.near)){const st=T.fired?'live':'armed';
       out.push({tk,L,kind:'TURN',cls:'turn',status:st,d:'<b>'+side+'</b> · rollover after a spent '+(L?'down':'up')+'-run · needs 2 closes '+(L?'up':'down')+' + through the 9 EMA'+(T.fired?' · stop $'+n2(T.stop)+' · T1 $'+n2(T.t1):'')+' · half size'});}
     /* PULLBACK */
-    const PB=pullback(A,L);if(PB&&(PB.fired||PB.ready||PB.thin)){const st=PB.fired?'live':'armed';
+    const PB=pullback(A,L);if(PB&&(PB.fired||PB.ready||PB.thin)&&rangeGate(A,tk,L,'PULLBACK').ok){const st=PB.fired?'live':'armed';
       out.push({tk,L,kind:'PULLBACK',cls:'pull',status:st,d:'<b>'+side+'</b> · held the ride line after the run · '+(PB.fired?'entry $'+n2(PB.trig)+' · stop $'+n2(PB.stop)+' · retest $'+n2(PB.ext):'needs one close '+(L?'up':'down')+' with volume · retest $'+n2(PB.ext))});}
   }
-  return out;
+  return out0;
 }
 function renderSets(){
   /* ONE VERDICT per name: the single best set per stock — live beats armed beats ready; range trades (CHOP/TURN/PULLBACK) beat raw breakouts at equal status */
-  const rows=[];const order={live:0,armed:1,ready:2};const kindPref={CHOP:0,TURN:1,PULLBACK:2,OPEN:3,RECLAIM:4,BREAKOUT:5};
+  const rows=[];const order={live:0,armed:1,ready:2};const base={CHOP:0,TURN:1,PULLBACK:2,OPEN:3,RECLAIM:4,BREAKOUT:5};
+  const prefFor=tk=>{const p=PM[tk];const d=DATA[tk];if(!p||!d||!d.A.pdc)return base;const gap=(p.last-d.A.pdc)/d.A.pdc*100;const h1=p.h1||0;
+    if(Math.abs(gap)>=0.8&&((gap>0&&h1>0)||(gap<0&&h1<0)))return {OPEN:0,PULLBACK:1,BREAKOUT:2,RECLAIM:3,TURN:4,CHOP:5};   /* gap-and-go: trend sets lead */
+    if(Math.abs(gap)>=0.8)return {TURN:0,CHOP:1,RECLAIM:2,PULLBACK:3,OPEN:4,BREAKOUT:5};                                        /* gap being faded: reversal sets lead */
+    return base;};
   for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;
-    const all=setsFor(tk,d);if(!all.length)continue;
+    const all=setsFor(tk,d);if(!all.length)continue;let kindPref=prefFor(tk);
+    {const R=rangeInfo(d.A,tk);if(R.pos>=0.8||R.pos<=0.2)kindPref={TURN:0,CHOP:1,RECLAIM:2,PULLBACK:3,OPEN:8,BREAKOUT:9};}   /* at the range end the fade leads */
     all.sort((a,b)=>(order[a.status]-order[b.status])||((kindPref[a.kind]||9)-(kindPref[b.kind]||9)));
     rows.push(all[0]);}
-  rows.sort((a,b)=>(order[a.status]-order[b.status])||((kindPref[a.kind]||9)-(kindPref[b.kind]||9)));
+  rows.sort((a,b)=>(order[a.status]-order[b.status])||((base[a.kind]||9)-(base[b.kind]||9)));
   const live=rows.filter(r=>r.status==='live').length,armed=rows.filter(r=>r.status==='armed').length;
-  $('setsI').textContent=(live?live+' live, ':'')+(armed?armed+' armed, ':'')+rows.length+' names. One verdict each; range trades first.';
-  if(!rows.length){$('setsList').innerHTML='<div style="font-size:13px;color:var(--dim);padding:10px 4px">Nothing to do yet. Verdicts appear as the market gives them; the board below shows every name meanwhile.</div>';return;}
+  const benchList=['OPEN','BREAK','PULLBACK','TURN','CHOP'].filter(k=>{const bo=boardOdds(k);return bo&&bo.n>=10&&bo.rate<0.35;});
+  if(benchList.length)$('setsI').textContent='Benched board-wide today: '+benchList.join(', ').toLowerCase()+' (failing this stretch). ';
+  $('setsI').textContent=($('setsI').textContent.startsWith('Benched')?$('setsI').textContent:'')+(live?live+' live, ':'')+(armed?armed+' armed, ':'')+rows.length+' names. One verdict each; range trades first.';
+  if(!rows.length){const allB=['OPEN','BREAK','PULLBACK','TURN','CHOP'].every(k=>{const bo=boardOdds(k);return bo&&bo.n>=10&&bo.rate<0.35;});
+    $('setsList').innerHTML='<div style="font-size:13px;color:var(--dim);padding:10px 4px">'+(allB?'Every strategy is failing this stretch on your names — the market is not giving your setups. The right trade is none. Sit out, keep the scorecard.':'Nothing to do yet. Verdicts appear as the market gives them; the board below shows every name meanwhile.')+'</div>';return;}
   $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'Live':r.status==='armed'?'Armed':'Ready')+'</div></div>').join('');
 }
 function setView(v){try{const d=$('dBoard');if(d)d.open=true;}catch(e){}}
@@ -1058,6 +1167,13 @@ function chime(kind){try{const el=document.getElementById('chime');if(el&&!el.ch
   const seq=kind==='exit'?[[520,0],[392,0.28]]:kind==='soft'?[[660,0]]:[[660,0],[880,0.22],[1046,0.44]];
   for(const [f,t] of seq){const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(0.3,ac.currentTime+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+t+0.35);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+0.4);}}catch(e){}}
 
+
+/* ===== done by noon: entries 8:35–11:00, everything closed by 11:45 ===== */
+function noonMode(){try{return localStorage.getItem('kNoon')!=='off';}catch(e){return true;}}
+function noonPhase(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(!noonMode())return 'off';if(m<8*60+35)return 'pre';if(m<11*60)return 'hunt';if(m<11*60+45)return 'close';return 'done';}
+function renderNoon(){const b=$('noonBar');const ph=noonPhase();if(ph==='off'||ph==='pre'){b.className='';b.textContent='';return;}b.className='on';
+  b.innerHTML=ph==='hunt'?'<b>Morning session.</b> Entries until 11:00, everything closed by 11:45. Done by noon.':ph==='close'?'<b>Closing window.</b> No new entries. Take profits into strength; be flat by 11:45.':'<b>Done for the day.</b> The afternoon is chop and theta. Read the scorecard; rest.';}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{
@@ -1065,15 +1181,16 @@ async function refreshOne(tk,speak){
     if(DAILY[tk]===undefined)DAILY[tk]=null;   /* filled by the background pass */
     if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
     A.beta=(DAILY[tk]&&NQD)?betaTo(DAILY[tk],NQD):null;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
-    if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
+    if(speak&&!isStale(A)&&noonPhase()!=='close'&&noonPhase()!=='done'){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
       {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;chime('soft');say(tk+', '+(L?'calls':'puts')+', approaching. Open the ticket and place the resting buy stop.');}}
       {const CH=chopSet(A,L);if(CH&&CH.fired&&FIRED[tk+(L?'C':'P')+'CH']!==A.ci){FIRED[tk+(L?'C':'P')+'CH']=A.ci;logFired(tk,L,CH.trig,A.px,A.ci);gradeLog(tk,L,'CHOP',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', chop fade fired. Reversal off the band. Target V WAP at '+n2(CH.t1).replace('.',' point ')+'. Half size.',true);}}
-      {const PB=pullback(A,L);if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
+      {let PB=pullback(A,L);if(PB&&!rangeGate(A,tk,L,'PULLBACK').ok)PB=null;if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
        else if(PB&&PB.ready&&FIRED[tk+(L?'C':'P')+'PBR']!==A.ci){FIRED[tk+(L?'C':'P')+'PBR']=A.ci;say(tk+', '+(L?'calls':'puts')+', pullback setting up. Pre-stage the ticket.');}}
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);gradeLog(tk,L,'TURN',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       const spentDay=A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3);
       const otherLive=sideLive({A,sC,sP},!L);if(otherLive)continue;
-      if(P.fired&&!spentDay&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);gradeLog(tk,L,P.kind,A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
+      const gate=rangeGate(A,tk,L,P.kind);if(benched(A,P.kind))continue;
+      if(P.fired&&gate.ok&&!spentDay&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);gradeLog(tk,L,P.kind,A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
 let BUSY=false;
@@ -1083,7 +1200,7 @@ async function refreshAll(force){
   {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60){if(!NQPM)nqOvernight();if(!FX||Date.now()-(FX._t||0)>10*60000){fxRead().then(()=>{if(FX)FX._t=Date.now();});}}}
   let k=0;
   for(const tk of LIST){await refreshOne(tk,true);k++;render();$('st').textContent='Scoring… '+k+' of '+LIST.length+' ('+tk+')';await sleep(250);}
-  render();officer();renderFired();renderRange();renderSets();feedCheck();gradeUpdate();BUSY=false;setTimeout(enrich,500);
+  render();officer();renderFired();renderRange();renderSets();renderNoon();feedCheck();gradeUpdate();BUSY=false;setTimeout(enrich,500);
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const raw=($('addTk').value||'');const v=raw.trim().toUpperCase().replace(/^\$/,'');
@@ -1117,7 +1234,7 @@ async function printOne(tk,L){
 /* ---------- boot ---------- */
 load();
 if(!LIST.length||$('autoTop').checked){DOZEN.forEach(t=>{if(!LIST.includes(t))LIST.push(t);});}
-save();render();paintScalps();renderGrade();try{setView(localStorage.getItem('kView')||'all');}catch(e){}tick();setInterval(tick,30000);
+save();render();paintScalps();renderGrade();try{$('noon').checked=noonMode();}catch(e){}renderNoon();try{setView(localStorage.getItem('kView')||'all');}catch(e){}tick();setInterval(tick,30000);
 refreshAll(false);
 /* refresh right after each 5-minute close (+12s) and once mid-candle (+150s); never faster — throttling is what made the feed stale */
 let LASTSLOT=null;
