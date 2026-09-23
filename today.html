@@ -283,12 +283,27 @@ details.drawer>*:not(summary){margin-bottom:12px}
 .ruler .bar{background:linear-gradient(90deg,#1e4a35 0%,#1e4a35 20%,#2a2f3a 20%,#2a2f3a 80%,#4a1e1e 80%,#4a1e1e 100%)}
 .ruler .zonev{margin-top:6px;padding:7px 9px;border-radius:8px;font-size:12.5px;font-weight:600;line-height:1.4}
 .ruler .zonev.top{background:#3a1a1a;color:#ffb3a8}.ruler .zonev.bot{background:#153a2a;color:#a8f0cc}.ruler .zonev.mid{background:#1B232E;color:var(--dim);font-weight:500}
+
+/* ===== paper mode + lock ===== */
+#paper{background:#1B232E;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+#paper .ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+#paper .pt{font-family:'Source Serif 4',Georgia,serif;font-size:17px;font-weight:600}
+#paper .pq{font-size:12px;color:var(--dim)}
+#paper .bar{height:8px;border-radius:4px;background:#0F141B;overflow:hidden;margin:6px 0}
+#paper .bar i{display:block;height:100%;background:var(--gold);width:0}
+#paper .pl{font-size:13px;line-height:1.55}
+#paper .pl b{color:var(--ink)}
+#paper .row{display:flex;gap:8px;margin-top:8px}
+#paper .row button{flex:1;padding:10px 6px;border-radius:10px;font-weight:600;font-size:12px;cursor:pointer;background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.ticket .locked{padding:10px;border:1px dashed var(--line);border-radius:10px;font-size:12.5px;color:var(--dim);line-height:1.5}
+.ticket .locked b{color:var(--gold)}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span><span style="font-size:8px;color:var(--dim);letter-spacing:.1em;margin-left:6px">VOICE v5 · chime</span></div>
 <div id="addRow"><input id="addTk" placeholder="type a ticker · enter" autocapitalize="characters" onkeydown="if(event.key==='Enter')addTk()"><button onclick="addTk()">＋ ADD</button></div>
 <div id="feedBar"></div>
 <div id="noonBar"></div>
+<div id="paper"><div class="ph"><span class="pt">Paper mode</span><span class="pq" id="paperQ">qualifying</span></div><div class="bar"><i id="paperBar"></i></div><div class="pl" id="paperL">Every verdict is taken on paper, graded, and logged. Tickets unlock when the record earns it.</div><div class="row"><button onclick="exportFires()">Export the record (for review)</button><button onclick="resetPaper()" style="color:var(--dim)">Reset the record</button></div></div>
 <div id="st">—</div>
 <div id="sets"><div class="sh"><span class="st">Today's verdicts</span><span class="si" id="setsI">built before the bell · each one has its levels, contract and resting entry</span></div><div id="setsList"><div style="font-size:10.5px;color:var(--dim)">scoring…</div></div></div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
@@ -351,7 +366,9 @@ function say(t,repeat){if(!$('voice').checked||!('speechSynthesis' in window))re
   try{kSpeak(new SpeechSynthesisUtterance(t));if(repeat)kSpeak(new SpeechSynthesisUtterance('I repeat. '+t));}catch(e){}}
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
-let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={},OPENT=new Set();
+let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={},OPENT=new Set();let DONE_TODAY={};try{DONE_TODAY=JSON.parse(localStorage.getItem('kDone')||'{}');if(DONE_TODAY._day!==new Date().toDateString())DONE_TODAY={_day:new Date().toDateString()};}catch(e){DONE_TODAY={_day:new Date().toDateString()};}
+function markDone(tk,why){DONE_TODAY[tk]=why;try{localStorage.setItem('kDone',JSON.stringify(DONE_TODAY));}catch(e){}}
+function isDone(tk){return !!DONE_TODAY[tk];}
 function save(){const v=JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked});
   try{localStorage.setItem('kToday',v);}
   catch(e){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&/^k(Chain_|Daily_|Tape_|DeskS_|Scan4_|GntS_)/.test(k))localStorage.removeItem(k);}localStorage.setItem('kToday',v);}catch(e2){}}}
@@ -611,6 +628,7 @@ function sideLive(d,L){const A=d.A;const P=compose(A,L);const T=rangeTurn(A,L),P
   return (P.fired&&statusOf(P,(L?d.sC:d.sP).rm,A,L)[0]==='fired')||(T&&T.fired)||(PB&&PB.fired)||(CH&&CH.fired);}
 function sideHTML(tk,L,d){
   const sc=L?d.sC:d.sP;let P=compose(d.A,L);const rm=sc.rm;let [cls,txt]=statusOf(P,rm,d.A,L);
+  if(isDone(tk)){return '<div class="side '+(L?'c':'p')+' late"><div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div><div class="status late">DONE FOR TODAY</div><div class="why">'+(DONE_TODAY[tk]||'traded')+'. One bullet per name per day. No re-entry, no second guess. Tomorrow it wakes up clean.</div></div>';}
   if(!sideLive(d,L)&&sideLive(d,!L)){const id0=tk+'_'+(L?'C':'P');window._PLAN=window._PLAN||{};window._PLAN[id0]=P;
     return '<div class="side '+(L?'c':'p')+' late" onclick="toggleTicket(\''+id0+'\')"><div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div><div class="status late">STAND ASIDE — the '+(L?'puts':'calls')+' side is live</div><div class="why">One verdict per name. This side wakes up only if the other one dies.</div><div class="ticket" id="tk_'+id0+'"></div></div>';}
   const T=rangeTurn(d.A,L);
@@ -673,6 +691,7 @@ async function openTicket(id){
   const E=c?c.mid:null;const trail=stopDist*dl;const tp=E!=null?E+t1Dist*dl-0.05:null;
   const sym=c?(tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')):'no liquid contract found — pick at the broker';
   const fast=d.A.atr/d.A.px>0.004;
+  if(isLocked()){const s=paperStats();box.innerHTML='<div class="locked"><b>Paper mode — this is not a trade.</b> The program is taking it on paper and grading itself. Record: '+s.sessions+' of '+QUAL_SESSIONS+' sessions, '+(s.n?Math.round(s.rate*100)+'%':'—')+' follow-through. No entry numbers are shown while it is unproven. Trade your own eyes.</div>';return;}
   box.innerHTML=
    '<div class="tl"><span class="k">Contract</span><span><span class="v b">'+sym+'</span>'+(c?'<div class="n">bid $'+n2(c.bid)+' · ask $'+n2(c.ask)+' · Δ'+dl.toFixed(2)+' (Black-Scholes) · IV '+(c.iv*100).toFixed(0)+'% · OI '+c.oi+'</div>':'')+'</span></div>'+
    '<div class="tl"><span class="k">Ticket 1</span><span><span class="v b">Buy to Open '+nC+' at $'+(E!=null?n2(E):'mid')+' limit</span><div class="n">Options ticket · Day · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+'</div></span></div>'+
@@ -731,13 +750,15 @@ function posHTML(){
    '<div class="fid"><b>BANK HALF:</b> Positions → this option → Trade → Sell to Close · '+Math.max(1,Math.floor(p.n/2))+' · Limit at the bid → Place. Then Orders → the trailing stop → Attempt to Cancel and Replace → qty '+(p.n-Math.max(1,Math.floor(p.n/2)))+'.<br><b>CLOSE ALL:</b> Positions → this option → Trade → Sell to Close · all · Limit at the bid (Market if it\'s moving against you) → Place. Then Orders → cancel the trailing stop. <b>Ignore the app\'s P/L number on a wide-spread contract — it uses the last trade, not the mid; the chart is the truth.</b></div>'+
    '<button class="out" onclick="event.stopPropagation();imOut()">✔ I\'M OUT — stand down</button></div>';
 }
-function imOut(){say('Out. Log it.');POS=null;save();render();}
+function imOut(){if(POS)markDone(POS.tk,'traded and closed');say('Out. That name is done for today.');POS=null;save();render();renderSets();}
 function officer(){
   if(!POS)return;const d=DATA[POS.tk];if(!d)return;const A=d.A,L=POS.L;
   const ctn=ctNow();const mm=ctn.getHours()*60+ctn.getMinutes();
-  const brk=(L?A.cClose<A.e9c:A.cClose>A.e9c)&&A.cVol>=1.1*A.avgVol;
+  const thru=(L?A.cClose<A.e9c:A.cClose>A.e9c);const thruPrev=(L?A.pClose<(A.e9p||A.e9c):A.pClose>(A.e9p||A.e9c));
+  const brk=thru&&((A.rvolTOD||A.rv)>=1.1||thruPrev);    /* one weak candle through the line is a wiggle, not an exit */
   const H=A.mh,ci=A.ci;const d0=(L?H[ci]:-H[ci])||0,d1=(L?H[ci-1]:-H[ci-1])||0;
   let cls,v,w;
+  if(POS&&cls==='exit'&&!isDone(POS.tk)){}
   if(noonMode()&&mm>=11*60+45&&mm<15*60){cls='exit';v='EXIT — permit 4';w='11:45. Done by noon: close it by hand, cancel the trailing stop, read the scorecard.';}
   else if(noonMode()&&mm>=11*60+30&&mm<11*60+45&&!(L?A.px<=POS.stop:A.px>=POS.stop)){cls='tighten';v='CLOSE INTO STRENGTH';w='Fifteen minutes to the noon close. Sell into the next push, not the next dip.';}
   else if(mm>=14*60+40&&mm<15*60){cls='exit';v='EXIT — permit 5';w='2:45. Close it by hand; cancel the trailing stop.';}
@@ -746,7 +767,10 @@ function officer(){
   else if(L?A.cClose>=POS.t1:A.cClose<=POS.t1){cls='tighten';v='BANK HALF — permit 2';w='Target reached. Sell half by hand, then cancel-and-replace the trail\'s quantity.';}
   else if(d0<0&&d0<d1){cls='tighten';v='TIGHTEN';w='Thrust fading. No selling — only permit 3 sells. The trail is behind you.';}
   else{cls='hold';v='HOLD';w='Structure intact. Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.';}
+  if(POS.lastV&&POS.lastCi!=null&&(ci-POS.lastCi)<2&&!/permit 1|permit 5|permit 4/.test(v)&&v!==POS.lastV&&!/EXIT/.test(POS.lastV)){v=POS.lastV;w=POS.lastW||w;cls=POS.lastCls||cls;}
+  else{POS.lastV=v;POS.lastW=w;POS.lastCls=cls;POS.lastCi=ci;}
   const pv=$('pv'),pw=$('pw');if(pv){pv.className='pv '+cls;pv.textContent=v;pw.textContent=w;}
+  if(cls==='exit')markDone(POS.tk,'the Officer ruled exit');
   const key=v+'|'+ci;if(POS.last!==key){const imp=(cls==='exit'||v.startsWith('BANK'));if(cls==='exit')chime('exit');else if(v.startsWith('BANK'))chime('fire');say(POS.tk+', '+(L?'calls':'puts')+'. '+v.replace('—',',').replace('#','number ')+'. '+w.split('.')[0]+'.',imp);POS.last=key;save();}
 }
 
@@ -959,6 +983,7 @@ async function enrich(){
 function gradeAll(){try{return JSON.parse(localStorage.getItem('kGrade'))||[];}catch(e){return [];}}
 function gradeSave(g){try{localStorage.setItem('kGrade',JSON.stringify(g.slice(-300)));}catch(e){}}
 function gradeLog(tk,L,kind,entry,ci){
+  try{const d=DATA[tk];if(d)recordFire(tk,L,kind,d.A);}catch(e){}
   const g=gradeAll();const day=ctNow().toDateString();
   if(g.find(x=>x.tk===tk&&x.L===L&&x.ci===ci&&x.day===day))return;
   g.push({tk,L,kind,entry,ci,day,t:Date.now(),result:null,best:0});gradeSave(g);renderGrade();
@@ -1114,7 +1139,7 @@ function benched(A,kind){
 
 /* ================= READY SETS — everything pre-built, marked READY / ARMED / LIVE ================= */
 function setsFor(tk,d){
-  const A=d.A,out0=[];if(noonPhase()==='close'||noonPhase()==='done')return out0;
+  const A=d.A,out0=[];if(noonPhase()==='close'||noonPhase()==='done')return out0;if(isDone(tk))return out0;
   const out={push:s=>{const b=benched(A,s.kind);if(b)return;const o=oddsFor(A,s.kind);const bo=boardOdds(s.kind);
     s.d+=' · odds '+(o?o.w+'/'+o.n+' here':'no history here')+(bo?', '+Math.round(bo.rate*100)+'% board':'');out0.push(s);},get length(){return out0.length;}};
   for(const L of [true,false]){
@@ -1156,7 +1181,8 @@ function renderSets(){
   $('setsI').textContent=($('setsI').textContent.startsWith('Benched')?$('setsI').textContent:'')+(live?live+' live, ':'')+(armed?armed+' armed, ':'')+rows.length+' names. One verdict each; range trades first.';
   if(!rows.length){const allB=['OPEN','BREAK','PULLBACK','TURN','CHOP'].every(k=>{const bo=boardOdds(k);return bo&&bo.n>=10&&bo.rate<0.35;});
     $('setsList').innerHTML='<div style="font-size:13px;color:var(--dim);padding:10px 4px">'+(allB?'Every strategy is failing this stretch on your names — the market is not giving your setups. The right trade is none. Sit out, keep the scorecard.':'Nothing to do yet. Verdicts appear as the market gives them; the board below shows every name meanwhile.')+'</div>';return;}
-  $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'Live':r.status==='armed'?'Armed':'Ready')+'</div></div>').join('');
+  const locked=isLocked();
+  $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+(locked?' · paper':'')+'</small></div><div class="d">'+(locked?r.d.replace(/\$[0-9.]+/g,'—'):r.d)+'</div><div class="s '+r.status+'">'+(r.status==='live'?'Live':r.status==='armed'?'Armed':'Ready')+'</div></div>').join('');
 }
 function setView(v){try{const d=$('dBoard');if(d)d.open=true;}catch(e){}}
 
@@ -1174,6 +1200,35 @@ function noonPhase(){const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(!
 function renderNoon(){const b=$('noonBar');const ph=noonPhase();if(ph==='off'||ph==='pre'){b.className='';b.textContent='';return;}b.className='on';
   b.innerHTML=ph==='hunt'?'<b>Morning session.</b> Entries until 11:00, everything closed by 11:45. Done by noon.':ph==='close'?'<b>Closing window.</b> No new entries. Take profits into strength; be flat by 11:45.':'<b>Done for the day.</b> The afternoon is chop and theta. Read the scorecard; rest.';}
 
+
+/* ===== PAPER MODE — the program trades every verdict on paper; tickets stay locked until its record earns them =====
+   Qualification: at least 5 sessions with fires, and >= 55% follow-through over those sessions. */
+const QUAL_SESSIONS=5,QUAL_RATE=0.55;
+function paperStats(){
+  const g=gradeAll().filter(x=>x.result&&x.result!=='expired');
+  const days={};for(const x of g){(days[x.day]=days[x.day]||[]).push(x);}
+  const sessions=Object.keys(days).length;const n=g.length,w=g.filter(x=>x.result==='hit').length;
+  const rate=n?w/n:0;const pl=g.reduce((s,x)=>s+(x.result==='hit'?1.5:x.result==='stopped'?-1.0:(x.best>0.5?0.3:-0.2)),0); /* in ATR-R units */
+  return {sessions,n,w,rate,pl,qualified:sessions>=QUAL_SESSIONS&&n>=10&&rate>=QUAL_RATE};
+}
+function isLocked(){try{if(localStorage.getItem('kUnlock')==='yes')return false;}catch(e){}return !paperStats().qualified;}
+function renderPaper(){
+  const s=paperStats();const pct=Math.min(100,Math.round((Math.min(s.sessions,QUAL_SESSIONS)/QUAL_SESSIONS)*50+(Math.min(s.rate,QUAL_RATE)/QUAL_RATE)*50));
+  $('paperBar').style.width=pct+'%';
+  $('paperQ').textContent=s.qualified?'qualified — tickets unlocked':(s.sessions+' of '+QUAL_SESSIONS+' sessions · '+(s.n?Math.round(s.rate*100)+'%':'—')+' follow-through (needs '+Math.round(QUAL_RATE*100)+'%)');
+  $('paperL').innerHTML=(s.n?'<b>'+s.n+' paper trades</b> over '+s.sessions+' session'+(s.sessions!==1?'s':'')+': '+s.w+' followed through, '+(s.n-s.w)+' did not · net <b>'+(s.pl>=0?'+':'')+s.pl.toFixed(1)+' R</b> (1 R = one stop). ':'No paper trades yet — leave this tab open 8:15 to noon and it trades every verdict by itself. ')+(s.qualified?'The record earned it. Tickets are open; size half until a second week confirms.':'Tickets stay locked until '+QUAL_SESSIONS+' sessions and '+Math.round(QUAL_RATE*100)+'%. Trade your eyes meanwhile.');
+}
+/* record every fire with the bars around it, so the logic can be audited on real tape */
+function recordFire(tk,L,kind,A){
+  try{const rec=JSON.parse(localStorage.getItem('kFires')||'[]');const b=A.bars;const from=Math.max(0,A.ci-30),to=Math.min(b.C.length-1,A.ci+14);
+    rec.push({t:Date.now(),day:ctNow().toDateString(),tk,L,kind,ci:A.ci,px:A.px,trig:null,rvolTOD:A.rvolTOD,run:(L?A._runC:A._runP)||null,rangePos:(rangeInfo(A,tk).pos),
+      bars:{T:b.T.slice(from,to+1),O:(b.O||b.C).slice(from,to+1),H:b.H.slice(from,to+1),L:b.L.slice(from,to+1),C:b.C.slice(from,to+1),V:b.V.slice(from,to+1)},ciOff:A.ci-from});
+    localStorage.setItem('kFires',JSON.stringify(rec.slice(-200)));}catch(e){}
+}
+function exportFires(){try{const rec=localStorage.getItem('kFires')||'[]';const g=localStorage.getItem('kGrade')||'[]';const blob=new Blob([JSON.stringify({fires:JSON.parse(rec),grades:JSON.parse(g),exported:new Date().toISOString(),names:LIST},null,1)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kornis-paper-record-'+ctNow().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();}catch(e){alert('Export failed: '+(e.message||e));}}
+function resetPaper(){if(!confirm('Erase the paper record and start qualification over?'))return;try{localStorage.removeItem('kFires');localStorage.removeItem('kGrade');}catch(e){}renderGrade();renderPaper();}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{
@@ -1181,7 +1236,7 @@ async function refreshOne(tk,speak){
     if(DAILY[tk]===undefined)DAILY[tk]=null;   /* filled by the background pass */
     if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
     A.beta=(DAILY[tk]&&NQD)?betaTo(DAILY[tk],NQD):null;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
-    if(speak&&!isStale(A)&&noonPhase()!=='close'&&noonPhase()!=='done'){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
+    if(speak&&!isStale(A)&&!isDone(tk)&&noonPhase()!=='close'&&noonPhase()!=='done'){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
       {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;chime('soft');say(tk+', '+(L?'calls':'puts')+', approaching. Open the ticket and place the resting buy stop.');}}
       {const CH=chopSet(A,L);if(CH&&CH.fired&&FIRED[tk+(L?'C':'P')+'CH']!==A.ci){FIRED[tk+(L?'C':'P')+'CH']=A.ci;logFired(tk,L,CH.trig,A.px,A.ci);gradeLog(tk,L,'CHOP',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', chop fade fired. Reversal off the band. Target V WAP at '+n2(CH.t1).replace('.',' point ')+'. Half size.',true);}}
       {let PB=pullback(A,L);if(PB&&!rangeGate(A,tk,L,'PULLBACK').ok)PB=null;if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
@@ -1200,7 +1255,7 @@ async function refreshAll(force){
   {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60){if(!NQPM)nqOvernight();if(!FX||Date.now()-(FX._t||0)>10*60000){fxRead().then(()=>{if(FX)FX._t=Date.now();});}}}
   let k=0;
   for(const tk of LIST){await refreshOne(tk,true);k++;render();$('st').textContent='Scoring… '+k+' of '+LIST.length+' ('+tk+')';await sleep(250);}
-  render();officer();renderFired();renderRange();renderSets();renderNoon();feedCheck();gradeUpdate();BUSY=false;setTimeout(enrich,500);
+  render();officer();renderFired();renderRange();renderSets();renderNoon();feedCheck();gradeUpdate();renderPaper();BUSY=false;setTimeout(enrich,500);
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const raw=($('addTk').value||'');const v=raw.trim().toUpperCase().replace(/^\$/,'');
@@ -1234,7 +1289,7 @@ async function printOne(tk,L){
 /* ---------- boot ---------- */
 load();
 if(!LIST.length||$('autoTop').checked){DOZEN.forEach(t=>{if(!LIST.includes(t))LIST.push(t);});}
-save();render();paintScalps();renderGrade();try{$('noon').checked=noonMode();}catch(e){}renderNoon();try{setView(localStorage.getItem('kView')||'all');}catch(e){}tick();setInterval(tick,30000);
+save();render();paintScalps();renderGrade();try{$('noon').checked=noonMode();}catch(e){}renderNoon();renderPaper();try{setView(localStorage.getItem('kView')||'all');}catch(e){}tick();setInterval(tick,30000);
 refreshAll(false);
 /* refresh right after each 5-minute close (+12s) and once mid-candle (+150s); never faster — throttling is what made the feed stale */
 let LASTSLOT=null;
