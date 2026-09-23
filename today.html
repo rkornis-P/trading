@@ -167,6 +167,47 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #grade b{color:var(--gold-soft)}
 #grade .g{display:grid;grid-template-columns:72px 1fr auto;gap:6px;padding:3px 0;border-top:1px solid #1C222C}
 #grade .g .ok{color:var(--green);font-weight:800}.g .no{color:var(--red);font-weight:800}.g .pend{color:var(--amber)}
+
+/* ===== resting entry ===== */
+.ticket .rest{margin-top:8px;border:1.5px solid #5B9BFF;border-radius:9px;padding:8px 10px;background:#0E1526}
+.ticket .rest .rh{font-size:9px;letter-spacing:.14em;color:#5B9BFF;font-weight:800;text-transform:uppercase;margin-bottom:4px}
+.ticket .rest .rv{font-family:Georgia,serif;font-size:15px;font-weight:700;color:#fff}
+.ticket .rest .rn{font-size:10px;color:#9fb4d8;line-height:1.5;margin-top:3px}
+.ticket .rest .rn b{color:#fff}
+.ticket .rest.no{border-color:var(--line);background:var(--card2)}
+.ticket .rest.no .rh{color:var(--dim)}.ticket .rest.no .rv{color:var(--dim)}
+
+/* ===== RANGE RULER ===== */
+.ruler{margin:6px 0 4px;padding:6px 8px 8px;background:#0E1117;border:1px solid var(--line);border-radius:9px}
+.ruler .rt{display:flex;justify-content:space-between;font-size:8.5px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase;margin-bottom:4px}
+.ruler .rt b{color:var(--gold-soft)}
+.ruler .bar{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#3a1a1a 0%,#2a2f3a 50%,#153a2a 100%)}
+.ruler .mk{position:absolute;top:-3px;width:2px;height:22px;background:var(--dim)}
+.ruler .mk.vw{background:#5B9BFF}.ruler .mk.pd{background:var(--gold)}.ruler .mk.pm{background:#C08BE6}
+.ruler .px{position:absolute;top:-5px;width:12px;height:26px;margin-left:-6px;border-radius:6px;background:#fff;box-shadow:0 0 8px #fff}
+.ruler .lab{display:flex;justify-content:space-between;font-size:8.5px;color:var(--dim);margin-top:5px}
+.ruler .lab b{color:var(--ink)}
+.ruler .zone{font-size:9.5px;color:#9fb4d8;margin-top:4px;line-height:1.45}
+.ruler .zone b{color:var(--gold-soft)}
+/* ===== READY SETS ===== */
+#sets{background:#12161D;border:2px solid var(--gold);border-radius:14px;padding:10px 11px;margin-bottom:10px}
+#sets .sh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+#sets .st{font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--gold-soft);letter-spacing:.06em}
+#sets .si{font-size:9px;color:var(--dim)}
+.set{display:grid;grid-template-columns:64px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border-radius:9px;background:var(--card2);border:1px solid var(--line);margin-bottom:5px;cursor:pointer}
+.set.live{border-color:var(--gold-soft);animation:fp .9s ease-in-out infinite alternate}
+.set.armed{border-color:var(--amber)}
+.set.chop{border-left:4px solid #5B9BFF}.set.turn{border-left:4px solid #C08BE6}.set.pull{border-left:4px solid var(--green)}.set.open{border-left:4px solid var(--gold)}
+.set .k{font-family:Georgia,serif;font-size:14px;font-weight:700}
+.set .k small{display:block;font-family:-apple-system,sans-serif;font-size:8px;letter-spacing:.1em;color:var(--dim)}
+.set .d{font-size:10px;color:var(--dim);line-height:1.45}
+.set .d b{color:var(--ink)}
+.set .s{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-align:right;white-space:nowrap}
+.set .s.live{color:var(--gold-soft)}.set .s.armed{color:var(--amber)}.set .s.ready{color:var(--dim)}
+#viewBar{display:flex;gap:6px;margin-bottom:8px}
+#viewBar button{flex:1;padding:9px 4px;border-radius:8px;font-weight:800;font-size:10px;cursor:pointer;background:var(--card2);color:var(--dim);border:1px solid var(--line)}
+#viewBar button.on{background:var(--gold);color:#000;border-color:var(--gold)}
+body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOnly #grade{display:none}
 </style></head><body>
 
 <div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
@@ -189,6 +230,8 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 <div id="mkt"></div>
 <div id="st">—</div>
 <div id="grade"><b>THE MACHINE GRADES ITSELF</b> · <span id="gradeSum">no fires yet today</span><div id="gradeList"></div></div>
+<div id="viewBar"><button id="vSets" onclick="setView('sets')">READY SETS — pick, don't research</button><button id="vAll" class="on" onclick="setView('all')">FULL BOARD</button></div>
+<div id="sets"><div class="sh"><span class="st">READY SETS</span><span class="si" id="setsI">built before the bell · each one has its levels, contract and resting entry</span></div><div id="setsList"><div style="font-size:10.5px;color:var(--dim)">scoring…</div></div></div>
 <div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
 <div id="cards"></div>
 <div id="flash"><div class="big" id="flBig">⚡ TRIGGER</div><div class="sub" id="flSub">—</div><div><button onclick="flashGo()">SHOW ME THE TICKET</button><button class="dis" onclick="flashOff()">dismiss</button></div></div>
@@ -461,6 +504,10 @@ function sideHTML(tk,L,d){
   if(T&&T.fired){cls='turn';txt='↩ TURN — range trade · '+(L?'bounce':'rollover')+' after a spent run';P=Object.assign({},P,{trig:T.trig,stop:T.stop,t1:T.t1,kind:'TURN',fired:true,missed:false});}
   else if(T&&T.thin){cls='thin';txt='turning — volume thin, wait one candle';}
   else if(T&&T.near){if(cls==='wait')txt='WAIT · the other side\'s run is '+T.runOpp.phase.toLowerCase()+' — a turn may set up (two closes against + through the 9 EMA)';}
+  const CH=chopSet(d.A,L);
+  if(CH&&CH.fired&&cls!=='turn'){cls='fired';txt='⚡ CHOP FADE FIRED — reversal off the '+(L?'lower':'upper')+' band $'+n2(CH.edge)+' · target VWAP';P=Object.assign({},P,{trig:CH.trig,stop:CH.stop,t1:CH.t1,kind:'CHOP',fired:true,missed:false});}
+  else if(CH&&CH.thin&&cls!=='turn'){cls='thin';txt='band touched, reversal thin — wait one candle';}
+  else if(CH&&CH.armed&&(cls==='wait'||cls==='late')){cls='thin';txt='◆ CHOP — at the '+(L?'lower':'upper')+' band $'+n2(CH.edge)+' · needs a reversal candle · fade to VWAP $'+n2(CH.t1);}
   const PB=pullback(d.A,L);
   if(PB&&PB.fired&&cls!=='turn'){cls='fired';txt='⚡ PULLBACK FIRED — held the '+(PB.line===d.A.e9c?'9 EMA':'VWAP')+' and pushed · retest $'+n2(PB.ext);P=Object.assign({},P,{trig:PB.trig,stop:PB.stop,t1:PB.t1,kind:'PULLBACK',fired:true,missed:false});}
   else if(PB&&PB.thin&&cls!=='turn'){cls='thin';txt='pullback pushed, volume thin — wait one candle';}
@@ -485,7 +532,7 @@ function cardHTML(tk){
   const bc=A.behave==='CLEAN'?'var(--green)':A.behave==='MIXED'?'var(--amber)':'var(--red)';
   const badges='<div style="font-size:9px;letter-spacing:.06em;margin-top:2px"><span style="color:'+rc+';font-weight:800">RANGE '+(A.adrP!=null?A.adrP.toFixed(1)+'%':'—')+(A.adr?' ($'+n2(A.adr)+'/day)':'')+' '+rb+'</span> · <span style="color:'+bc+';font-weight:800">'+A.behave+'</span> <span style="color:var(--dim)">'+(A.behave==='CLEAN'?'trends hold, respects the ride line':A.behave==='MIXED'?'some whipsaw — demand volume':'whipsaws — reclaim entries only, half size')+'</span></div>';
   const stale=isStale(A);const fl='<div class="fresh'+(stale?' stale':'')+'">'+freshLabel(A)+(stale?' — numbers below are OLD':'')+'</div>';
-  return '<div class="tc'+(isPos?' pos':'')+(stale?' stale':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+fl+badges+
+  return '<div class="tc'+(isPos?' pos':'')+(stale?' stale':'')+'" id="card_'+tk+'"><div class="hd"><span class="tk">'+tk+' <span class="px">$'+n2(d.A.px)+(d.A.chg!=null?' '+(d.A.chg>=0?'+':'')+d.A.chg.toFixed(1)+'%':'')+'</span></span><span class="x" onclick="rm(\''+tk+'\')">✕</span></div>'+fl+badges+rulerHTML(tk,A)+
    ((()=>{const n=ctNow();const m=n.getHours()*60+n.getMinutes();return (m<9*60)?(fxLine(tk)+pmLine(tk,A)):'';})())+
    ((window._AIREAD&&window._AIREAD[tk])?'<div class="airead">🧠 '+window._AIREAD[tk].replace(/^[A-Z.\-]{1,7}\s*[—-]\s*/,'')+'</div>':'')+
    '<div class="sides">'+sideHTML(tk,true,d)+sideHTML(tk,false,d)+'</div>'+(isPos?posHTML():'')+'</div>';
@@ -503,7 +550,7 @@ async function toggleTicket(id){
   const [tk,s]=id.split('_');const L=s==='C';const d=DATA[tk];if(!d)return;
   box.innerHTML='<div style="font-size:10px;color:var(--dim)">pulling the contract…</div>';
   const c=await vehicle(tk,L,d.A);const P=(window._PLAN&&window._PLAN[id])||compose(d.A,L);
-  const risk=(parseFloat(localStorage.getItem('kRisk'))||500)*(P.kind==='TURN'?0.5:1);const dl=c?c.d:0.70;const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
+  const risk=(parseFloat(localStorage.getItem('kRisk'))||500)*((P.kind==='TURN'||P.kind==='CHOP')?0.5:1);const dl=c?c.d:0.70;const stopDist=Math.abs(P.trig-P.stop),t1Dist=Math.abs(P.t1-P.trig);
   const per=stopDist*dl*100;const nC=Math.max(1,Math.floor(risk/per));const half=Math.max(1,Math.floor(nC/2));
   const E=c?c.mid:null;const trail=stopDist*dl;const tp=E!=null?E+t1Dist*dl-0.05:null;
   const sym=c?(tk+' '+c.exp.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' $'+c.K+' '+(L?'CALL':'PUT')):'no liquid contract found — pick at the broker';
@@ -513,10 +560,38 @@ async function toggleTicket(id){
    '<div class="tl"><span class="k">Ticket 1</span><span><span class="v b">Buy to Open '+nC+' at $'+(E!=null?n2(E):'mid')+' limit</span><div class="n">Options ticket · Day · est. value ≈ $'+(E!=null?(E*100*nC).toFixed(0):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Ticket 2</span><span><span class="v r">'+(fast?'Trailing Stop Loss':'Trailing Stop Limit')+' · trail $'+n2(trail)+'</span><div class="n">within 60s of the fill · all '+nC+' · Day · floor ≈ $'+(E!=null?n2(E-trail):'—')+'</div></span></div>'+
    '<div class="tl"><span class="k">Take half</span><span><span class="v g">Sell '+half+' at $'+(tp!=null?n2(tp):'—')+' limit</span><div class="n">when the voice says "bank half" · stock T1 $'+n2(P.t1)+' · stock stop $'+n2(P.stop)+'</div></span></div>'+
+   restingHTML(tk,L,d,P,c,dl,nC,E)+
    '<div class="fid"><b>PRE-STAGE at APPROACHING:</b> Fidelity → Trade → <b>Options</b> tab → symbol → Calls&amp;Puts → pick the contract above → Buy to Open · '+nC+' · <b>Limit</b> '+(E!=null?n2(E+0.02):'ask')+' · Day → <b>Preview, and stop there.</b><br><b>AT THE FIRE:</b> tap Place — only if the stock is still within a third of an ATR of the trigger (the card says "enter by $…"). Past that, it is a chase: wait for the pullback.<br><b>PROTECT (within 60s):</b> Portfolio → Positions → this option → Trade → Sell to Close · '+nC+' · <b>Trailing Stop Loss ($)</b> · Trail '+n2(trail)+' · <b>Day</b> → Place. One resting sell only.</div>'+
    '<div class="row"><button class="in" onclick="event.stopPropagation();imIn(\''+tk+'\','+L+','+(E||0)+','+dl+','+P.stop.toFixed(2)+','+P.t1.toFixed(2)+','+nC+')">✔ I\'M IN</button><button class="pr" onclick="event.stopPropagation();printOne(\''+tk+'\','+L+')">🖨 PRINT</button></div>';
   box.onclick=e=>e.stopPropagation();
 }
+
+/* ===== RESTING BUY-STOP ENTRY — remove your hands from the entry =====
+   Placed only when the setup is APPROACHING (near the trigger, run fresh, volume building) or PULLBACK SETTING UP.
+   Fidelity options ticket: Buy to Open · Stop Limit · Stop = the option price at the stock trigger · Limit = stop + a few cents · Day.
+   The broker fires it the instant the option trades at your stop — no human latency. Cancel it at 2:00 or if the setup dies. */
+function restingHTML(tk,L,d,P,c,dl,nC,E){
+  const A=d.A;if(E==null||!A.atr)return '';
+  const rm=(L?d.sC:d.sP).rm;
+  const distStock=L?(P.trig-A.px):(A.px-P.trig);                 /* how far the stock must move to hit the trigger (+ = ahead of us) */
+  const optAtTrig=E+Math.max(0,distStock)*dl;                      /* what the option should cost when the stock touches the trigger */
+  const stopPx=+(optAtTrig+0.02).toFixed(2);                       /* a hair through the level so the cross is real */
+  const limPx=+(stopPx+Math.max(0.05,optAtTrig*0.02)).toFixed(2);   /* 2% (min 5c) of slippage allowed to make sure it fills */
+  const near=Math.abs(distStock)/A.atr;
+  const late=rm.phase==='LATE'||rm.phase==='EXHAUSTED';
+  const PB=pullback(A,L);
+  const ok=!late&&((distStock>0&&near<=0.6&&(A.rvolTOD||A.rv)>=0.9)||(PB&&PB.ready));
+  const already=distStock<=0;
+  if(already)return '<div class="rest no"><div class="rh">Resting entry</div><div class="rv">not needed — the stock is already past the trigger</div><div class="rn">If the side reads FIRED and "enter by" still holds, use the limit order above. If it reads MISSED, wait for the pullback.</div></div>';
+  if(!ok)return '<div class="rest no"><div class="rh">Resting entry</div><div class="rv">not yet — '+(late?'run is '+rm.phase.toLowerCase():'trigger is '+near.toFixed(1)+' ATR away')+'</div><div class="rn">This panel arms when the setup is APPROACHING (within 0.6 ATR, volume building) or a PULLBACK is setting up. Then the broker can take the entry for you.</div></div>';
+  return '<div class="rest"><div class="rh">⚡ Resting entry — let the broker take it</div>'+
+    '<div class="rv">Buy to Open · '+nC+' · Stop Limit · Stop <b>$'+n2(stopPx)+'</b> · Limit <b>$'+n2(limPx)+'</b> · Day</div>'+
+    '<div class="rn">Option now $'+n2(E)+' · stock trigger $'+n2(P.trig)+' is '+n2(Math.abs(distStock))+' away · Δ'+dl.toFixed(2)+' → the option should be about $'+n2(optAtTrig)+' when the stock touches it.<br>'+
+    '<b>Fidelity:</b> Trade → Options → the contract → Buy to Open · '+nC+' · ORDER TYPE <b>Stop Limit</b> · Stop price '+n2(stopPx)+' · Limit price '+n2(limPx)+' · Day → Place. The order sits; the broker fires it the moment the option crosses '+n2(stopPx)+'.<br>'+
+    '<b>Then, within 60s of the fill:</b> Positions → the option → Trade → Sell to Close · '+nC+' · Trailing Stop Loss ($) · Trail '+n2(Math.abs(P.trig-P.stop)*dl)+' · Day.<br>'+
+    '<b>Cancel the resting buy</b> if the side turns MISSED, LATE, or thin-volume — or at 2:00 regardless. A resting buy with no setup behind it is a blind trade.</div></div>';
+}
+
 /* ---------- position (one at a time) ---------- */
 function imIn(tk,L,E,d,stop,t1,n){
   const v=prompt('Your actual fill price for the '+tk+' '+(L?'call':'put')+' (E):',E?E.toFixed(2):'');const fill=parseFloat(v);if(!fill)return;
@@ -786,6 +861,85 @@ function renderGrade(){
   $('gradeList').innerHTML=today.slice(-8).reverse().map(x=>'<div class="g"><span>'+x.tk+' '+(x.L?'C':'P')+'</span><span>'+x.kind+' @ $'+n2(x.entry)+' · best +'+x.best.toFixed(1)+' ATR</span><span class="'+(x.result==='hit'?'ok':x.result?'no':'pend')+'">'+(x.result==='hit'?'✔ followed through':x.result==='stopped'?'✘ stopped':x.result==='flat'?'— went nowhere':x.result==='expired'?'expired':'grading…')+'</span></div>').join('');
 }
 
+
+/* ================= RANGE RULER — where are we in the range, where does it likely end, where are the reversals ================= */
+function rangeInfo(A,tk){
+  const p=PM[tk]||null;const lo=Math.min(A.dayLo||A.px,p?p.pmL:A.px),hi=Math.max(A.dayHi||A.px,p?p.pmH:A.px);
+  const span=Math.max(hi-lo,0.01);const pos=(A.px-lo)/span;
+  const adr=A.adr||A.atr*10;const used=(hi-lo)/adr;
+  const rem=Math.max(0,adr-(hi-lo));
+  /* likely end of the range: extend the side price is leaning toward by what's left of a normal day */
+  const lean=A.px>A.vw?'up':'down';
+  const projHi=lean==='up'?hi+rem:hi,projLo=lean==='down'?lo-rem:lo;
+  return {lo,hi,span,pos,used,rem,projHi,projLo,lean};
+}
+function rulerHTML(tk,A){
+  const R=rangeInfo(A,tk);const p=PM[tk];
+  const X=v=>Math.max(0,Math.min(100,(v-R.projLo)/((R.projHi-R.projLo)||0.01)*100));
+  const mk=(v,cls,t)=>(v!=null&&isFinite(v))?'<div class="mk '+cls+'" style="left:'+X(v).toFixed(1)+'%" title="'+t+'"></div>':'';
+  const where=R.pos>=0.85?'at the TOP of the range':R.pos<=0.15?'at the BOTTOM of the range':R.pos>=0.6?'upper third':R.pos<=0.4?'lower third':'middle';
+  const ends=R.used>=1?'the range is spent — expect reversion, not extension':'about $'+n2(R.rem)+' of a normal day left; likely ends near '+(R.lean==='up'?'$'+n2(R.projHi)+' (up)':'$'+n2(R.projLo)+' (down)');
+  const zones=[];if(A.pdh)zones.push('PDH '+n2(A.pdh));if(A.pdl)zones.push('PDL '+n2(A.pdl));if(p)zones.push('pre-mkt '+n2(p.pmL)+'–'+n2(p.pmH));if(A.vsig)zones.push('VWAP bands '+n2(A.vw-2*A.vsig)+' / '+n2(A.vw+2*A.vsig));
+  return '<div class="ruler"><div class="rt"><span>RANGE RULER · '+(R.pos*100).toFixed(0)+'% · '+where+'</span><b>'+(R.used*100).toFixed(0)+'% of a normal day used</b></div>'+
+    '<div class="bar">'+mk(A.vw,'vw','VWAP')+mk(A.pdh,'pd','PDH')+mk(A.pdl,'pd','PDL')+(p?mk(p.pmH,'pm','pre-mkt high')+mk(p.pmL,'pm','pre-mkt low'):'')+mk(R.lo,'','day low')+mk(R.hi,'','day high')+'<div class="px" style="left:'+X(A.px).toFixed(1)+'%"></div></div>'+
+    '<div class="lab"><span>likely low <b>$'+n2(R.projLo)+'</b></span><span>low $'+n2(R.lo)+' · <b>$'+n2(A.px)+'</b> · high $'+n2(R.hi)+'</span><span>likely high <b>$'+n2(R.projHi)+'</b></span></div>'+
+    '<div class="zone"><b>Likely end:</b> '+ends+'. <b>Reversal zones:</b> '+zones.join(' · ')+'. Gold = yesterday, purple = pre-market, blue = VWAP.</div></div>';
+}
+
+/* ================= THE CHOP SET — the consistent trade in a wide, sideways range ================= */
+/* Regime: not trending (few 9/20 crosses is NOT chop; many is), price oscillating around VWAP, range wide enough to pay (ADR >= 3%). */
+function chopRegime(A){
+  const wide=(A.adrP||0)>=3;const notTrend=(A.behave==='CHOPPY'||A.behave==='MIXED')&&Math.abs(A.vz||0)<2.2;
+  const spent=(A.adrUsed||0)>=0.5;   /* the range has to exist before you can fade its edges */
+  return wide&&notTrend&&spent;
+}
+function chopSet(A,L){
+  if(!chopRegime(A)||!A.vsig)return null;
+  const R=rangeInfo(A,A.tk);
+  const edge=L?Math.max(R.lo,A.vw-1.5*A.vsig):Math.min(R.hi,A.vw+1.5*A.vsig);   /* the band you fade */
+  const near=Math.abs(A.px-edge)/A.atr;
+  const b=A.bars,ci=A.ci,prev=ci>0?ci-1:ci;
+  const touched=L?(b.L[prev]<=edge+0.15*A.atr||b.L[ci]<=edge+0.15*A.atr):(b.H[prev]>=edge-0.15*A.atr||b.H[ci]>=edge-0.15*A.atr);
+  const reversal=L?(A.cClose>b.H[prev]&&A.cClose>b.O[ci]):(A.cClose<b.L[prev]&&A.cClose<b.O[ci]);   /* this candle closed back through the prior candle */
+  const vol=(A.rvolTOD||A.rv)>=0.9;
+  const stop=L?edge-0.6*A.atr:edge+0.6*A.atr;const t1=A.vw;const t2=L?A.vw+1.0*A.vsig:A.vw-1.0*A.vsig;
+  if(touched&&reversal)return {fired:vol,thin:!vol,trig:A.cClose,stop,t1,t2,edge,kind:'CHOP'};
+  if(near<=0.5)return {armed:true,edge,stop,t1,t2,kind:'CHOP'};
+  return {ready:true,edge,stop,t1,t2,kind:'CHOP'};
+}
+
+/* ================= READY SETS — everything pre-built, marked READY / ARMED / LIVE ================= */
+function setsFor(tk,d){
+  const A=d.A,out=[];
+  for(const L of [true,false]){
+    const sc=L?d.sC:d.sP;const rm=sc.rm;const P=compose(A,L);const late=rm.phase==='LATE'||rm.phase==='EXHAUSTED';
+    const side=L?'CALLS':'PUTS';const dist=Math.abs(P.trig-A.px)/(A.atr||1);
+    /* OPEN / BREAKOUT / RECLAIM */
+    if(!late){const st=P.fired?'live':(dist<=0.6?'armed':'ready');
+      out.push({tk,L,kind:P.kind,cls:'open',status:st,d:'<b>'+side+'</b> · '+P.kind.toLowerCase()+' trigger <b>$'+n2(P.trig)+'</b> ('+n2(Math.abs(P.trig-A.px))+' away) · stop $'+n2(P.stop)+' · T1 $'+n2(P.t1)+' · run '+rm.phase.toLowerCase()});}
+    /* CHOP */
+    const C=chopSet(A,L);if(C){const st=C.fired?'live':C.armed?'armed':'ready';
+      out.push({tk,L,kind:'CHOP',cls:'chop',status:st,d:'<b>'+side+'</b> · fade the '+(L?'lower':'upper')+' band <b>$'+n2(C.edge)+'</b> on a reversal candle · stop $'+n2(C.stop)+' · target VWAP $'+n2(C.t1)+' → $'+n2(C.t2)+' · half size'});}
+    /* TURN */
+    const T=rangeTurn(A,L);if(T&&(T.fired||T.near)){const st=T.fired?'live':'armed';
+      out.push({tk,L,kind:'TURN',cls:'turn',status:st,d:'<b>'+side+'</b> · rollover after a spent '+(L?'down':'up')+'-run · needs 2 closes '+(L?'up':'down')+' + through the 9 EMA'+(T.fired?' · stop $'+n2(T.stop)+' · T1 $'+n2(T.t1):'')+' · half size'});}
+    /* PULLBACK */
+    const PB=pullback(A,L);if(PB&&(PB.fired||PB.ready||PB.thin)){const st=PB.fired?'live':'armed';
+      out.push({tk,L,kind:'PULLBACK',cls:'pull',status:st,d:'<b>'+side+'</b> · held the ride line after the run · '+(PB.fired?'entry $'+n2(PB.trig)+' · stop $'+n2(PB.stop)+' · retest $'+n2(PB.ext):'needs one close '+(L?'up':'down')+' with volume · retest $'+n2(PB.ext))});}
+  }
+  return out;
+}
+function renderSets(){
+  const rows=[];const order={live:0,armed:1,ready:2};
+  for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;for(const s of setsFor(tk,d))rows.push(s);}
+  rows.sort((a,b)=>order[a.status]-order[b.status]);
+  const live=rows.filter(r=>r.status==='live').length,armed=rows.filter(r=>r.status==='armed').length;
+  $('setsI').textContent=(live?live+' LIVE · ':'')+(armed?armed+' ARMED · ':'')+rows.length+' sets built · tap one to open its ticket';
+  if(!rows.length){$('setsList').innerHTML='<div style="font-size:10.5px;color:var(--dim)">no sets yet — scoring, or the market is closed</div>';return;}
+  $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'⚡ LIVE':r.status==='armed'?'◆ ARMED':'READY')+'</div></div>').join('');
+}
+function setView(v){document.body.classList.toggle('setsOnly',v==='sets');$('vSets').className=v==='sets'?'on':'';$('vAll').className=v==='all'?'on':'';try{localStorage.setItem('kView',v);}catch(e){}}
+
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
   try{
@@ -794,7 +948,8 @@ async function refreshOne(tk,speak){
     if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
     A.beta=(DAILY[tk]&&NQD)?betaTo(DAILY[tk],NQD):null;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
-      {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;say(tk+', '+(L?'calls':'puts')+', approaching. Pre-stage the buy ticket now.');}}
+      {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;say(tk+', '+(L?'calls':'puts')+', approaching. Open the ticket and place the resting buy stop.');}}
+      {const CH=chopSet(A,L);if(CH&&CH.fired&&FIRED[tk+(L?'C':'P')+'CH']!==A.ci){FIRED[tk+(L?'C':'P')+'CH']=A.ci;logFired(tk,L,CH.trig,A.px,A.ci);gradeLog(tk,L,'CHOP',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', chop fade fired. Reversal off the band. Target V WAP at '+n2(CH.t1).replace('.',' point ')+'. Half size.',true);}}
       {const PB=pullback(A,L);if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
        else if(PB&&PB.ready&&FIRED[tk+(L?'C':'P')+'PBR']!==A.ci){FIRED[tk+(L?'C':'P')+'PBR']=A.ci;say(tk+', '+(L?'calls':'puts')+', pullback setting up. Pre-stage the ticket.');}}
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);gradeLog(tk,L,'TURN',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
@@ -808,7 +963,7 @@ async function refreshAll(force){
   {const n=ctNow();const m=n.getHours()*60+n.getMinutes();if(n.getDay()>=1&&n.getDay()<=5&&m>=3*60&&m<9*60){if(!NQPM)nqOvernight();if(!FX||Date.now()-(FX._t||0)>10*60000){fxRead().then(()=>{if(FX)FX._t=Date.now();});}}}
   let k=0;
   for(const tk of LIST){await refreshOne(tk,true);k++;render();$('st').textContent='Scoring… '+k+' of '+LIST.length+' ('+tk+')';await sleep(250);}
-  render();officer();renderFired();renderRange();feedCheck();gradeUpdate();BUSY=false;setTimeout(enrich,500);
+  render();officer();renderFired();renderRange();renderSets();feedCheck();gradeUpdate();BUSY=false;setTimeout(enrich,500);
   $('st').textContent='Updated '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT · both sides scored on every card · tap a side for its ticket';
 }
 function addTk(){const raw=($('addTk').value||'');const v=raw.trim().toUpperCase().replace(/^\$/,'');
@@ -842,7 +997,7 @@ async function printOne(tk,L){
 /* ---------- boot ---------- */
 load();
 if(!LIST.length||$('autoTop').checked){DOZEN.forEach(t=>{if(!LIST.includes(t))LIST.push(t);});}
-save();render();paintScalps();renderGrade();tick();setInterval(tick,30000);
+save();render();paintScalps();renderGrade();try{setView(localStorage.getItem('kView')||'all');}catch(e){}tick();setInterval(tick,30000);
 refreshAll(false);
 /* refresh right after each 5-minute close (+12s) and once mid-candle (+150s); never faster — throttling is what made the feed stale */
 let LASTSLOT=null;
