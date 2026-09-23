@@ -254,7 +254,7 @@ function say(t,repeat){if(!$('voice').checked||!('speechSynthesis' in window))re
   SPEAK_Q.push(t);if(repeat)SPEAK_Q.push('I repeat. '+t);_next();}
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
-let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={};
+let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={},OPENT=new Set();
 function save(){const v=JSON.stringify({list:LIST,pos:POS,auto:$('autoTop').checked});
   try{localStorage.setItem('kToday',v);}
   catch(e){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&/^k(Chain_|Daily_|Tape_|DeskS_|Scan4_|GntS_)/.test(k))localStorage.removeItem(k);}localStorage.setItem('kToday',v);}catch(e2){}}}
@@ -542,10 +542,15 @@ function render(){
   const pin=t=>(PIN[t]&&Date.now()-PIN[t]<30*60000)?1000:0;   /* names you added stay on top for 30 minutes */
   const order=[...LIST].sort((a,b)=>(pin(b)+q(DATA[b]))-(pin(a)+q(DATA[a])));
   $('cards').innerHTML=order.map(cardHTML).join('');
+  for(const id of OPENT){const box=$('tk_'+id);if(box&&!box.classList.contains('on'))openTicket(id);}
 }
 async function toggleTicket(id){
   const box=$('tk_'+id);if(!box)return;
-  if(box.classList.contains('on')){box.classList.remove('on');return;}
+  if(box.classList.contains('on')){box.classList.remove('on');OPENT.delete(id);return;}
+  OPENT.add(id);await openTicket(id);
+}
+async function openTicket(id){
+  const box=$('tk_'+id);if(!box)return;
   box.classList.add('on');
   const [tk,s]=id.split('_');const L=s==='C';const d=DATA[tk];if(!d)return;
   box.innerHTML='<div style="font-size:10px;color:var(--dim)">pulling the contract…</div>';
@@ -654,10 +659,11 @@ function renderFired(){
 }
 function clearFired(){FIREDLOG=[];renderFired();document.title='TODAY · Kornis Protocol';}
 function jumpTo(tk,L){
-  /* move the card to the top and open its side's ticket */
-  LIST=[tk,...LIST.filter(x=>x!==tk)];render();
-  const id=tk+'_'+(L?'C':'P');
-  setTimeout(()=>{const card=$('card_'+tk);if(card)card.scrollIntoView({behavior:'smooth',block:'start'});toggleTicket(id);},150);
+  /* show the board, pin the card to the top, OPEN its side's ticket, scroll to it */
+  try{setView('all');}catch(e){}
+  PIN[tk]=Date.now();LIST=[tk,...LIST.filter(x=>x!==tk)];render();
+  const id=tk+'_'+(L?'C':'P');OPENT.add(id);
+  setTimeout(()=>{openTicket(id);const card=$('card_'+tk);if(card)card.scrollIntoView({behavior:'smooth',block:'start'});$('st').textContent=tk+' '+(L?'CALLS':'PUTS')+' — ticket open below the card';},120);
 }
 function flashGo(){$('flash').classList.remove('on');if(FLASH_CTX)jumpTo(FLASH_CTX.tk,FLASH_CTX.L);}
 function flashOff(){$('flash').classList.remove('on');}
@@ -934,7 +940,7 @@ function renderSets(){
   for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;for(const s of setsFor(tk,d))rows.push(s);}
   rows.sort((a,b)=>order[a.status]-order[b.status]);
   const live=rows.filter(r=>r.status==='live').length,armed=rows.filter(r=>r.status==='armed').length;
-  $('setsI').textContent=(live?live+' LIVE · ':'')+(armed?armed+' ARMED · ':'')+rows.length+' sets built · tap one to open its ticket';
+  $('setsI').textContent=(live?live+' LIVE · ':'')+(armed?armed+' ARMED · ':'')+rows.length+' sets built · tap one → the board opens with its ticket';
   if(!rows.length){$('setsList').innerHTML='<div style="font-size:10.5px;color:var(--dim)">no sets yet — scoring, or the market is closed</div>';return;}
   $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'⚡ LIVE':r.status==='armed'?'◆ ARMED':'READY')+'</div></div>').join('');
 }
