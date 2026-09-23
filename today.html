@@ -2,6 +2,7 @@
 <html lang="en"><head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TODAY · Kornis Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0B0E13;--card:#12161D;--card2:#0E1117;--line:#242B36;--gold:#BF9000;--gold-soft:#D9B44A;--ink:#E9ECF2;--dim:#8A93A3;--green:#2FB673;--red:#E05B44;--amber:#E0A93F}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -208,11 +209,83 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 #viewBar button{flex:1;padding:9px 4px;border-radius:8px;font-weight:800;font-size:10px;cursor:pointer;background:var(--card2);color:var(--dim);border:1px solid var(--line)}
 #viewBar button.on{background:var(--gold);color:#000;border-color:var(--gold)}
 body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOnly #grade{display:none}
+
+/* ===== TODAY v2 look — the verdict is the page; everything else is a drawer ===== */
+:root{--bg:#141A22;--card:#1B232E;--card2:#161D26;--line:#2A3441;--gold:#F2B950;--gold-soft:#F2B950;--ink:#EDE8DC;--dim:#8C97A6;--green:#48C78E;--red:#E8705F;--amber:#F2B950}
+body{font-family:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;padding:14px 12px 96px}
+#top{margin-bottom:12px;align-items:baseline}
+#top h1{font-family:'Source Serif 4',Georgia,serif;font-size:30px;font-weight:600;letter-spacing:0;color:var(--ink)}
+#top .clk{font-size:13px;color:var(--dim)}
+#top span:last-child{display:none}
+#addRow input{font-family:'Source Serif 4',Georgia,serif;font-size:18px;letter-spacing:.02em;text-transform:uppercase;border:1px solid var(--line);background:var(--card2);border-radius:12px;padding:14px}
+#addRow input:focus{border-color:var(--gold)}
+#addRow button{border-radius:12px;font-size:13px;font-weight:600;letter-spacing:0}
+#viewBar{display:none}
+/* ---- the verdict list (hero) ---- */
+#sets{background:transparent;border:none;padding:0;margin:6px 0 8px}
+#sets .sh{margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:6px}
+#sets .st{font-family:'Source Serif 4',Georgia,serif;font-size:22px;font-weight:600;letter-spacing:0;color:var(--ink)}
+#sets .si{font-size:12px;color:var(--dim)}
+.set{display:grid;grid-template-columns:1fr auto;grid-template-areas:"k s" "d d";gap:2px 10px;padding:14px 4px;border:none;border-bottom:1px solid var(--line);border-left:none;border-radius:0;background:transparent;margin:0}
+.set:last-child{border-bottom:none}
+.set.live,.set.armed{border-color:var(--line);animation:none;background:transparent}
+.set .k{grid-area:k;font-family:'Source Serif 4',Georgia,serif;font-size:26px;font-weight:600;line-height:1.1;display:flex;align-items:baseline;gap:10px}
+.set .k small{display:inline;font-family:'Inter Tight',sans-serif;font-size:12px;letter-spacing:0;color:var(--dim);font-weight:500}
+.set .d{grid-area:d;font-size:14px;color:var(--ink);line-height:1.5;max-width:62ch}
+.set .d b{color:var(--ink);font-weight:600}
+.set.chop .d b:first-child,.set.turn .d b:first-child,.set.pull .d b:first-child,.set.open .d b:first-child{padding:1px 7px;border-radius:6px;font-size:12px;vertical-align:1px}
+.set .d b:first-child{background:#243041}
+.set .s{grid-area:s;align-self:start;font-family:'Source Serif 4',Georgia,serif;font-size:15px;font-weight:600;letter-spacing:0;text-align:right;white-space:nowrap;padding:3px 10px;border-radius:8px}
+.set .s.live{color:#1a1200;background:var(--gold)}
+.set .s.armed{color:var(--gold);background:#2a2412}
+.set .s.ready{color:var(--dim);background:transparent}
+.set.chop .k::before,.set.turn .k::before,.set.pull .k::before,.set.open .k::before{content:'';display:inline-block;width:6px;height:22px;border-radius:3px;margin-right:2px;align-self:center}
+.set.chop .k::before{background:#6AA5FF}.set.turn .k::before{background:#B48CE6}.set.pull .k::before{background:var(--green)}.set.open .k::before{background:var(--dim)}
+/* ---- drawers ---- */
+details.drawer{border-top:1px solid var(--line);padding:0;margin:0}
+details.drawer>summary{list-style:none;cursor:pointer;padding:13px 4px;font-family:'Source Serif 4',Georgia,serif;font-size:17px;font-weight:600;color:var(--ink);display:flex;justify-content:space-between;align-items:baseline}
+details.drawer>summary::-webkit-details-marker{display:none}
+details.drawer>summary small{font-family:'Inter Tight',sans-serif;font-size:12px;color:var(--dim);font-weight:400}
+details.drawer>summary::after{content:'+';color:var(--dim);font-size:18px;margin-left:10px}
+details.drawer[open]>summary::after{content:'–'}
+details.drawer>*:not(summary){margin-bottom:12px}
+/* panels inside drawers: quiet */
+#fx,#mkt,#scalpBar,#rangeBar,#grade,#firedStrip,#feedBar{border-color:var(--line);border-radius:12px;box-shadow:none}
+#fx .fh,#rangeBar .rt,#grade b,#firedStrip .fh{letter-spacing:0;text-transform:none;font-family:'Source Serif 4',Georgia,serif;font-size:14px;font-weight:600;color:var(--ink)}
+#scalpBar .lb{letter-spacing:0;text-transform:none;font-size:12px;color:var(--dim);font-weight:500}
+.schip{border-radius:10px;border-color:var(--line);color:var(--ink);font-family:'Source Serif 4',Georgia,serif;font-size:15px}
+.schip.on{background:var(--gold);color:#1a1200;border-color:var(--gold)}
+#aiBar button{border-radius:12px;border-color:var(--line);color:var(--ink);font-weight:600;font-size:13px;background:var(--card2)}
+#ctl{font-size:12px}
+#st{font-size:12px;color:var(--dim);margin:6px 0 10px}
+/* ---- cards (inside the Board drawer) ---- */
+.tc{border-radius:14px;border-color:var(--line)}
+.tc .tk{font-family:'Source Serif 4',Georgia,serif;font-size:24px;font-weight:600}
+.side{border-radius:12px}
+.side .sc{font-family:'Source Serif 4',Georgia,serif}
+.side .status{font-family:'Source Serif 4',Georgia,serif;font-size:14px}
+.ticket .tl .v{font-family:'Source Serif 4',Georgia,serif;font-size:17px}
+.ruler .rt{letter-spacing:0;text-transform:none;font-size:11px}
+.posbar{border-radius:12px;border-left-width:5px}
+.posbar .pv{font-family:'Source Serif 4',Georgia,serif;font-size:18px}
+/* ---- position pinned above everything when in a trade ---- */
+#posTop{position:sticky;top:0;z-index:60}
+/* ---- nav ---- */
+.knav{background:#0F141B;border-top:1px solid var(--line)}
+.knav a{font-size:12px;letter-spacing:0;font-weight:600;padding:14px 0;color:var(--dim)}
+.knav a.on{color:var(--gold);border-bottom-color:var(--gold)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 
-<div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span><span style="font-size:8px;color:var(--dim);letter-spacing:.1em;margin-left:6px">VOICE v4</span></div>
+<div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span><span style="font-size:8px;color:var(--dim);letter-spacing:.1em;margin-left:6px">VOICE v5 · chime</span></div>
 <div id="addRow"><input id="addTk" placeholder="type a ticker · enter" autocapitalize="characters" onkeydown="if(event.key==='Enter')addTk()"><button onclick="addTk()">＋ ADD</button></div>
-<div id="scalpBar"><span class="lb">Consistent scalps</span>
+<div id="feedBar"></div>
+<div id="st">—</div>
+<div id="sets"><div class="sh"><span class="st">Today's verdicts</span><span class="si" id="setsI">built before the bell · each one has its levels, contract and resting entry</span></div><div id="setsList"><div style="font-size:10.5px;color:var(--dim)">scoring…</div></div></div>
+<div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
+<div id="viewBar"><button id="vSets" onclick="setView('sets')">READY SETS — pick, don't research</button><button id="vAll" class="on" onclick="setView('all')">FULL BOARD</button></div>
+<details class="drawer" id="dOver"><summary>Overnight <small>currencies, pre-market, the morning read</small></summary><div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div><div id="fx"><div class="fh"><span>🌍 London currencies → what they mean for the open</span><span id="fxT"></span></div><div class="cells" id="fxCells"></div><div class="sec" id="fxSec"></div></div><div id="mkt"></div></details>
+<details class="drawer" id="dScalp"><summary>Index scalps <small>the market's clock</small></summary><div id="scalpBar"><span class="lb">Consistent scalps</span>
   <span class="schip" id="sc_TQQQ" onclick="scalp('TQQQ')">TQQQ<small>3× Nasdaq · the market's clock</small></span>
   <span class="schip" id="sc_SOXL" onclick="scalp('SOXL')">SOXL<small>3× semis · chips' clock</small></span>
   <span class="schip" id="sc_SPY" onclick="scalp('SPY')">SPY<small>the index itself</small></span>
@@ -221,19 +294,11 @@ body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOn
   <span class="schip" id="sc_IWM" onclick="scalp('IWM')">IWM<small>small caps · rates engine</small></span>
   <span class="schip" id="sc_TNA" onclick="scalp('TNA')">TNA<small>3× small caps</small></span>
   <span class="schip" id="sc_IBIT" onclick="scalp('IBIT')">IBIT<small>bitcoin ETF · crypto engine</small></span>
-</div>
-<div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div>
-<div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak (this page only)</label><span style="cursor:pointer;color:var(--red);font-weight:800" onclick="try{kFlushSoft();speechSynthesis.cancel();}catch(e){}">🔇 STOP TALKING</span><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
-<div id="feedBar"></div>
-<div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div>
-<div id="fx"><div class="fh"><span>🌍 London currencies → what they mean for the open</span><span id="fxT"></span></div><div class="cells" id="fxCells"></div><div class="sec" id="fxSec"></div></div>
-<div id="mkt"></div>
-<div id="st">—</div>
-<div id="grade"><b>THE MACHINE GRADES ITSELF</b> · <span id="gradeSum">no fires yet today</span><div id="gradeList"></div></div>
-<div id="viewBar"><button id="vSets" onclick="setView('sets')">READY SETS — pick, don't research</button><button id="vAll" class="on" onclick="setView('all')">FULL BOARD</button></div>
-<div id="sets"><div class="sh"><span class="st">READY SETS</span><span class="si" id="setsI">built before the bell · each one has its levels, contract and resting entry</span></div><div id="setsList"><div style="font-size:10.5px;color:var(--dim)">scoring…</div></div></div>
-<div id="firedStrip"><div class="fh"><span>⚡ FIRED — live triggers (newest first)</span><span onclick="clearFired()">clear</span></div><div id="firedList"></div></div>
-<div id="cards"></div>
+</div></details>
+<details class="drawer" id="dRange"><summary>Range trades <small>spent runs likely to turn</small></summary><div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div></details>
+<details class="drawer" id="dGrade"><summary>Scorecard <small>the machine grades itself</small></summary><div id="grade"><b>THE MACHINE GRADES ITSELF</b> · <span id="gradeSum">no fires yet today</span><div id="gradeList"></div></div></details>
+<details class="drawer" id="dBoard" open><summary>The board <small>every name, both sides, tickets</small></summary><div id="ctl"><label><input type="checkbox" id="chime" checked> 🔔 chime on a fire</label><label><input type="checkbox" id="voice"> 🗣 voice (off by default)</label><span style="cursor:pointer;color:var(--red);font-weight:800" onclick="try{kFlushSoft();speechSynthesis.cancel();}catch(e){}">🔇 STOP TALKING</span><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div><div id="cards"></div></details>
+
 <div id="flash"><div class="big" id="flBig">⚡ TRIGGER</div><div class="sub" id="flSub">—</div><div><button onclick="flashGo()">SHOW ME THE TICKET</button><button class="dis" onclick="flashOff()">dismiss</button></div></div>
 <div id="printSheet"></div>
 
@@ -257,7 +322,10 @@ body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOn
     if(!Q.length||S.speaking||S.pending)return;
     if(Date.now()-since<600)return;
     if(lockHeld())return;                          /* another tab is talking — wait */
-    cur=Q.shift();cur.rate=0.45;cur.pitch=1.0;cur.volume=1;since=Date.now();takeLock(cur.text);S.speak(cur);
+    cur=Q.shift();cur.rate=0.4;cur.pitch=1.0;cur.volume=1;
+    try{const vs=S.getVoices();const want=['Samantha','Karen','Moira','Daniel','Google US English','Microsoft Aria'];let v=null;for(const w of want){v=vs.find(x=>x.name.indexOf(w)>=0);if(v)break;}if(!v)v=vs.find(x=>/en/i.test(x.lang)&&x.localService)||null;if(v)cur.voice=v;}catch(e){}
+    try{cur.text=String(cur.text||'').replace(/\bcalls\b/gi,'call options').replace(/\bputs\b/gi,'put options').replace(/\bE M A\b/g,'ride line').replace(/\bV WAP\b/g,'vee wap').replace(/\bATR\b/g,'A T R');}catch(e){}
+    since=Date.now();takeLock(cur.text);S.speak(cur);
   }catch(e){cur=null;dropLock();}},250);
   window.addEventListener('beforeunload',dropLock);
 }catch(e){}})();
@@ -526,8 +594,12 @@ function statusOf(P,rm,A,L){
   if(P.thin)return ['thin','crossed, volume thin — no'];
   return ['wait','WAIT'];
 }
+function sideLive(d,L){const A=d.A;const P=compose(A,L);const T=rangeTurn(A,L),PB=pullback(A,L),CH=chopSet(A,L);
+  return (P.fired&&statusOf(P,(L?d.sC:d.sP).rm,A,L)[0]==='fired')||(T&&T.fired)||(PB&&PB.fired)||(CH&&CH.fired);}
 function sideHTML(tk,L,d){
   const sc=L?d.sC:d.sP;let P=compose(d.A,L);const rm=sc.rm;let [cls,txt]=statusOf(P,rm,d.A,L);
+  if(!sideLive(d,L)&&sideLive(d,!L)){const id0=tk+'_'+(L?'C':'P');window._PLAN=window._PLAN||{};window._PLAN[id0]=P;
+    return '<div class="side '+(L?'c':'p')+' late" onclick="toggleTicket(\''+id0+'\')"><div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div><div class="status late">STAND ASIDE — the '+(L?'puts':'calls')+' side is live</div><div class="why">One verdict per name. This side wakes up only if the other one dies.</div><div class="ticket" id="tk_'+id0+'"></div></div>';}
   const T=rangeTurn(d.A,L);
   if(T&&T.fired){cls='turn';txt='↩ TURN — range trade · '+(L?'bounce':'rollover')+' after a spent run';P=Object.assign({},P,{trig:T.trig,stop:T.stop,t1:T.t1,kind:'TURN',fired:true,missed:false});}
   else if(T&&T.thin){cls='thin';txt='turning — volume thin, wait one candle';}
@@ -660,13 +732,13 @@ function officer(){
   else if(d0<0&&d0<d1){cls='tighten';v='TIGHTEN';w='Thrust fading. No selling — only permit 3 sells. The trail is behind you.';}
   else{cls='hold';v='HOLD';w='Structure intact. Sideways '+(L?'above':'below')+' the ride line is a position, not a problem.';}
   const pv=$('pv'),pw=$('pw');if(pv){pv.className='pv '+cls;pv.textContent=v;pw.textContent=w;}
-  const key=v+'|'+ci;if(POS.last!==key){const imp=(cls==='exit'||v.startsWith('BANK'));say(POS.tk+', '+(L?'calls':'puts')+'. '+v.replace('—',',').replace('#','number ')+'. '+w.split('.')[0]+'.',imp);POS.last=key;save();}
+  const key=v+'|'+ci;if(POS.last!==key){const imp=(cls==='exit'||v.startsWith('BANK'));if(cls==='exit')chime('exit');else if(v.startsWith('BANK'))chime('fire');say(POS.tk+', '+(L?'calls':'puts')+'. '+v.replace('—',',').replace('#','number ')+'. '+w.split('.')[0]+'.',imp);POS.last=key;save();}
 }
 
 /* ===== FIRED strip + flash ===== */
 let FIREDLOG=[];  /* {tk,L,trig,px,t} newest first */
 let FLASH_CTX=null;
-function logFired(tk,L,trig,px,ci){
+function logFired(tk,L,trig,px,ci){chime('fire');
   FIREDLOG=FIREDLOG.filter(f=>!(f.tk===tk&&f.L===L));
   FIREDLOG.unshift({tk,L,trig,px,t:Date.now(),ci});
   if(FIREDLOG.length>8)FIREDLOG.length=8;
@@ -688,7 +760,7 @@ function renderFired(){
 function clearFired(){FIREDLOG=[];renderFired();document.title='TODAY · Kornis Protocol';}
 function jumpTo(tk,L){
   /* show the board, pin the card to the top, OPEN its side's ticket, scroll to it */
-  try{setView('all');}catch(e){}
+  try{const d=$('dBoard');if(d)d.open=true;}catch(e){}
   PIN[tk]=Date.now();LIST=[tk,...LIST.filter(x=>x!==tk)];render();
   const id=tk+'_'+(L?'C':'P');OPENT.add(id);
   setTimeout(()=>{openTicket(id);const card=$('card_'+tk);if(card)card.scrollIntoView({behavior:'smooth',block:'start'});$('st').textContent=tk+' '+(L?'CALLS':'PUTS')+' — ticket open below the card';},120);
@@ -965,15 +1037,26 @@ function setsFor(tk,d){
   return out;
 }
 function renderSets(){
-  const rows=[];const order={live:0,armed:1,ready:2};
-  for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;for(const s of setsFor(tk,d))rows.push(s);}
-  rows.sort((a,b)=>order[a.status]-order[b.status]);
+  /* ONE VERDICT per name: the single best set per stock — live beats armed beats ready; range trades (CHOP/TURN/PULLBACK) beat raw breakouts at equal status */
+  const rows=[];const order={live:0,armed:1,ready:2};const kindPref={CHOP:0,TURN:1,PULLBACK:2,OPEN:3,RECLAIM:4,BREAKOUT:5};
+  for(const tk of LIST){const d=DATA[tk];if(!d||isStale(d.A))continue;
+    const all=setsFor(tk,d);if(!all.length)continue;
+    all.sort((a,b)=>(order[a.status]-order[b.status])||((kindPref[a.kind]||9)-(kindPref[b.kind]||9)));
+    rows.push(all[0]);}
+  rows.sort((a,b)=>(order[a.status]-order[b.status])||((kindPref[a.kind]||9)-(kindPref[b.kind]||9)));
   const live=rows.filter(r=>r.status==='live').length,armed=rows.filter(r=>r.status==='armed').length;
-  $('setsI').textContent=(live?live+' LIVE · ':'')+(armed?armed+' ARMED · ':'')+rows.length+' sets built · tap one → the board opens with its ticket';
-  if(!rows.length){$('setsList').innerHTML='<div style="font-size:10.5px;color:var(--dim)">no sets yet — scoring, or the market is closed</div>';return;}
-  $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'⚡ LIVE':r.status==='armed'?'◆ ARMED':'READY')+'</div></div>').join('');
+  $('setsI').textContent=(live?live+' live, ':'')+(armed?armed+' armed, ':'')+rows.length+' names. One verdict each; range trades first.';
+  if(!rows.length){$('setsList').innerHTML='<div style="font-size:13px;color:var(--dim);padding:10px 4px">Nothing to do yet. Verdicts appear as the market gives them; the board below shows every name meanwhile.</div>';return;}
+  $('setsList').innerHTML=rows.slice(0,14).map(r=>'<div class="set '+r.cls+(r.status==='live'?' live':r.status==='armed'?' armed':'')+'" onclick="jumpTo(\''+r.tk+'\','+r.L+')"><div class="k">'+r.tk+'<small>'+r.kind+'</small></div><div class="d">'+r.d+'</div><div class="s '+r.status+'">'+(r.status==='live'?'Live':r.status==='armed'?'Armed':'Ready')+'</div></div>').join('');
 }
-function setView(v){document.body.classList.toggle('setsOnly',v==='sets');$('vSets').className=v==='sets'?'on':'';$('vAll').className=v==='all'?'on':'';try{localStorage.setItem('kView',v);}catch(e){}}
+function setView(v){try{const d=$('dBoard');if(d)d.open=true;}catch(e){}}
+
+
+/* ===== chime: two clean tones — the alert without the talking ===== */
+let _AC=null;
+function chime(kind){try{const el=document.getElementById('chime');if(el&&!el.checked)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;if(!_AC)_AC=new AC();const ac=_AC;ac.resume&&ac.resume();
+  const seq=kind==='exit'?[[520,0],[392,0.28]]:kind==='soft'?[[660,0]]:[[660,0],[880,0.22],[1046,0.44]];
+  for(const [f,t] of seq){const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.0001,ac.currentTime+t);g.gain.exponentialRampToValueAtTime(0.3,ac.currentTime+t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,ac.currentTime+t+0.35);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+t);o.stop(ac.currentTime+t+0.4);}}catch(e){}}
 
 /* ---------- refresh loop ---------- */
 async function refreshOne(tk,speak){
@@ -983,12 +1066,13 @@ async function refreshOne(tk,speak){
     if(DAILY[tk]&&DAILY[tk].adr20){A.adr=DAILY[tk].adr20;A.adrP=A.adr/A.px*100;const td=A.days[A.days.length-1];if(td&&td.length){const hi=Math.max(...td.map(i=>b.H[i])),lo=Math.min(...td.map(i=>b.L[i]));A.adrUsed=(hi-lo)/A.adr;}}
     A.beta=(DAILY[tk]&&NQD)?betaTo(DAILY[tk],NQD):null;const sC=score(A,true),sP=score(A,false);DATA[tk]={A,sC,sP};
     if(speak&&!isStale(A)){for(const L of [true,false]){const P=compose(A,L);const rm=(L?sC:sP).rm;const k=tk+(L?'C':'P')+'|'+A.ci;
-      {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;say(tk+', '+(L?'calls':'puts')+', approaching. Open the ticket and place the resting buy stop.');}}
+      {const dist=Math.abs(P.trig-A.px)/(A.atr||1);if(!P.fired&&!P.missed&&dist<=0.4&&(A.rvolTOD||A.rv)>=0.9&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')+'A']!==A.ci){FIRED[tk+(L?'C':'P')+'A']=A.ci;chime('soft');say(tk+', '+(L?'calls':'puts')+', approaching. Open the ticket and place the resting buy stop.');}}
       {const CH=chopSet(A,L);if(CH&&CH.fired&&FIRED[tk+(L?'C':'P')+'CH']!==A.ci){FIRED[tk+(L?'C':'P')+'CH']=A.ci;logFired(tk,L,CH.trig,A.px,A.ci);gradeLog(tk,L,'CHOP',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', chop fade fired. Reversal off the band. Target V WAP at '+n2(CH.t1).replace('.',' point ')+'. Half size.',true);}}
       {const PB=pullback(A,L);if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
        else if(PB&&PB.ready&&FIRED[tk+(L?'C':'P')+'PBR']!==A.ci){FIRED[tk+(L?'C':'P')+'PBR']=A.ci;say(tk+', '+(L?'calls':'puts')+', pullback setting up. Pre-stage the ticket.');}}
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);gradeLog(tk,L,'TURN',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
       const spentDay=A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3);
+      const otherLive=sideLive({A,sC,sP},!L);if(otherLive)continue;
       if(P.fired&&!spentDay&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);gradeLog(tk,L,P.kind,A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
