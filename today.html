@@ -352,9 +352,10 @@ function runMeter(A,L){
   /* THE DAY'S MOVE in your direction — vs a normal day's range. A stock already up a full ADR has spent its day, whatever the last leg looks like. */
   const adrP=A.adrP||(A.atr/A.px*100*8);const chg=A.chg||0;const dirChg=L?chg:-chg;
   const openMove=(A.dayOpen&&A.atr)?((L?(A.px-A.dayOpen):(A.dayOpen-A.px))/A.atr):0;
-  const cDay=Math.max(0,Math.min(1,Math.max(dirChg/Math.max(0.5,adrP), openMove/8)));   /* 100% of ADR from yesterday's close, or 8 ATR from the open = spent */
+  /* starts counting only once the day is half spent: 50% of ADR = 0, 110% = fully spent. Ordinary moves don't read late. */
+  const cDay=Math.max(0,Math.min(1,Math.max((dirChg/Math.max(0.5,adrP)-0.5)/0.6,(openMove-3)/5)));
   const dayMove={chgPct:dirChg,openATR:openMove};A._dayMove=dayMove;
-  const score=Math.round(100*(0.22*cAdr+0.18*cZ+0.10*cLeg+0.08*rs+0.17*cChase+0.25*cDay));
+  const score=Math.round(100*(0.30*cAdr+0.22*cZ+0.13*cLeg+0.08*rs+0.12*cChase+0.15*cDay));
   const phase=score<30?'EARLY':score<50?'FRESH':score<70?'RUNNING':score<85?'LATE':'EXHAUSTED';
   const lines=[];if(A._dayMove){const dm=A._dayMove;if(dm.chgPct>=0.8*(A.adrP||3))lines.push('already '+dm.chgPct.toFixed(1)+'% today vs a normal '+(A.adrP||0).toFixed(1)+'% day — the day\'s move is spent');else if(dm.openATR>=5)lines.push(dm.openATR.toFixed(1)+' ATR from the open — a long leg already');}
   return {score,phase,lines};
