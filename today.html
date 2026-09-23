@@ -240,18 +240,27 @@ body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOn
 <div class="knav"><a href="today.html" class="on">TODAY</a><a href="health.html">HEALTH</a><a href="hub.html">THE SCHOOL</a></div>
 
 <script>
+/* ===== one voice, one at a time, slower ===== */
+(function(){try{
+  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
+  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
+  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
+    u.rate=0.45;u.pitch=1.0;u.volume=1;
+    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
+    u.addEventListener('end',done);u.addEventListener('error',done);
+    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
+    orig(u);}
+  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
+  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+}catch(e){}})();
+
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 const _fetch=window.fetch.bind(window);
 window.fetch=(u,o)=>{const c=new AbortController();const t=setTimeout(()=>c.abort(),12000);return _fetch(u,Object.assign({},o||{},{signal:c.signal})).finally(()=>clearTimeout(t));};
 const $=id=>document.getElementById(id);const n2=x=>x==null?'—':(+x).toFixed(2);const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
-const SPEAK_Q=[];let SPEAKING=false;
-function _next(){if(SPEAKING||!SPEAK_Q.length)return;const t=SPEAK_Q.shift();SPEAKING=true;
-  try{const u=new SpeechSynthesisUtterance(t);u.rate=0.55;u.pitch=1.0;u.onend=()=>{SPEAKING=false;setTimeout(_next,700);};u.onerror=()=>{SPEAKING=false;setTimeout(_next,300);};speechSynthesis.speak(u);}
-  catch(e){SPEAKING=false;}}
 function say(t,repeat){if(!$('voice').checked||!('speechSynthesis' in window))return;
-  if(SPEAK_Q.length>4)SPEAK_Q.length=4;               /* never let a backlog pile up */
-  SPEAK_Q.push(t);if(repeat)SPEAK_Q.push('I repeat. '+t);_next();}
+  try{speechSynthesis.speak(new SpeechSynthesisUtterance(t));if(repeat)speechSynthesis.speak(new SpeechSynthesisUtterance('I repeat. '+t));}catch(e){}}
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={},OPENT=new Set();
@@ -804,7 +813,7 @@ async function morningRead(){
     $('mkt').innerHTML='<b>MORNING READ · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT</b><br>'+(mk_||lines[0]);
     window._AIREAD={};lines.forEach(l=>{const m=l.match(/^([A-Z.\-]{1,7})\s*[—-]/);if(m)window._AIREAD[m[1]]=l;});
     render();$('st').textContent='Morning read done — each card carries its opening plan. Then: hands off 8:30–8:35.';
-    try{const u=new SpeechSynthesisUtterance('Morning read. '+(mk_||'').replace(/MARKET:?/i,''));u.rate=0.55;speechSynthesis.speak(u);}catch(e){}
+    try{const u=new SpeechSynthesisUtterance('Morning read. '+(mk_||'').replace(/MARKET:?/i,''));u.rate=0.45;speechSynthesis.speak(u);}catch(e){}
   }catch(e){$('mkt').innerHTML='Morning read failed: '+(e.message||e)+'. Check health.html (AI route).';}
 }
 

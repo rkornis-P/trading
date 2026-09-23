@@ -209,6 +209,20 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 <div class="knav"><a href="today.html">TODAY</a><a href="gauntlet.html">GAUNTLET</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="health.html">HEALTH</a><a href="hub.html">SCHOOL</a></div>
 
 <script>
+/* ===== one voice, one at a time, slower ===== */
+(function(){try{
+  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
+  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
+  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
+    u.rate=0.45;u.pitch=1.0;u.volume=1;
+    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
+    u.addEventListener('end',done);u.addEventListener('error',done);
+    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
+    orig(u);}
+  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
+  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+}catch(e){}})();
+
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 let TIMER=null;
 
@@ -359,12 +373,12 @@ function speakG(){
   const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
   let pos=null;try{pos=JSON.parse(localStorage.getItem('kCoach_pos'));}catch(e){}
   const inTk=pos&&(pos.tk||'').toUpperCase()===G.tk;
-  say('Gauge reading, '+G.tk+'.', 0.55);
-  say('Trend force '+(G.tf>0?'plus ':'minus ')+Math.abs(G.tf)+'. '+document.getElementById('s1').textContent+'.', 0.55);
-  say('Fuel '+G.fuel+'. '+document.getElementById('s2').textContent+'.', 0.55);
-  if(G.tw!=null)say('Theta war '+(G.tw>0?'plus ':'minus ')+Math.abs(G.tw)+'. '+document.getElementById('s3').textContent+'.', 0.55);
-  if(inTk){const dv=document.getElementById('tDev').textContent;if(dv)say(dv, 0.55);
-    const pl=document.getElementById('tPL').textContent;if(pl&&pl!=='—')say('Position '+pl+'.', 0.55);}
+  say('Gauge reading, '+G.tk+'.', 0.45);
+  say('Trend force '+(G.tf>0?'plus ':'minus ')+Math.abs(G.tf)+'. '+document.getElementById('s1').textContent+'.', 0.45);
+  say('Fuel '+G.fuel+'. '+document.getElementById('s2').textContent+'.', 0.45);
+  if(G.tw!=null)say('Theta war '+(G.tw>0?'plus ':'minus ')+Math.abs(G.tw)+'. '+document.getElementById('s3').textContent+'.', 0.45);
+  if(inTk){const dv=document.getElementById('tDev').textContent;if(dv)say(dv, 0.45);
+    const pl=document.getElementById('tPL').textContent;if(pl&&pl!=='—')say('Position '+pl+'.', 0.45);}
 }
 /* ---------- diary ---------- */
 function getGLog(){try{return JSON.parse(localStorage.getItem('kGaugeLog'))||[];}catch(e){return[];}}

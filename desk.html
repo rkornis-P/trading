@@ -275,6 +275,20 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 <div class="knav"><a href="today.html">TODAY</a><a href="gauntlet.html">GAUNTLET</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="health.html">HEALTH</a><a href="hub.html">SCHOOL</a></div>
 
 <script>
+/* ===== one voice, one at a time, slower ===== */
+(function(){try{
+  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
+  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
+  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
+    u.rate=0.45;u.pitch=1.0;u.volume=1;
+    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
+    u.addEventListener('end',done);u.addEventListener('error',done);
+    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
+    orig(u);}
+  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
+  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+}catch(e){}})();
+
 /* ===== safe chain cache (quota-proof) ===== */
 function kTrimChain(cj){
   try{
@@ -712,13 +726,13 @@ function speakDesk(){
   if(!('speechSynthesis' in window)||!DESK.best)return;
   const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
   const b=DESK.best,T=DESK.T,c=DESK.contract;
-  say('The desk. Today\'s setup.', 0.55);
-  say(b.tk+'. '+b.sc.side+'. Score '+b.sc.score+' out of 100.', 0.55);
-  say('Trigger: a 5 minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Until then, nothing.', 0.55);
-  say('Stop: '+n2(T.stop)+'. Target one: '+n2(T.t1)+'. Half off at target, stop to breakeven.', 0.55);
-  if(c)say('The contract: '+b.tk+' '+c.K+' '+(T.L?'call':'put')+', '+c.dte+' days out, about '+c.mid.toFixed(2)+' at the mid, delta '+c.d.toFixed(2)+'.', 0.55);
-  try{const tl=[...document.querySelectorAll('#tkLegs .leg')].map(l=>l.querySelector('.ln').textContent+': '+l.querySelector('.lv').textContent);if(tl.length)say('The ticket. '+tl.slice(0,3).join('. ')+'.', 0.55);}catch(e){}
-  say('Bracket on the ticket. Flat by 2 45.', 0.55);
+  say('The desk. Today\'s setup.', 0.45);
+  say(b.tk+'. '+b.sc.side+'. Score '+b.sc.score+' out of 100.', 0.45);
+  say('Trigger: a 5 minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Until then, nothing.', 0.45);
+  say('Stop: '+n2(T.stop)+'. Target one: '+n2(T.t1)+'. Half off at target, stop to breakeven.', 0.45);
+  if(c)say('The contract: '+b.tk+' '+c.K+' '+(T.L?'call':'put')+', '+c.dte+' days out, about '+c.mid.toFixed(2)+' at the mid, delta '+c.d.toFixed(2)+'.', 0.45);
+  try{const tl=[...document.querySelectorAll('#tkLegs .leg')].map(l=>l.querySelector('.ln').textContent+': '+l.querySelector('.lv').textContent);if(tl.length)say('The ticket. '+tl.slice(0,3).join('. ')+'.', 0.45);}catch(e){}
+  say('Bracket on the ticket. Flat by 2 45.', 0.45);
 }
 function sendCoach(){
   const b=DESK.best,T=DESK.T,c=DESK.contract;if(!b)return;
@@ -803,7 +817,7 @@ function printBrief(){
 function speakBrief(){
   if(!BRIEF||!('speechSynthesis' in window))return;
   const parts=BRIEF.split(/\n+/).filter(Boolean);
-  parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.55;speechSynthesis.speak(u);}catch(e){}});
+  parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.45;speechSynthesis.speak(u);}catch(e){}});
 }
 
 
@@ -845,7 +859,7 @@ async function sentinelTick(){
     SENT.did800=today;sStatus('8:00 — reading London…');
     await readWorld(true);await findTrade(true);
     const rl=document.getElementById('readLine').textContent;
-    sSay('Eight A M. The London read. '+rl, 0.55);
+    sSay('Eight A M. The London read. '+rl, 0.45);
     if(localStorage.getItem('kAutoBrief')==='1'){sStatus('8:00 — writing the brief…');try{await writeBrief();}catch(e){}}
     sStatus('London read done · waiting for the 8:30 open');
     return;
@@ -857,7 +871,7 @@ async function sentinelTick(){
     await runDesk(true);
     const b=DESK.best,T=DESK.T;
     if(b&&T){
-      sSay('Opening range printed. The setup is ready. '+b.tk+', '+b.sc.side+', score '+b.sc.score+'. Trigger '+n2(T.trig)+', stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is on the desk.', 0.55);
+      sSay('Opening range printed. The setup is ready. '+b.tk+', '+b.sc.side+', score '+b.sc.score+'. Trigger '+n2(T.trig)+', stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is on the desk.', 0.45);
       const fb=document.getElementById('fireBanner');document.getElementById('fbT').textContent='8:35 SETUP READY';
       document.getElementById('fbD').textContent=b.tk+' '+b.sc.side+' · trigger '+n2(T.trig)+' · stop '+n2(T.stop)+' · T1 '+n2(T.t1)+' — bench and ticket are current. Print it, then wait for the 5-minute close.';
       fb.classList.add('on');
@@ -872,7 +886,7 @@ async function sentinelTick(){
     const entries=(m<11*60)||(m>=12*60+30&&m<14*60);
     sStatus((entries?'watching · ':'lunch/wind-down · ')+'5-min close at '+n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}));
     try{await findTrade(true);}catch(e){}
-    try{const pv=SENT.ofLast,nv=officerDesk();if(nv&&nv!==pv&&nv!=='HOLD'){sSay('Exit officer. '+nv.replace('—',',').replace('#','number '), 0.55);}SENT.ofLast=nv;}catch(e){}
+    try{const pv=SENT.ofLast,nv=officerDesk();if(nv&&nv!==pv&&nv!=='HOLD'){sSay('Exit officer. '+nv.replace('—',',').replace('#','number '), 0.45);}SENT.ofLast=nv;}catch(e){}
     const b=DESK.best,T=DESK.T;if(!b||!T)return;
     if(!entries)return;
     if(T.fired&&localStorage.getItem(firedKey())!==b.tk){
@@ -881,8 +895,8 @@ async function sentinelTick(){
       document.getElementById('fbD').textContent='5-minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume ('+(b.A.cVol/b.A.avgVol).toFixed(1)+'× the prior bars). The ticket below is computed at the live mid — fill, then type E. Bracket on the ticket.';
       fb.classList.add('on');
       try{navigator.vibrate&&navigator.vibrate([200,100,200,100,400]);}catch(e){}
-      sSay('Trigger fired. '+b.tk+' '+b.sc.side+'. Five minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is ready. Bracket on the ticket.', 0.55);
-      setTimeout(()=>sSay('Again. Trigger fired, '+b.tk+' '+b.sc.side+'. Ticket is ready.', 0.55),9000);
+      sSay('Trigger fired. '+b.tk+' '+b.sc.side+'. Five minute close '+(T.L?'above':'below')+' '+n2(T.trig)+' with volume. Stop '+n2(T.stop)+', target '+n2(T.t1)+'. The ticket is ready. Bracket on the ticket.', 0.45);
+      setTimeout(()=>sSay('Again. Trigger fired, '+b.tk+' '+b.sc.side+'. Ticket is ready.', 0.45),9000);
     }else if(T.firedNoVol&&localStorage.getItem(firedKey()+'_nv')!==b.tk+slot){
       localStorage.setItem(firedKey()+'_nv',b.tk+slot);
       sStatus('close beyond trigger but volume thin ('+(b.A.cVol/b.A.avgVol).toFixed(1)+'×) — no trade; waiting for a real bar');
