@@ -312,7 +312,7 @@ function analyze(b){
   const days=[];let cur=[],d0=null;for(let i=0;i<b.T.length;i++){const d=new Date(b.T[i]*1000).toLocaleDateString('en-US',{timeZone:'America/Chicago'});if(d0!==null&&d!==d0){days.push(cur);cur=[];}d0=d;cur.push(i);}days.push(cur);
   const today=days[days.length-1],prior=days.length>1?days[days.length-2]:null;
   const pdh=prior?Math.max(...prior.map(i=>b.H[i])):null,pdl=prior?Math.min(...prior.map(i=>b.L[i])):null,pdc=prior?b.C[prior[prior.length-1]]:null;
-  const orH=today?b.H[today[0]]:null,orL=today?b.L[today[0]]:null;
+  const orH=today?b.H[today[0]]:null,orL=today?b.L[today[0]]:null;const dayOpen=today?(b.O?b.O[today[0]]:b.C[today[0]]):null;
   const nowS=Date.now()/1000;const ci=(nowS-b.T[n]<90&&n>0)?n-1:n;
   let av=0,ac=0;for(let k=Math.max(0,ci-5);k<ci;k++){av+=b.V[k];ac++;}const avgVol=ac?av/ac:b.V[ci];
   /* prior high/low = TODAY's session before the closed candle (not the 5-day) */
@@ -343,15 +343,21 @@ function analyze(b){
   const sess=Math.max(1,days.length);const xPer=crosses/sess;
   const behave=xPer<=2.5?'CLEAN':xPer<=4.5?'MIXED':'CHOPPY';
   const adrP=adr&&px?adr/px*100:null;
-  return {lastT:b.T[n],px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],vwc:vw[ci],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,rvolTOD,todBase,slotOf,SLOT,SV,days,bars:b};
+  return {lastT:b.T[n],dayOpen,px,chg:b.pc?(px-b.pc)/b.pc*100:null,e9:e9[n],e9c:e9[ci],s20:s20[n],vw:vw[n],vwc:vw[ci],rsi:rsi[n]||50,mh,ci,pClose,ppClose,e9p,dayHi,dayLo,firstBar,cClose:b.C[ci],cVol:b.V[ci],avgVol,prevHi,prevLo,pdh,pdl,pdc,orH,orL,atr,rv,volTrend,adrUsed,vz,legMove:Math.abs(px-b.C[legStart]),adr,adrP,behave,xPer,rvolTOD,todBase,slotOf,SLOT,SV,days,bars:b};
 }
 function runMeter(A,L){
   const dirZ=A.vz==null?0:(L?A.vz:-A.vz);const cAdr=A.adrUsed==null?0.4:Math.min(1,A.adrUsed/1.1);const cZ=Math.max(0,Math.min(1,dirZ/3));
   const cLeg=A.atr?Math.max(0,Math.min(1,(A.legMove/A.atr)/6)):0.3;const rs=L?Math.max(0,Math.min(1,(A.rsi-55)/25)):Math.max(0,Math.min(1,(45-A.rsi)/25));
   const pastT=A._pastATR||0;const cChase=Math.max(0,Math.min(1,(pastT-0.5)/2));   /* >0.5 ATR past the trigger starts counting; 2.5 ATR = fully spent */
-  const score=Math.round(100*(0.30*cAdr+0.25*cZ+0.15*cLeg+0.10*rs+0.20*cChase));
+  /* THE DAY'S MOVE in your direction — vs a normal day's range. A stock already up a full ADR has spent its day, whatever the last leg looks like. */
+  const adrP=A.adrP||(A.atr/A.px*100*8);const chg=A.chg||0;const dirChg=L?chg:-chg;
+  const openMove=(A.dayOpen&&A.atr)?((L?(A.px-A.dayOpen):(A.dayOpen-A.px))/A.atr):0;
+  const cDay=Math.max(0,Math.min(1,Math.max(dirChg/Math.max(0.5,adrP), openMove/8)));   /* 100% of ADR from yesterday's close, or 8 ATR from the open = spent */
+  const dayMove={chgPct:dirChg,openATR:openMove};A._dayMove=dayMove;
+  const score=Math.round(100*(0.22*cAdr+0.18*cZ+0.10*cLeg+0.08*rs+0.17*cChase+0.25*cDay));
   const phase=score<30?'EARLY':score<50?'FRESH':score<70?'RUNNING':score<85?'LATE':'EXHAUSTED';
-  return {score,phase};
+  const lines=[];if(A._dayMove){const dm=A._dayMove;if(dm.chgPct>=0.8*(A.adrP||3))lines.push('already '+dm.chgPct.toFixed(1)+'% today vs a normal '+(A.adrP||0).toFixed(1)+'% day — the day\'s move is spent');else if(dm.openATR>=5)lines.push(dm.openATR.toFixed(1)+' ATR from the open — a long leg already');}
+  return {score,phase,lines};
 }
 function score(A,L){
   let sc=0;const S=[];const add=(ok,p,l)=>{if(ok)sc+=p;S.push({ok,l});};
@@ -489,7 +495,8 @@ async function vehicle(tk,L,A){
 }
 /* ---------- render ---------- */
 function statusOf(P,rm,A,L){
-  if(rm.phase==='LATE'||rm.phase==='EXHAUSTED')return ['late',rm.phase==='LATE'?'LATE — no chase':'EXHAUSTED — pass'];
+  if(A&&A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3))return ['late','EXHAUSTED — already '+A._dayMove.chgPct.toFixed(1)+'% today, a full normal day · no chase'];
+  if(rm.phase==='LATE'||rm.phase==='EXHAUSTED')return ['late',(rm.phase==='LATE'?'LATE — no chase':'EXHAUSTED — pass')+((rm.lines&&rm.lines[0])?' · '+rm.lines[0]:'')];
   if(P.fired){const past=A?Math.abs(A.px-P.trig)/(A.atr||1):0;
     if(past>0.35)return ['late','FIRED but MISSED — already '+past.toFixed(1)+' ATR past the trigger · wait for a pullback to $'+n2(P.trig)];
     return ['fired','⚡ FIRED — go now (enter by $'+n2(L?P.trig+0.35*(A?A.atr:0):P.trig-0.35*(A?A.atr:0))+')'];}
@@ -520,7 +527,7 @@ function sideHTML(tk,L,d){
   return '<div class="side '+(L?'c':'p')+(cls==='fired'?' fired':'')+(cls==='turn'?' turn':'')+(cls==='late'?' late':'')+'" onclick="toggleTicket(\''+id+'\')">'+
    '<div class="sl"><span class="nm">'+(L?'CALLS':'PUTS')+'</span><span class="sc">'+sc.score+'</span></div>'+
    '<div class="status '+cls+'">'+st+'</div>'+
-   '<div><span class="run '+rm.phase+'">RUN '+rm.score+' '+rm.phase+'</span> <span class="why">· VOL '+(d.A.volTrend>=1.15?'▲':d.A.volTrend<=0.85?'▼':'▬')+' '+(d.A.rvolTOD?d.A.rvolTOD.toFixed(1)+'× this hour':'')+'</span></div>'+
+   '<div><span class="run '+rm.phase+'">RUN '+rm.score+' '+rm.phase+'</span>'+((d.A._dayMove&&Math.abs(d.A._dayMove.chgPct)>=0.6*(d.A.adrP||3))?' <span class="why" style="color:var(--red)">· day move '+(d.A.chg>=0?'+':'')+(d.A.chg||0).toFixed(1)+'% vs normal '+(d.A.adrP||0).toFixed(1)+'%</span>':'')+' <span class="why">· VOL '+(d.A.volTrend>=1.15?'▲':d.A.volTrend<=0.85?'▼':'▬')+' '+(d.A.rvolTOD?d.A.rvolTOD.toFixed(1)+'× this hour':'')+'</span></div>'+
    evLine(d.A,L)+
    '<div class="why">'+top+'</div>'+flip+
    '<div class="ticket" id="tk_'+id+'"><div style="font-size:10px;color:var(--dim)">tap to load the ticket…</div></div></div>';
@@ -920,8 +927,9 @@ function setsFor(tk,d){
   for(const L of [true,false]){
     const sc=L?d.sC:d.sP;const rm=sc.rm;const P=compose(A,L);const late=rm.phase==='LATE'||rm.phase==='EXHAUSTED';
     const side=L?'CALLS':'PUTS';const dist=Math.abs(P.trig-A.px)/(A.atr||1);
-    /* OPEN / BREAKOUT / RECLAIM */
-    if(!late){const st=P.fired?'live':(dist<=0.6?'armed':'ready');
+    const spentDay=A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3);
+    /* OPEN / BREAKOUT / RECLAIM — never on a day that has already moved a full normal day in that direction */
+    if(!late&&!spentDay){const st=P.fired?'live':(dist<=0.6?'armed':'ready');
       out.push({tk,L,kind:P.kind,cls:'open',status:st,d:'<b>'+side+'</b> · '+P.kind.toLowerCase()+' trigger <b>$'+n2(P.trig)+'</b> ('+n2(Math.abs(P.trig-A.px))+' away) · stop $'+n2(P.stop)+' · T1 $'+n2(P.t1)+' · run '+rm.phase.toLowerCase()});}
     /* CHOP */
     const C=chopSet(A,L);if(C){const st=C.fired?'live':C.armed?'armed':'ready';
@@ -959,7 +967,8 @@ async function refreshOne(tk,speak){
       {const PB=pullback(A,L);if(PB&&PB.fired&&FIRED[tk+(L?'C':'P')+'PB']!==A.ci){FIRED[tk+(L?'C':'P')+'PB']=A.ci;logFired(tk,L,PB.trig,A.px,A.ci);gradeLog(tk,L,'PULLBACK',PB.trig,A.ci);say(tk+', '+(L?'calls':'puts')+', pullback fired. Held the ride line and pushed with volume. Target, the retest at '+n2(PB.ext).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side.',true);}
        else if(PB&&PB.ready&&FIRED[tk+(L?'C':'P')+'PBR']!==A.ci){FIRED[tk+(L?'C':'P')+'PBR']=A.ci;say(tk+', '+(L?'calls':'puts')+', pullback setting up. Pre-stage the ticket.');}}
       const T=rangeTurn(A,L);if(T&&T.fired&&FIRED[tk+(L?'C':'P')+'T']!==A.ci){FIRED[tk+(L?'C':'P')+'T']=A.ci;logFired(tk,L,T.trig,A.px,A.ci);gradeLog(tk,L,'TURN',A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', range turn. The run is spent and price closed through the 9 E M A. Half size scalp. Tap the '+(L?'calls':'puts')+' side.',true);}
-      if(P.fired&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);gradeLog(tk,L,P.kind,A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
+      const spentDay=A._dayMove&&A._dayMove.chgPct>=1.0*(A.adrP||3);
+      if(P.fired&&!spentDay&&rm.phase!=='LATE'&&rm.phase!=='EXHAUSTED'&&FIRED[tk+(L?'C':'P')]!==A.ci){FIRED[tk+(L?'C':'P')]=A.ci;logFired(tk,L,P.trig,A.px,A.ci);gradeLog(tk,L,P.kind,A.cClose,A.ci);say(tk+', '+(L?'calls':'puts')+', fired'+(P.kind==='OPEN'?' on the open':'')+'. Just crossed '+n2(P.trig).replace('.',' point ')+' with volume. Price is '+n2(A.px).replace('.',' point ')+'. Tap the '+(L?'calls':'puts')+' side for the ticket.',true);}}}
   }catch(e){}
 }
 let BUSY=false;
