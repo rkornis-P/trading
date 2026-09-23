@@ -334,19 +334,30 @@ input:focus{outline:none;border-color:var(--gold)}
 <div class="knav"><a href="today.html">TODAY</a><a href="gauntlet.html" class="on">GAUNTLET</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="health.html">HEALTH</a><a href="hub.html">SCHOOL</a></div>
 
 <script>
-/* ===== one voice, one at a time, slower ===== */
+/* ===== one voice, one at a time — across ALL open tabs (shared lock) ===== */
 (function(){try{
-  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
-  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
-  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
-    u.rate=0.45;u.pitch=1.0;u.volume=1;
-    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
-    u.addEventListener('end',done);u.addEventListener('error',done);
-    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
-    orig(u);}
-  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
-  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+  if(!('speechSynthesis' in window))return;const S=window.speechSynthesis;const Q=[];let cur=null,since=0,myTab=Math.random().toString(36).slice(2);
+  const est=t=>Math.min(25000,1500+String(t||'').length*95);
+  function lockHeld(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');return l&&l.tab!==myTab&&Date.now()<l.until;}catch(e){return false;}}
+  function takeLock(t){try{localStorage.setItem('kVoiceLock',JSON.stringify({tab:myTab,until:Date.now()+est(t)}));}catch(e){}}
+  function dropLock(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');if(l&&l.tab===myTab)localStorage.removeItem('kVoiceLock');}catch(e){}}
+  window.kSpeak=function(u){try{if(localStorage.getItem('kVoiceOwner')!=='any'&&!window.__allowVoice)return;const t=String(u.text||'');if(Q.some(x=>String(x.text||'')===t))return;if(Q.length>6)Q.length=6;Q.push(u);}catch(e){}};
+  window.kFlushSoft=function(){Q.length=0;};
+  setInterval(function(){try{
+    if(cur){const stuck=Date.now()-since>est(cur.text);
+      if(S.speaking&&!stuck)return;
+      if(stuck){try{S.cancel();}catch(e){}}
+      cur=null;since=Date.now();dropLock();return;}
+    if(!Q.length||S.speaking||S.pending)return;
+    if(Date.now()-since<600)return;
+    if(lockHeld())return;                          /* another tab is talking — wait */
+    cur=Q.shift();cur.rate=0.45;cur.pitch=1.0;cur.volume=1;since=Date.now();takeLock(cur.text);S.speak(cur);
+  }catch(e){cur=null;dropLock();}},250);
+  window.addEventListener('beforeunload',dropLock);
 }catch(e){}})();
+
+
+
 
 function kLeg(name,text){
   const M={'ENTRY':[1,'ENTRY — the buy'],'PRIMARY':[1,'ENTRY — the buy'],'TAKE PROFIT':[2,'TAKE PROFIT — sell half'],'STOP':[3,'STOP — sell all if wrong'],'AFTER T1':[4,'AFTER T1 — re-protect at breakeven'],'RUNNER':[5,'RUNNER — let it ride']};
@@ -359,7 +370,7 @@ const $=id=>document.getElementById(id);
 const n2=x=>x==null?'—':(+x).toFixed(2);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
-function say(t,repeat){try{if(!$('wVoice')||!$('wVoice').checked)return;if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.45;speechSynthesis.speak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.45;setTimeout(()=>speechSynthesis.speak(u2),600);}}catch(e){}}
+function say(t,repeat){try{if(!$('wVoice')||!$('wVoice').checked)return;if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.45;kSpeak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.45;setTimeout(()=>kSpeak(u2),600);}}catch(e){}}
 function board(){try{const b=JSON.parse(localStorage.getItem('kBoard'));if(Array.isArray(b)&&b.length)return b.slice(0,6);}catch(e){}return ['SPCX','MU','PLTR','XOM','TSLA'];}
 
 /* ---------- indicators ---------- */
@@ -841,7 +852,7 @@ function coachSpeak(){
   let box=document.getElementById('cxCoach');
   if(!box){box=document.createElement('div');box.id='cxCoach';box.style.cssText='max-width:520px;width:100%;font-size:11.5px;line-height:1.6;color:#cfd6e2;background:#0E1117;border:1px solid #242B36;border-radius:10px;padding:11px;margin:6px 0';document.getElementById('cxOtoco').after(box);}
   box.textContent=s;
-  try{if('speechSynthesis' in window){speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.rate=0.45;speechSynthesis.speak(u);}}catch(e){}
+  try{if('speechSynthesis' in window){kFlushSoft();const u=new SpeechSynthesisUtterance(s);u.rate=0.45;kSpeak(u);}}catch(e){}
 }
 function printClaxon(){
   if(!CLAXON_CTX)return;const c=CLAXON_CTX;
@@ -871,7 +882,7 @@ function toggleHunt(){
   if(HUNT.on){rebuildHuntList();huntScan();HUNT.timer=setInterval(huntScan,60000);huntSay('The hunt is on. Watching '+HUNT.list.length+' names.');}
   else{if(HUNT.timer)clearInterval(HUNT.timer);HUNT.timer=null;$('huntSt').textContent='Hunt stopped.';}
 }
-function huntSay(t,repeat){try{if(!$('huntVoice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.45;speechSynthesis.speak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.45;setTimeout(()=>speechSynthesis.speak(u2),600);}}catch(e){}}
+function huntSay(t,repeat){try{if(!$('huntVoice').checked||!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=0.45;kSpeak(u);if(repeat){const u2=new SpeechSynthesisUtterance('I repeat. '+t);u2.rate=0.45;setTimeout(()=>kSpeak(u2),600);}}catch(e){}}
 function renderHunt(){
   $('huntCards').innerHTML=HUNT.list.map((tk,i)=>'<div class="hcard wait" id="hc'+i+'"><div class="hh"><span class="htk">'+tk+'</span><span class="hsd" id="hcs'+i+'"></span></div><div class="hv" id="hcv'+i+'">—</div><div class="hw" id="hcw'+i+'">tap START HUNT to begin</div><button class="hgo" id="hcg'+i+'">⚡ GO — SHOW OTOCO</button></div>').join('');
 }

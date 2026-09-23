@@ -275,19 +275,30 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 <div class="knav"><a href="today.html">TODAY</a><a href="gauntlet.html">GAUNTLET</a><a href="cockpit.html">COCKPIT</a><a href="coach.html">COACH</a><a href="watchlist.html">SCAN</a><a href="health.html">HEALTH</a><a href="hub.html">SCHOOL</a></div>
 
 <script>
-/* ===== one voice, one at a time, slower ===== */
+/* ===== one voice, one at a time — across ALL open tabs (shared lock) ===== */
 (function(){try{
-  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
-  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
-  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
-    u.rate=0.45;u.pitch=1.0;u.volume=1;
-    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
-    u.addEventListener('end',done);u.addEventListener('error',done);
-    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
-    orig(u);}
-  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
-  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+  if(!('speechSynthesis' in window))return;const S=window.speechSynthesis;const Q=[];let cur=null,since=0,myTab=Math.random().toString(36).slice(2);
+  const est=t=>Math.min(25000,1500+String(t||'').length*95);
+  function lockHeld(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');return l&&l.tab!==myTab&&Date.now()<l.until;}catch(e){return false;}}
+  function takeLock(t){try{localStorage.setItem('kVoiceLock',JSON.stringify({tab:myTab,until:Date.now()+est(t)}));}catch(e){}}
+  function dropLock(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');if(l&&l.tab===myTab)localStorage.removeItem('kVoiceLock');}catch(e){}}
+  window.kSpeak=function(u){try{if(localStorage.getItem('kVoiceOwner')!=='any'&&!window.__allowVoice)return;const t=String(u.text||'');if(Q.some(x=>String(x.text||'')===t))return;if(Q.length>6)Q.length=6;Q.push(u);}catch(e){}};
+  window.kFlushSoft=function(){Q.length=0;};
+  setInterval(function(){try{
+    if(cur){const stuck=Date.now()-since>est(cur.text);
+      if(S.speaking&&!stuck)return;
+      if(stuck){try{S.cancel();}catch(e){}}
+      cur=null;since=Date.now();dropLock();return;}
+    if(!Q.length||S.speaking||S.pending)return;
+    if(Date.now()-since<600)return;
+    if(lockHeld())return;                          /* another tab is talking — wait */
+    cur=Q.shift();cur.rate=0.45;cur.pitch=1.0;cur.volume=1;since=Date.now();takeLock(cur.text);S.speak(cur);
+  }catch(e){cur=null;dropLock();}},250);
+  window.addEventListener('beforeunload',dropLock);
 }catch(e){}})();
+
+
+
 
 /* ===== safe chain cache (quota-proof) ===== */
 function kTrimChain(cj){
@@ -724,7 +735,7 @@ function openWhy(){
 }
 function speakDesk(){
   if(!('speechSynthesis' in window)||!DESK.best)return;
-  const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;speechSynthesis.speak(u);}catch(e){}};
+  const say=(t,r)=>{try{const u=new SpeechSynthesisUtterance(t);u.rate=r;kSpeak(u);}catch(e){}};
   const b=DESK.best,T=DESK.T,c=DESK.contract;
   say('The desk. Today\'s setup.', 0.45);
   say(b.tk+'. '+b.sc.side+'. Score '+b.sc.score+' out of 100.', 0.45);
@@ -817,7 +828,7 @@ function printBrief(){
 function speakBrief(){
   if(!BRIEF||!('speechSynthesis' in window))return;
   const parts=BRIEF.split(/\n+/).filter(Boolean);
-  parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.45;speechSynthesis.speak(u);}catch(e){}});
+  parts.forEach((p,i)=>{try{const u=new SpeechSynthesisUtterance(p);u.rate=0.45;kSpeak(u);}catch(e){}});
 }
 
 
@@ -845,7 +856,7 @@ function officerDesk(){
 
 /* ================= SENTINEL — 8:35 recompose + 5-min close watch ================= */
 const SENT={lastSlot:null,did835:null,did800:null,ofLast:null};
-function sSay(t,r){try{if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=r||0.7;speechSynthesis.speak(u);}catch(e){}}
+function sSay(t,r){try{if(!('speechSynthesis' in window))return;const u=new SpeechSynthesisUtterance(t);u.rate=r||0.7;kSpeak(u);}catch(e){}}
 function sStatus(t){const e=document.getElementById('sentSt');if(e)e.textContent=t;}
 function firedKey(){return 'kDeskFired_'+ctNow().toDateString();}
 async function sentinelTick(){

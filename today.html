@@ -210,7 +210,7 @@ body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSys
 body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOnly #grade{display:none}
 </style></head><body>
 
-<div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span></div>
+<div id="top"><h1>TODAY</h1><span class="clk" id="clk">—</span><span style="font-size:8px;color:var(--dim);letter-spacing:.1em;margin-left:6px">VOICE v4</span></div>
 <div id="addRow"><input id="addTk" placeholder="type a ticker · enter" autocapitalize="characters" onkeydown="if(event.key==='Enter')addTk()"><button onclick="addTk()">＋ ADD</button></div>
 <div id="scalpBar"><span class="lb">Consistent scalps</span>
   <span class="schip" id="sc_TQQQ" onclick="scalp('TQQQ')">TQQQ<small>3× Nasdaq · the market's clock</small></span>
@@ -223,7 +223,7 @@ body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOn
   <span class="schip" id="sc_IBIT" onclick="scalp('IBIT')">IBIT<small>bitcoin ETF · crypto engine</small></span>
 </div>
 <div id="rangeBar"><div class="rh"><span class="rt">↩ Range trades — extended runs likely to turn</span><span class="ri">big-range names at the end of a run · half-size scalps · tap to open the turn side</span></div><div id="rangeList"></div></div>
-<div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak when one fires</label><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
+<div id="ctl"><label><input type="checkbox" id="voice" checked> 🔊 speak (this page only)</label><span style="cursor:pointer;color:var(--red);font-weight:800" onclick="try{kFlushSoft();speechSynthesis.cancel();}catch(e){}">🔇 STOP TALKING</span><label><input type="checkbox" id="autoTop" checked onchange="save()"> show the dozen, best first</label><span class="r" onclick="refreshAll(true)">↻ REFRESH</span></div>
 <div id="feedBar"></div>
 <div id="aiBar"><button onclick="morningRead()">🧠 MORNING READ — overnight + London → the opening plan (AI)</button><button onclick="lonInfo(true)" style="flex:0 0 auto;padding:11px 14px">🌍 ⓘ</button></div>
 <div id="fx"><div class="fh"><span>🌍 London currencies → what they mean for the open</span><span id="fxT"></span></div><div class="cells" id="fxCells"></div><div class="sec" id="fxSec"></div></div>
@@ -240,19 +240,30 @@ body.setsOnly #cards,body.setsOnly #scalpBar,body.setsOnly #rangeBar,body.setsOn
 <div class="knav"><a href="today.html" class="on">TODAY</a><a href="health.html">HEALTH</a><a href="hub.html">THE SCHOOL</a></div>
 
 <script>
-/* ===== one voice, one at a time, slower ===== */
+/* ===== one voice, one at a time — across ALL open tabs (shared lock) ===== */
 (function(){try{
-  if(!('speechSynthesis' in window)||window.__kVoice)return;window.__kVoice=1;
-  const S=window.speechSynthesis;const orig=S.speak.bind(S);const Q=[];let busy=false,guard=null;
-  function next(){if(busy||!Q.length)return;const u=Q.shift();busy=true;
-    u.rate=0.45;u.pitch=1.0;u.volume=1;
-    const done=()=>{if(!busy)return;busy=false;clearTimeout(guard);setTimeout(next,650);};
-    u.addEventListener('end',done);u.addEventListener('error',done);
-    guard=setTimeout(()=>{try{S.cancel();}catch(e){}done();},Math.min(25000,3000+String(u.text||'').length*90));   /* iOS sometimes never fires 'end' */
-    orig(u);}
-  S.speak=function(u){if(Q.length>5)Q.length=5;Q.push(u);next();};
-  S.__kFlush=function(){Q.length=0;busy=false;try{S.cancel();}catch(e){}};
+  if(!('speechSynthesis' in window))return;const S=window.speechSynthesis;const Q=[];let cur=null,since=0,myTab=Math.random().toString(36).slice(2);
+  const est=t=>Math.min(25000,1500+String(t||'').length*95);
+  function lockHeld(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');return l&&l.tab!==myTab&&Date.now()<l.until;}catch(e){return false;}}
+  function takeLock(t){try{localStorage.setItem('kVoiceLock',JSON.stringify({tab:myTab,until:Date.now()+est(t)}));}catch(e){}}
+  function dropLock(){try{const l=JSON.parse(localStorage.getItem('kVoiceLock')||'null');if(l&&l.tab===myTab)localStorage.removeItem('kVoiceLock');}catch(e){}}
+  window.kSpeak=function(u){try{const t=String(u.text||'');if(Q.some(x=>String(x.text||'')===t))return;if(Q.length>6)Q.length=6;Q.push(u);}catch(e){}};
+  window.kFlushSoft=function(){Q.length=0;};
+  setInterval(function(){try{
+    if(cur){const stuck=Date.now()-since>est(cur.text);
+      if(S.speaking&&!stuck)return;
+      if(stuck){try{S.cancel();}catch(e){}}
+      cur=null;since=Date.now();dropLock();return;}
+    if(!Q.length||S.speaking||S.pending)return;
+    if(Date.now()-since<600)return;
+    if(lockHeld())return;                          /* another tab is talking — wait */
+    cur=Q.shift();cur.rate=0.45;cur.pitch=1.0;cur.volume=1;since=Date.now();takeLock(cur.text);S.speak(cur);
+  }catch(e){cur=null;dropLock();}},250);
+  window.addEventListener('beforeunload',dropLock);
 }catch(e){}})();
+
+
+
 
 const RELAY='https://kornis-ai-relay.rick-018.workers.dev';
 const _fetch=window.fetch.bind(window);
@@ -260,7 +271,7 @@ window.fetch=(u,o)=>{const c=new AbortController();const t=setTimeout(()=>c.abor
 const $=id=>document.getElementById(id);const n2=x=>x==null?'—':(+x).toFixed(2);const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function ctNow(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Chicago'}));}
 function say(t,repeat){if(!$('voice').checked||!('speechSynthesis' in window))return;
-  try{speechSynthesis.speak(new SpeechSynthesisUtterance(t));if(repeat)speechSynthesis.speak(new SpeechSynthesisUtterance('I repeat. '+t));}catch(e){}}
+  try{kSpeak(new SpeechSynthesisUtterance(t));if(repeat)kSpeak(new SpeechSynthesisUtterance('I repeat. '+t));}catch(e){}}
 const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC','OKLO','APLD','NU','UBER','BE','HIMS','RKLB','CORZ'];
 const TELLS=['MU','TSLA','USO'];
 let LIST=[],DATA={},POS=null,TIMER=null,FIRED={},PIN={},OPENT=new Set();
@@ -813,7 +824,7 @@ async function morningRead(){
     $('mkt').innerHTML='<b>MORNING READ · '+ctNow().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+' CT</b><br>'+(mk_||lines[0]);
     window._AIREAD={};lines.forEach(l=>{const m=l.match(/^([A-Z.\-]{1,7})\s*[—-]/);if(m)window._AIREAD[m[1]]=l;});
     render();$('st').textContent='Morning read done — each card carries its opening plan. Then: hands off 8:30–8:35.';
-    try{const u=new SpeechSynthesisUtterance('Morning read. '+(mk_||'').replace(/MARKET:?/i,''));u.rate=0.45;speechSynthesis.speak(u);}catch(e){}
+    try{const u=new SpeechSynthesisUtterance('Morning read. '+(mk_||'').replace(/MARKET:?/i,''));u.rate=0.45;kSpeak(u);}catch(e){}
   }catch(e){$('mkt').innerHTML='Morning read failed: '+(e.message||e)+'. Check health.html (AI route).';}
 }
 
