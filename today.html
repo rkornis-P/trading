@@ -995,7 +995,8 @@ function gradeUpdate(){
     const td=A.days[A.days.length-1];const atr=A.atr||0.5;let best=0,res=null,n=0;
     for(let m=1;m<=12&&start+m<td.length;m++){const j=td[start+m];n++;const fav=x.L?(b.H[j]-x.entry):(x.entry-b.L[j]);const adv=x.L?(x.entry-b.L[j]):(b.H[j]-x.entry);best=Math.max(best,fav);
       if(adv>=1.0*atr){res='stopped';break;}if(fav>=1.5*atr){res='hit';break;}}
-    x.best=best/atr;if(res){x.result=res;changed=true;}else if(n>=12){x.result='flat';changed=true;}}
+    x.best=best/atr;if(res){x.result=res;changed=true;}else if(n>=12){x.result='flat';changed=true;}
+    if(x.result)fillFire(x,A);}
   if(changed)gradeSave(g);renderGrade();
 }
 function renderGrade(){
@@ -1219,6 +1220,12 @@ function renderPaper(){
   $('paperL').innerHTML=(s.n?'<b>'+s.n+' paper trades</b> over '+s.sessions+' session'+(s.sessions!==1?'s':'')+': '+s.w+' followed through, '+(s.n-s.w)+' did not · net <b>'+(s.pl>=0?'+':'')+s.pl.toFixed(1)+' R</b> (1 R = one stop). ':'No paper trades yet — leave this tab open 8:15 to noon and it trades every verdict by itself. ')+(s.qualified?'The record earned it. Tickets are open; size half until a second week confirms.':'Tickets stay locked until '+QUAL_SESSIONS+' sessions and '+Math.round(QUAL_RATE*100)+'%. Trade your eyes meanwhile.');
 }
 /* record every fire with the bars around it, so the logic can be audited on real tape */
+function fillFire(x,A){ /* once a paper trade is decided, save the 14 candles AFTER the fire so the audit can replay it */
+  try{const rec=JSON.parse(localStorage.getItem('kFires')||'[]');const f=rec.find(r=>r.tk===x.tk&&r.L===x.L&&r.ci===x.ci&&r.day===x.day);if(!f||f.filled)return;
+    const b=A.bars;const from=Math.max(0,f.ci-30),to=Math.min(b.C.length-1,f.ci+14);if(to<=f.ci)return;
+    f.bars={T:b.T.slice(from,to+1),O:(b.O||b.C).slice(from,to+1),H:b.H.slice(from,to+1),L:b.L.slice(from,to+1),C:b.C.slice(from,to+1),V:b.V.slice(from,to+1)};f.ciOff=f.ci-from;f.filled=true;f.result=x.result;
+    localStorage.setItem('kFires',JSON.stringify(rec));}catch(e){}
+}
 function recordFire(tk,L,kind,A){
   try{const rec=JSON.parse(localStorage.getItem('kFires')||'[]');const b=A.bars;const from=Math.max(0,A.ci-30),to=Math.min(b.C.length-1,A.ci+14);
     rec.push({t:Date.now(),day:ctNow().toDateString(),tk,L,kind,ci:A.ci,px:A.px,trig:null,rvolTOD:A.rvolTOD,run:(L?A._runC:A._runP)||null,rangePos:(rangeInfo(A,tk).pos),
