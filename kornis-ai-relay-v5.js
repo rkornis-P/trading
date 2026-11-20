@@ -1,5 +1,8 @@
 /* ============================================================
-   KORNIS AI RELAY v5.1 — hardened data + AI passthrough
+   KORNIS AI RELAY v5.2 — hardened data + AI passthrough
+   v5.2 (Nov 18, 2026): intraday history cached 15s (was 60s — a 60s edge copy let TODAY read a
+   candle up to a minute before it closed); the 24h emergency copy is now MARKED in the JSON body
+   ("_stale":true) so pages lock out instead of trading on it.
    Paste over the existing kornis-ai-relay worker (NOT autopilot).
 
    Endpoints (contract unchanged — every page keeps working):
@@ -52,7 +55,9 @@ async function cachedFetch(cacheKeyUrl, ttl, staleTtl, producer){
   }catch(e){
     const stale = await cache.match(staleKey);
     if(stale){
-      const r = new Response(stale.body, stale);
+      let body = await stale.text();
+      try{ const j=JSON.parse(body); if(j&&typeof j==='object'&&!Array.isArray(j)){ j._stale=true; j._staleWhy=String(e&&e.message||e); body=JSON.stringify(j); } }catch(_){}
+      const r = new Response(body, {headers:{'Content-Type':'application/json'}});
       r.headers.set('X-Kornis-Stale','1');
       return r;
     }
@@ -189,7 +194,8 @@ export default {
         const rng = u.searchParams.get('r')||'5d';
         const pp = u.searchParams.get('pp')==='1';
         const key = 'https://kornis-cache/hist?tk='+hist.toUpperCase()+'&i='+iv+'&r='+rng+(pp?'&pp=1':'');
-        const resp = await cachedFetch(key, 60, 86400, ()=>histProducer(hist.toUpperCase(), iv, rng, pp));
+        const ttl = /^(1|2|5)m$/.test(iv) ? 15 : 60;   /* intraday bars: 15s, so a poll 12s after the close sees the closed candle */
+        const resp = await cachedFetch(key, ttl, 86400, ()=>histProducer(hist.toUpperCase(), iv, rng, pp));
         const out = new Response(resp.body, resp);
         out.headers.set('Access-Control-Allow-Origin','*');
         return out;
@@ -201,7 +207,7 @@ export default {
         out.headers.set('Access-Control-Allow-Origin','*');
         return out;
       }
-      return cors(JSON.stringify({relay:'kornis v5.1', routes:['POST / (anthropic)','GET /?hist=TK&i=5m&r=5d[&pp=1]','GET /?chain=TK','GET /?pm=TK']}));
+      return cors(JSON.stringify({relay:'kornis v5.2', routes:['POST / (anthropic)','GET /?hist=TK&i=5m&r=5d[&pp=1]','GET /?chain=TK','GET /?pm=TK']}));
     }catch(e){
       return jerr(String(e.message||e), 502);
     }
