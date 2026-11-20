@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AUDIT · Kornis Protocol</title>
+<title>AUDIT v1.1 · Kornis Protocol</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{--bg:#0B0D11;--card:#141821;--card2:#10141B;--line:#242B36;--ink:#E8EAF0;--dim:#8B93A5;--gold:#E0B04C;--gold-soft:#B8903A;--green:#3CCB7F;--red:#F06A5F;--amber:#F2B544;--blue:#5B9BFF}
@@ -25,14 +25,15 @@ td:first-child,th:first-child{text-align:left}
 details summary{cursor:pointer;color:var(--gold-soft);font-weight:700;font-size:12px;margin:6px 0}
 .pill{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.05em}.pill.L{background:#3a2d12;color:var(--amber)}.pill.F{background:#12331f;color:var(--green)}
 </style></head><body>
-<h1>Audit — the program's calls, replayed on real tape</h1>
+<h1>Audit v1.1 — the program's calls, replayed on real tape</h1>
 <div class="sub">Pulls the last ~8 sessions of 5-minute bars for every name on your board, walks candle by candle exactly the way TODAY sees them, fires the <b>LEGACY</b> rules (what ran through Sep 29) and the <b>FIXED</b> rules (engine.js) side by side, and grades every fire against its own plan: stop and T1 as the ticket wrote them, 12 candles, inside the session. Nothing here is a forecast — it is what the rules would have told you to do, and what the stock did next.</div>
 
 <div class="card">
-  <div class="row"><input id="names" placeholder="tickers, comma separated"><button id="run" onclick="runAudit()">▶ RUN THE AUDIT</button><button class="sec" onclick="exportJSON()" id="exp" disabled>⬇ EXPORT</button></div>
-  <div id="prog"><i></i></div><div id="st">Loads your TODAY board automatically. Runs in this tab — under a minute for a full board. Leave the tab in front.</div>
+  <div class="row"><input id="names" placeholder="tickers, comma separated"><select id="rng" style="background:var(--card2);color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px"><option value="60d" selected>60 days (≈40 sessions)</option><option value="1mo">1 month</option><option value="10d">10 days (v1.0)</option></select><button id="run" onclick="runAudit()">▶ RUN THE AUDIT</button><button class="sec" onclick="exportJSON()" id="exp" disabled>⬇ EXPORT</button></div>
+  <div id="prog"><i></i></div><div id="st">Loads your TODAY board automatically. Runs in this tab — about 1 to 3 minutes for a full board over 60 days. Leave the tab in front until it says Done.</div>
 </div>
 
+<div id="vout"></div>
 <div id="out"></div>
 
 <div class="card note" style="border-color:var(--gold-soft)">
@@ -50,6 +51,8 @@ const DOZEN=['SMCI','SPCX','OXY','IONQ','SOFI','RIOT','NVDA','AMD','PLTR','INTC'
 let RESULT=null;
 (function(){let list=null;try{const s=JSON.parse(localStorage.getItem('kToday'));if(s&&s.list&&s.list.length)list=s.list;}catch(e){}$('names').value=(list||DOZEN).join(', ');})();
 
+/* the 8 sessions already looked at in the v1.0 audit (11/10–11/19/2026): ideas formed there must be proven on days BEFORE them */
+const SEEN_FROM=Math.floor(Date.UTC(2026,10,10,12,0,0)/1000);function isSeen(t){return t>=SEEN_FROM;}
 function ctStr(t){return new Date(t*1000).toLocaleString('en-US',{timeZone:'America/Chicago',month:'numeric',day:'numeric',hour:'numeric',minute:'2-digit'});}
 
 /* ---- replay one name under one rule set: returns the list of fires with grades ---- */
@@ -74,7 +77,7 @@ function replayName(tk,b,rulesName){
         const P=compose(A,L);const rm=(L?sC:sP).rm;const side=L?'C':'P';
         const push=(kind,plan,entry)=>{const key=side+kind+'|'+i;if(seen[key])return;seen[key]=1;dayFired[side+kind]=(dayFired[side+kind]||0)+1;
           const g=gradeTrade(b,i,entry,plan.stop,plan.t1,L,12,dayEnd);const f=gradeFixed(b,i,entry,A.atr,L,12,dayEnd);
-          fires.push({rules:rulesName,tk,L,side,kind,t:b.T[i],when:ctStr(b.T[i]),entry:+entry.toFixed(2),stop:+plan.stop.toFixed(2),t1:+plan.t1.toFixed(2),atr:+A.atr.toFixed(3),run:rm.phase,runScore:rm.score,pastATR:plan.pastATR!=null?+plan.pastATR.toFixed(2):null,levelAge:plan.levelAge??null,
+          fires.push({rules:rulesName,tk,L,side,kind,t:b.T[i],day:ctDate(b.T[i]),seen:isSeen(b.T[i]),when:ctStr(b.T[i]),entry:+entry.toFixed(2),stop:+plan.stop.toFixed(2),t1:+plan.t1.toFixed(2),atr:+A.atr.toFixed(3),run:rm.phase,runScore:rm.score,pastATR:plan.pastATR!=null?+plan.pastATR.toFixed(2):null,levelAge:plan.levelAge??null,
             result:g.result,R:g.R!=null?+g.R.toFixed(2):null,best:+(g.best/A.atr).toFixed(2),fixed:f.result,nthToday:dayFired[side+kind]});};
         const CH=chopSet(A,L);if(CH&&CH.fired)push('CHOP',CH,A.cClose);
         let PB=pullback(A,L);if(PB&&!rangeGate(A,tk,L,'PULLBACK').ok)PB=null;if(PB&&PB.fired)push('PULLBACK',PB,A.cClose);
@@ -89,23 +92,23 @@ function replayName(tk,b,rulesName){
   return fires;
 }
 
-async function pullBars(tk){const c=new AbortController();const to=setTimeout(()=>c.abort(),15000);const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r=10d',{signal:c.signal}).finally(()=>clearTimeout(to));const j=await r.json();const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
+async function pullBars(tk,rng){const c=new AbortController();const to=setTimeout(()=>c.abort(),15000);const r=await fetch(RELAY+'/?hist='+encodeURIComponent(tk)+'&i=5m&r='+encodeURIComponent(rng||'60d'),{signal:c.signal}).finally(()=>clearTimeout(to));const j=await r.json();const res=j.chart&&j.chart.result&&j.chart.result[0];if(!res)throw new Error('no data');
   const q=res.indicators.quote[0],ts=res.timestamp||[];const T=[],H=[],L=[],C=[],V=[],O=[];for(let i=0;i<ts.length;i++){if(q.close[i]==null)continue;T.push(ts[i]);H.push(q.high[i]);L.push(q.low[i]);C.push(q.close[i]);V.push(q.volume[i]||0);O.push(q.open[i]!=null?q.open[i]:q.close[i]);}
   return {T,O,H,L,C,V,pc:res.meta.chartPreviousClose||null,stale:!!j._stale};}
 
 async function runAudit(){
   const names=$('names').value.split(/[,\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean);if(!names.length)return;
-  $('run').disabled=true;$('exp').disabled=true;RESULT={ran:new Date().toISOString(),engine:ENGINE_VERSION,names,fires:[],errors:[]};
+  $('run').disabled=true;$('exp').disabled=true;const RNG=$('rng').value;RESULT={ran:new Date().toISOString(),audit:'1.1',range:RNG,engine:ENGINE_VERSION,names,fires:[],errors:[]};
   let k=0;for(const tk of names){
     $('st').textContent='Pulling '+tk+'… ('+(k+1)+' of '+names.length+')';$('prog').firstChild.style.width=Math.round(k/names.length*100)+'%';
-    try{const b=await pullBars(tk);if(b.stale)RESULT.errors.push(tk+': relay served a stale copy');
+    try{const b=await pullBars(tk,RNG);if(b.stale)RESULT.errors.push(tk+': relay served a stale copy');
       await sleep(10);$('st').textContent='Replaying '+tk+' — LEGACY rules…';await sleep(10);RESULT.fires.push(...replayName(tk,b,'LEGACY'));
       $('st').textContent='Replaying '+tk+' — FIXED rules…';await sleep(10);RESULT.fires.push(...replayName(tk,b,'FIXED'));}
     catch(e){RESULT.errors.push(tk+': '+(e.message||e));}
     k++;await sleep(300);
   }
   setRules('FIXED');$('prog').firstChild.style.width='100%';$('st').textContent='Done · '+RESULT.fires.length+' fires graded'+(RESULT.errors.length?' · '+RESULT.errors.join('; '):'');
-  render();$('run').disabled=false;$('exp').disabled=false;
+  render();renderVariants();$('run').disabled=false;$('exp').disabled=false;
 }
 
 function stats(list){const n=list.length;const graded=list.filter(x=>x.result);const w=graded.filter(x=>x.result==='hit').length;const st=graded.filter(x=>x.result==='stopped').length;const R=graded.reduce((s,x)=>s+(x.R||0),0);
@@ -135,6 +138,43 @@ function render(){
     +F.slice().sort((a,b)=>b.t-a.t||a.rules.localeCompare(b.rules)).slice(0,600).map(x=>'<tr><td>'+x.when+'</td><td>'+x.tk+'</td><td>'+(x.L?'CALLS':'PUTS')+'</td><td>'+x.kind+'</td><td><span class="pill '+x.rules[0]+'">'+x.rules+'</span></td><td>'+n2(x.entry)+'</td><td>'+n2(x.stop)+'</td><td>'+n2(x.t1)+'</td><td>'+x.run+'</td><td>'+(x.pastATR==null?'—':x.pastATR.toFixed(2)+' ATR')+'</td><td class="'+(x.result==='hit'?'g':x.result==='stopped'?'r':'d')+'">'+(x.result||'open')+'</td><td class="'+(x.R>=0?'g':'r')+'">'+(x.R==null?'—':(x.R>=0?'+':'')+x.R.toFixed(2))+'</td><td>+'+x.best+' ATR</td></tr>').join('')+'</table></details></div>');
   $('out').innerHTML=out.join('');
 }
+
+/* ===== PRE-REGISTERED VARIANTS — decided before seeing the untouched days; all are filters on the FIXED-rules fires ===== */
+const COST_R=0.15;   /* assumed spread+slippage per option trade, in R — an estimate, not a measurement */
+function dedupeFirst(list){const seen=new Set(),out=[];for(const x of list.slice().sort((p,q)=>p.t-q.t)){const k=x.tk+'|'+x.side+'|'+x.day;if(seen.has(k))continue;seen.add(k);out.push(x);}return out;}
+const VARIANTS=[
+ {id:'V0',name:'All fires, as the program runs today',f:l=>l},
+ {id:'V1',name:'No CHOP fires',f:l=>l.filter(x=>x.kind!=='CHOP')},
+ {id:'V2',name:'One fire per name, side and day (first only)',f:l=>dedupeFirst(l)},
+ {id:'V3',name:'EARLY run phase only',f:l=>l.filter(x=>x.run==='EARLY')},
+ {id:'V4',name:'PULLBACK only',f:l=>l.filter(x=>x.kind==='PULLBACK')},
+ {id:'V5',name:'No CHOP + not RUNNING/LATE/EXHAUSTED + one per name/side/day',f:l=>dedupeFirst(l.filter(x=>x.kind!=='CHOP'&&x.run!=='RUNNING'&&x.run!=='LATE'&&x.run!=='EXHAUSTED'))}
+];
+function vstats(list){
+  const R=list.map(x=>x.R).filter(r=>r!=null);const n=R.length;if(!n)return {n:0};
+  const net=R.reduce((s,r)=>s+r,0),srt=R.slice().sort((a,b)=>a-b),med=n%2?srt[(n-1)/2]:(srt[n/2-1]+srt[n/2])/2;
+  const wins=R.filter(r=>r>0),loss=R.filter(r=>r<=0);const top3=srt.slice(-3).reduce((s,r)=>s+r,0);
+  const sessions=new Set(list.map(x=>x.day)).size;
+  return {n,sessions,net,avg:net/n,med,winPct:wins.length/n,avgWin:wins.length?wins.reduce((s,r)=>s+r,0)/wins.length:0,avgLoss:loss.length?loss.reduce((s,r)=>s+r,0)/loss.length:0,
+    exTop3:n>6?net-top3:net,netCost:net-COST_R*n,avgCost:(net-COST_R*n)/n,exTop3Cost:(n>6?net-top3:net)-COST_R*n};
+}
+function verdict(s){if(!s.n||s.n<30)return ['TOO FEW','d'];return (s.avgCost>0&&s.exTop3Cost>0)?['PASS','g']:['FAIL','r'];}
+function variantTable(rows){return rows;}
+function renderVariants(){
+  const F=RESULT.fires.filter(x=>x.rules==='FIXED');const out=[];
+  const days=[...new Set(F.map(x=>x.day))];const un=F.filter(x=>!x.seen),se=F.filter(x=>x.seen);
+  const unDays=new Set(un.map(x=>x.day)).size,seDays=new Set(se.map(x=>x.day)).size;
+  const fm=x=>x==null?'—':(x>=0?'+':'')+x.toFixed(2);
+  out.push('<div class="card"><b>The test that decides it — variants fixed in advance, judged on days they were not tuned on</b>'
+   +'<div class="note">Untouched = sessions <i>before</i> 11/10 ('+unDays+' sessions, '+un.length+' fires). Seen = the 8 sessions 11/10–11/19 we already studied ('+seDays+' sessions, '+se.length+' fires). A variant PASSES only if, on the untouched days, it has at least 30 trades, a positive average <i>after</i> an assumed '+COST_R+' R trading cost per trade, and stays positive after removing its 3 best trades. R = one stop\'s worth of risk, measured on the stock.</div>'
+   +'<table><tr><th>Variant</th><th>Days</th><th>Trades</th><th>Win %</th><th>Avg win</th><th>Avg loss</th><th>Net R</th><th>Avg R</th><th>Avg R after cost</th><th>Net w/o best 3, after cost</th><th>Verdict</th></tr>'
+   +VARIANTS.map(v=>{const rowsHtml=[['Untouched',v.f(un)],['Seen',v.f(se)]].map(([lab,l],i)=>{const s=vstats(l);if(!s.n)return '<tr><td>'+(i?'':'<b>'+v.id+'</b> '+v.name)+'</td><td>'+lab+'</td><td colspan="9" class="d">no trades</td></tr>';const vd=lab==='Untouched'?verdict(s):['—','d'];
+     return '<tr><td>'+(i?'':'<b>'+v.id+'</b> '+v.name)+'</td><td>'+lab+' ('+s.sessions+')</td><td>'+s.n+'</td><td>'+Math.round(s.winPct*100)+'%</td><td class="g">'+fm(s.avgWin)+'</td><td class="r">'+fm(s.avgLoss)+'</td><td class="'+(s.net>=0?'g':'r')+'">'+fm(s.net)+'</td><td class="'+(s.avg>=0?'g':'r')+'">'+fm(s.avg)+'</td><td class="'+(s.avgCost>=0?'g':'r')+'">'+fm(s.avgCost)+'</td><td class="'+(s.exTop3Cost>=0?'g':'r')+'">'+fm(s.exTop3Cost)+'</td><td class="'+vd[1]+'"><b>'+vd[0]+'</b></td></tr>';}).join('');return rowsHtml;}).join('')
+   +'</table></div>');
+  RESULT.variants=VARIANTS.map(v=>({id:v.id,name:v.name,untouched:vstats(v.f(un)),seen:vstats(v.f(se)),verdict:verdict(vstats(v.f(un)))[0]}));
+  $('vout').innerHTML=out.join('');
+}
+
 function exportJSON(){if(!RESULT)return;const blob=new Blob([JSON.stringify(RESULT,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kornis-audit-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();}
 </script>
 </body></html>
