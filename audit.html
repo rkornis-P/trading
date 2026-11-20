@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>AUDIT v1.1 · Kornis Protocol</title>
+<title>AUDIT v1.2 · Kornis Protocol</title>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <style>
 :root{--bg:#0B0D11;--card:#141821;--card2:#10141B;--line:#242B36;--ink:#E8EAF0;--dim:#8B93A5;--gold:#E0B04C;--gold-soft:#B8903A;--green:#3CCB7F;--red:#F06A5F;--amber:#F2B544;--blue:#5B9BFF}
@@ -25,7 +25,7 @@ td:first-child,th:first-child{text-align:left}
 details summary{cursor:pointer;color:var(--gold-soft);font-weight:700;font-size:12px;margin:6px 0}
 .pill{display:inline-block;padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.05em}.pill.L{background:#3a2d12;color:var(--amber)}.pill.F{background:#12331f;color:var(--green)}
 </style></head><body>
-<h1>Audit v1.1 — the program's calls, replayed on real tape</h1>
+<h1>Audit v1.2 — the program's calls, replayed on real tape</h1>
 <div class="sub">Pulls the last ~8 sessions of 5-minute bars for every name on your board, walks candle by candle exactly the way TODAY sees them, fires the <b>LEGACY</b> rules (what ran through Sep 29) and the <b>FIXED</b> rules (engine.js) side by side, and grades every fire against its own plan: stop and T1 as the ticket wrote them, 12 candles, inside the session. Nothing here is a forecast — it is what the rules would have told you to do, and what the stock did next.</div>
 
 <div class="card">
@@ -33,6 +33,7 @@ details summary{cursor:pointer;color:var(--gold-soft);font-weight:700;font-size:
   <div id="prog"><i></i></div><div id="st">Loads your TODAY board automatically. Runs in this tab — about 1 to 3 minutes for a full board over 60 days. Leave the tab in front until it says Done.</div>
 </div>
 
+<div id="bout"></div>
 <div id="vout"></div>
 <div id="out"></div>
 
@@ -77,7 +78,7 @@ function replayName(tk,b,rulesName){
         const P=compose(A,L);const rm=(L?sC:sP).rm;const side=L?'C':'P';
         const push=(kind,plan,entry)=>{const key=side+kind+'|'+i;if(seen[key])return;seen[key]=1;dayFired[side+kind]=(dayFired[side+kind]||0)+1;
           const g=gradeTrade(b,i,entry,plan.stop,plan.t1,L,12,dayEnd);const f=gradeFixed(b,i,entry,A.atr,L,12,dayEnd);
-          fires.push({rules:rulesName,tk,L,side,kind,t:b.T[i],day:ctDate(b.T[i]),seen:isSeen(b.T[i]),when:ctStr(b.T[i]),entry:+entry.toFixed(2),stop:+plan.stop.toFixed(2),t1:+plan.t1.toFixed(2),atr:+A.atr.toFixed(3),run:rm.phase,runScore:rm.score,pastATR:plan.pastATR!=null?+plan.pastATR.toFixed(2):null,levelAge:plan.levelAge??null,
+          fires.push({rules:rulesName,tk,L,side,kind,t:b.T[i],day:ctDate(b.T[i]),seen:isSeen(b.T[i]),when:ctStr(b.T[i]),_sd:+Math.abs(entry-plan.stop).toFixed(5),_td:+Math.abs(plan.t1-entry).toFixed(5),_ok:(L?(plan.stop<entry&&plan.t1>entry):(plan.stop>entry&&plan.t1<entry)),entry:+entry.toFixed(2),stop:+plan.stop.toFixed(2),t1:+plan.t1.toFixed(2),atr:+A.atr.toFixed(3),run:rm.phase,runScore:rm.score,pastATR:plan.pastATR!=null?+plan.pastATR.toFixed(2):null,levelAge:plan.levelAge??null,
             result:g.result,R:g.R!=null?+g.R.toFixed(2):null,best:+(g.best/A.atr).toFixed(2),fixed:f.result,nthToday:dayFired[side+kind]});};
         const CH=chopSet(A,L);if(CH&&CH.fired)push('CHOP',CH,A.cClose);
         let PB=pullback(A,L);if(PB&&!rangeGate(A,tk,L,'PULLBACK').ok)PB=null;if(PB&&PB.fired)push('PULLBACK',PB,A.cClose);
@@ -98,17 +99,17 @@ async function pullBars(tk,rng){const c=new AbortController();const to=setTimeou
 
 async function runAudit(){
   const names=$('names').value.split(/[,\s]+/).map(x=>x.trim().toUpperCase()).filter(Boolean);if(!names.length)return;
-  $('run').disabled=true;$('exp').disabled=true;const RNG=$('rng').value;RESULT={ran:new Date().toISOString(),audit:'1.1',range:RNG,engine:ENGINE_VERSION,names,fires:[],errors:[]};
+  $('run').disabled=true;$('exp').disabled=true;const RNG=$('rng').value;RESULT={ran:new Date().toISOString(),audit:'1.2',range:RNG,engine:ENGINE_VERSION,names,fires:[],errors:[]};
   let k=0;for(const tk of names){
     $('st').textContent='Pulling '+tk+'… ('+(k+1)+' of '+names.length+')';$('prog').firstChild.style.width=Math.round(k/names.length*100)+'%';
     try{const b=await pullBars(tk,RNG);if(b.stale)RESULT.errors.push(tk+': relay served a stale copy');
       await sleep(10);$('st').textContent='Replaying '+tk+' — LEGACY rules…';await sleep(10);RESULT.fires.push(...replayName(tk,b,'LEGACY'));
-      $('st').textContent='Replaying '+tk+' — FIXED rules…';await sleep(10);RESULT.fires.push(...replayName(tk,b,'FIXED'));}
+      $('st').textContent='Replaying '+tk+' — FIXED rules…';await sleep(10);{const ff=replayName(tk,b,'FIXED');addBaselines(tk,b,ff);RESULT.fires.push(...ff);}}
     catch(e){RESULT.errors.push(tk+': '+(e.message||e));}
     k++;await sleep(300);
   }
   setRules('FIXED');$('prog').firstChild.style.width='100%';$('st').textContent='Done · '+RESULT.fires.length+' fires graded'+(RESULT.errors.length?' · '+RESULT.errors.join('; '):'');
-  render();renderVariants();$('run').disabled=false;$('exp').disabled=false;
+  render();renderVariants();renderBaseline();$('run').disabled=false;$('exp').disabled=false;
 }
 
 function stats(list){const n=list.length;const graded=list.filter(x=>x.result);const w=graded.filter(x=>x.result==='hit').length;const st=graded.filter(x=>x.result==='stopped').length;const R=graded.reduce((s,x)=>s+(x.R||0),0);
@@ -173,6 +174,46 @@ function renderVariants(){
    +'</table></div>');
   RESULT.variants=VARIANTS.map(v=>({id:v.id,name:v.name,untouched:vstats(v.f(un)),seen:vstats(v.f(se)),verdict:verdict(vstats(v.f(un)))[0]}));
   $('vout').innerHTML=out.join('');
+}
+
+
+/* ===== RANDOM-ENTRY BASELINE — does the program's timing (and side) beat random entries on the same name, same day? ===== */
+const BASE_K=20;
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function addBaselines(tk,b,fires){
+  const byDay={};let d0=null,cur=null;
+  for(let i=0;i<b.T.length;i++){const d=ctDate(b.T[i]);if(d!==d0){cur=[];byDay[d]=cur;d0=d;}cur.push(i);}
+  for(const f of fires){
+    const dd=byDay[f.day];if(!dd)continue;const dayEnd=dd[dd.length-1];
+    if(f._ok===false)continue;                                   /* the engine produced a stop/target on the wrong side of entry — not a real trade, leave out of the comparison */
+    const kf=dd.indexOf(dd.find(i=>b.T[i]===f.t));if(kf<0)continue;
+    const cand=[];for(let k=Math.max(0,kf-6);k<=Math.min(dd.length-2,kf+6);k++){const i=dd[k];const mins=new Date(b.T[i]*1000).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour12:false,hour:'2-digit',minute:'2-digit'});const mm=+mins.slice(0,2)*60+ +mins.slice(3,5);if(mm+5>=660)break;cand.push(i);}
+    if(!cand.length)continue;
+    const sd=f._sd,td=f._td;if(!(sd>0&&td>0))continue;
+    const rnd=mulberry(hashStr(tk+'|'+f.t+'|'+f.side+'|'+f.kind));f.bA=[];f.bB=[];
+    for(let r=0;r<BASE_K;r++){
+      const i=cand[Math.floor(rnd()*cand.length)],e=b.C[i];
+      const gA=gradeTrade(b,i,e,f.L?e-sd:e+sd,f.L?e+td:e-td,f.L,12,dayEnd);f.bA.push(gA.R!=null?+gA.R.toFixed(2):null);
+      const L2=rnd()<0.5;const gB=gradeTrade(b,i,e,L2?e-sd:e+sd,L2?e+td:e-td,L2,12,dayEnd);f.bB.push(gB.R!=null?+gB.R.toFixed(2):null);
+    }
+  }
+}
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+function paired(list,key){   /* per-trade difference: real R minus that trade's own random-entry average; SE clustered by name-and-day (fires on one name-day are not independent) */
+  const cl={};let n=0,sum=0,sr=0,sb=0;for(const x of list){if(x.R==null||!x[key])continue;const bs=x[key].filter(v=>v!=null);if(bs.length<BASE_K/2)continue;const m=mean(bs),d=x.R-m;const k=x.tk+'|'+x.day;(cl[k]=cl[k]||{s:0,n:0});cl[k].s+=d;cl[k].n++;n++;sum+=d;sr+=x.R;sb+=m;}
+  const G=Object.keys(cl).length;if(n<2||G<3)return {n};const md=sum/n;let v=0;for(const k in cl){const e=cl[k].s-cl[k].n*md;v+=e*e;}
+  const se=Math.sqrt(v*G/(G-1))/n;return {n,clusters:G,real:sr/n,rnd:sb/n,diff:md,se,t:se>0?md/se:0};
+}
+function renderBaseline(){
+  const F=RESULT.fires.filter(x=>x.rules==='FIXED'&&x.bA);const un=F.filter(x=>!x.seen),se=F.filter(x=>x.seen);const fm=x=>x==null||isNaN(x)?'—':(x>=0?'+':'')+x.toFixed(3);
+  const rows=[];RESULT.baseline=[];
+  for(const v of VARIANTS){for(const [lab,l] of [['Untouched',v.f(un)],['Seen',v.f(se)]]){
+    const A=paired(l,'bA'),B=paired(l,'bB');RESULT.baseline.push({id:v.id,set:lab,sameSide:A,randomSide:B});
+    if(!A.n||A.n<2){rows.push('<tr><td><b>'+v.id+'</b> '+(lab==='Untouched'?v.name:'')+'</td><td>'+lab+'</td><td colspan="7" class="d">too few</td></tr>');continue;}
+    const cls=x=>x.t>=2?'g':(x.t<=-2?'r':'d');
+    rows.push('<tr><td><b>'+v.id+'</b> '+(lab==='Untouched'?v.name:'')+'</td><td>'+lab+'</td><td>'+A.n+'</td><td>'+fm(A.real)+'</td><td>'+fm(A.rnd)+'</td><td class="'+cls(A)+'">'+fm(A.diff)+'</td><td>'+A.t.toFixed(1)+'</td><td class="'+(B.n?cls(B):'d')+'">'+(B.n?fm(B.diff):'—')+'</td><td>'+(B.n?B.t.toFixed(1):'—')+'</td></tr>');}}
+  $('bout').innerHTML='<div class="card"><b>Random-entry baseline — does the program\'s timing beat chance?</b><div class="note">For every fire, '+BASE_K+' random entries on the <i>same stock, same day</i> (before 11:00 CT) with the <i>same stop and target distances</i>, graded the same way. "Avg R" is per trade, before any trading cost (cost hits both equally, so it cancels). <b>Gap</b> = program minus random; <b>t</b> of +2 or more means the program is better than chance, −2 or less means worse, in between means no detectable difference (t counts fires on the same stock and day as one cluster). Random entries are drawn within 6 candles (30 minutes) of the program\'s own fire time, so time-of-day volatility is matched. Left block: random time, same side as the program called. Right block: random time and random side.</div><table><tr><th>Variant</th><th>Days</th><th>Trades</th><th>Program avg R</th><th>Random avg R</th><th>Gap</th><th>t</th><th>Gap (random side)</th><th>t</th></tr>'+rows.join('')+'</table></div>';
 }
 
 function exportJSON(){if(!RESULT)return;const blob=new Blob([JSON.stringify(RESULT,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='kornis-audit-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();}
